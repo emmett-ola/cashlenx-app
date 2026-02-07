@@ -1,0 +1,78 @@
+name: cashlenx
+description: A cross-platform finance app.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Architecture & State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  fpdart: ^1.1.0
+  
+  # Networking
+  dio: ^5.4.0
+  # retrofit: ^4.0.3 # Commented out until we setup code gen, but good to have in mind
+  
+  # Routing
+  go_router: ^13.0.0
+  
+  # Dependency Injection
+  get_it: ^7.6.6
+  injectable: ^2.3.2
+  
+  # Data Classes & Serialization
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  equatable: ^2.0.5
+
+  # Utils
+  logger: ^2.0.0
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  flutter_svg: ^2.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
+  
+  # Code Generation
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.3.9
+  # retrofit_generator: ^8.0.0
+  injectable_generator: ^2.5.3
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo_teal.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/images/logo_teal.png"
+    background_color: "#79BCB8"
+    theme_color: "#79BCB8"
+  windows:
+    generate: true
+    image_path: "assets/images/logo_teal.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/images/logo_teal.png"

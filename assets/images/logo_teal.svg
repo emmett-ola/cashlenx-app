@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <title>CashLenx Logo - Optimized Vector</title>
+  <g fill="#79BCB8">
+    <!-- Wallet Main Body: Elegant rounded corners and balanced proportions -->
+    <path d="M120,280 L780,280 C860,280 900,320 900,400 L900,480 L760,480 C680,480 620,540 620,620 C620,700 680,760 760,760 L900,760 L900,860 C900,940 860,980 780,980 L120,980 C40,980 0,940 0,860 L0,400 C0,320 40,280 120,280 Z" fill-rule="evenodd"/>
+    
+    <!-- Wallet Clasp: Perfectly centered circular detail -->
+    <circle cx="760" cy="620" r="90" />
+    <circle cx="760" cy="620" r="40" fill="#FFFFFF" />
+    
+    <!-- Main Sparkle: Symmetric four-point star with smooth Bezier curves -->
+    <path d="M910,100 C910,170 950,210 1020,210 C950,210 910,250 910,320 C910,250 870,210 800,210 C870,210 910,170 910,100 Z"/>
+    
+    <!-- Small sparkles -->
+    <path d="M830,120 L838,142 L860,150 L838,158 L830,180 L822,158 L800,150 L822,142 Z"/>
+    <path d="M950,350 L956,366 L972,372 L956,378 L950,394 L944,378 L928,372 L944,366 Z"/>
+    
+    <!-- Subtle X Branding: Smooth rounded design at the bottom left -->
+    <g transform="translate(60, 880) scale(0.7)">
+      <path d="M15,0 C20,0 25,5 30,15 L45,35 L60,15 C65,5 70,0 75,0 L90,0 L55,45 L90,90 L75,90 C70,90 65,85 60,75 L45,55 L30,75 C25,85 20,90 15,90 L0,90 L35,45 L0,0 Z" fill="#79BCB8" />
+    </g>
+  </g>
+</svg>
