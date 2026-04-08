@@ -14,19 +14,19 @@ class ApiException implements Exception {
 }
 
 class NetworkException extends ApiException {
-  NetworkException({required super.message});
+  NetworkException({required super.message, super.data});
 }
 
 class UnauthorizedException extends ApiException {
-  UnauthorizedException({required super.message});
+  UnauthorizedException({required super.message, super.data});
 }
 
 class ServerException extends ApiException {
-  ServerException({required super.message, super.statusCode});
+  ServerException({required super.message, super.statusCode, super.data});
 }
 
 class NotFoundException extends ApiException {
-  NotFoundException({required super.message});
+  NotFoundException({required super.message, super.data});
 }
 
 class ValidationException extends ApiException {

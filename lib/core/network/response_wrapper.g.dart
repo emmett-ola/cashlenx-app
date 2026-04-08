@@ -14,6 +14,9 @@ ResponseWrapper<T> _$ResponseWrapperFromJson<T>(
       code: json['code'] as String,
       message: json['message'] as String,
       data: _$nullableGenericFromJson(json['data'], fromJsonT),
+      meta: json['meta'] as Map<String, dynamic>?,
+      errors: json['errors'] as List<dynamic>?,
+      extra: json['extra'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$ResponseWrapperToJson<T>(
@@ -24,6 +27,9 @@ Map<String, dynamic> _$ResponseWrapperToJson<T>(
       'code': instance.code,
       'message': instance.message,
       'data': _$nullableGenericToJson(instance.data, toJsonT),
+      'meta': instance.meta,
+      'errors': instance.errors,
+      'extra': instance.extra,
     };
 
 T? _$nullableGenericFromJson<T>(

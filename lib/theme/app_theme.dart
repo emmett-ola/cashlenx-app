@@ -11,6 +11,7 @@ class AppTheme {
   static const primaryColor = Color(0xFF008080); // Teal (THEME_PRIMARY)
   static const secondaryColor = Color(0xFF4DB6AC); // Light Teal
   static const errorColor = Color(0xFFD32F2F);
+  static const successColor = Color(0xFF388E3C);
 
   static ThemeData get lightTheme {
     return ThemeData(

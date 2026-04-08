@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../features/auth/domain/models/user.dart';
 import '../features/splash/presentation/pages/splash_screen.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
@@ -8,14 +9,20 @@ import '../features/home/presentation/pages/home_page.dart';
 
 part 'app_router.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 GoRouter router(RouterRef ref) {
-  // Watch auth state to trigger redirects
-  final authState = ref.watch(authNotifierProvider);
+  final authNotifier = ref.read(authNotifierProvider.notifier);
+  
+  // Create a Listenable that notifies GoRouter when auth state changes
+  final listenable = ValueNotifier<AsyncValue<User?>>(const AsyncLoading());
+  ref.listen(authNotifierProvider, (previous, next) {
+    listenable.value = next;
+  });
 
   return GoRouter(
     initialLocation: '/',
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: false, // Reduced noise
+    refreshListenable: listenable,
     routes: [
       GoRoute(
         path: '/',
@@ -34,6 +41,8 @@ GoRouter router(RouterRef ref) {
       ),
     ],
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
+
       // If auth state is loading, stay on splash (or return null if on splash)
       if (authState.isLoading) return null;
 

@@ -9,12 +9,6 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // Skip if no-auth header is present (custom header to bypass auth)
-    if (options.headers.containsKey('no-auth')) {
-      options.headers.remove('no-auth');
-      return super.onRequest(options, handler);
-    }
-
     final token = await _ref.read(secureStorageServiceProvider).getToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';

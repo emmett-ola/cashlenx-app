@@ -1,4 +1,5 @@
 import 'package:logger/logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum Environment { dev, staging, prod }
 
@@ -8,10 +9,16 @@ class AppConfig {
   static late String _apiBaseUrl;
 
   static Future<void> init() async {
-    // In a real app, this might load from .env files or build flavors
-    // For now, we default to dev
-    _environment = Environment.dev;
-    _apiBaseUrl = _getBaseUrl(_environment);
+    // Load `.env` file from assets
+    await dotenv.load(fileName: ".env");
+
+    final envStr = dotenv.env['APP_ENV']?.toLowerCase() ?? 'dev';
+    _environment = Environment.values.firstWhere(
+      (e) => e.name == envStr,
+      orElse: () => Environment.dev,
+    );
+    
+    _apiBaseUrl = _getBaseUrl();
     
     _logger = Logger(
       printer: PrettyPrinter(
@@ -23,19 +30,18 @@ class AppConfig {
         printTime: false,
       ),
     );
-    
-    _logger.i("App initialized in ${_environment.name} mode");
   }
 
-  static String _getBaseUrl(Environment env) {
-    switch (env) {
-      case Environment.dev:
-        return 'https://dev-api.cashlenx.com/v1';
-      case Environment.staging:
-        return 'https://staging-api.cashlenx.com/v1';
-      case Environment.prod:
-        return 'https://api.cashlenx.com/v1';
+  static String _getBaseUrl() {
+    final scheme = dotenv.env['API_SCHEME'] ?? 'https';
+    final domain = dotenv.env['API_DOMAIN'] ?? 'api.cashlenx.com';
+    final port = dotenv.env['API_PORT'];
+    final version = dotenv.env['API_VERSION'] ?? 'v1';
+    
+    if (port != null && port.isNotEmpty) {
+      return '$scheme://$domain:$port/$version';
     }
+    return '$scheme://$domain/$version';
   }
 
   static Logger get logger => _logger;

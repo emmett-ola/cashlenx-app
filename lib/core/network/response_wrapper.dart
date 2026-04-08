@@ -7,13 +7,17 @@ class ResponseWrapper<T> {
   final String code;
   final String message;
   final T? data;
-  // final MetaInfo? meta; // TODO: Implement MetaInfo if needed
-  // final List<ErrorItem>? errors; // TODO: Implement ErrorItem if needed
+  final Map<String, dynamic>? meta;
+  final List<dynamic>? errors;
+  final Map<String, dynamic>? extra;
 
   ResponseWrapper({
     required this.code,
     required this.message,
     this.data,
+    this.meta,
+    this.errors,
+    this.extra,
   });
 
   factory ResponseWrapper.fromJson(

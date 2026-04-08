@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
 import '../../../../theme/app_theme.dart';
@@ -50,15 +51,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // Listen for errors
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error.toString()),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      } else if (next.value != null) {
-        // Success - Navigate to Home
-        // context.go('/home'); // TODO: Define home route
+        ToastUtils.showServerErrors(context, next.error);
+      } else if (next.hasValue && next.value != null && previous?.isLoading == true) {
+        // Only show success if we were loading (avoids showing on initial app load check)
+        ToastUtils.showSuccess(context, 'Login Success');
+        context.go('/home');
       }
     });
 
@@ -123,30 +120,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: Checkbox(
-                        value: _rememberMe,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (value) {
-                          setState(() {
-                            _rememberMe = value ?? false;
-                          });
-                        },
+                Flexible(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: Checkbox(
+                          value: _rememberMe,
+                          activeColor: AppTheme.primaryColor,
+                          onChanged: (value) {
+                            setState(() {
+                              _rememberMe = value ?? false;
+                            });
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Remember me',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Remember me',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
@@ -210,8 +212,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             const SizedBox(height: 24),
 
             // Sign Up Link
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   "Don't have an account? ",

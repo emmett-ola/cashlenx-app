@@ -22,11 +22,11 @@ Dio dio(DioRef ref) {
   // Add Interceptors
   dio.interceptors.addAll([
     AuthInterceptor(ref),
-    LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => AppConfig.logger.d(obj),
-    ),
+    // LogInterceptor(
+    //   requestBody: true,
+    //   responseBody: true,
+    //   logPrint: (obj) => AppConfig.logger.d(obj),
+    // ),
   ]);
 
   return dio;

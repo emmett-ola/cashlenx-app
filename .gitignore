@@ -61,3 +61,6 @@ env/
 
 # Windows
 Thumbs.db
+
+# Copilot Directory
+/copilot/

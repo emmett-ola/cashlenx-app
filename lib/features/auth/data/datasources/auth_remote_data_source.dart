@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../network/api_client.dart';
 import '../../../../core/network/response_wrapper.dart';
@@ -17,21 +18,25 @@ class AuthRemoteDataSource {
   AuthRemoteDataSource(this._apiClient);
 
   Future<AuthResponse> login(LoginRequest request) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      '/open/auth/login',
-      data: request.toJson(),
-    );
-    
-    final wrapper = ResponseWrapper<AuthResponse>.fromJson(
-      response,
-      (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
-    );
-
-    if (wrapper.data == null) {
-      throw Exception(wrapper.message);
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '/open/auth/login',
+        data: request.toJson(),
+      );
+      
+      final wrapper = ResponseWrapper<AuthResponse>.fromJson(
+        response,
+        (json) => AuthResponse.fromJson(json as Map<String, dynamic>),
+      );
+  
+      if (wrapper.data == null) {
+        throw Exception(wrapper.message);
+      }
+      
+      return wrapper.data!;
+    } catch (e) {
+      rethrow;
     }
-    
-    return wrapper.data!;
   }
 
   Future<void> register(RegisterRequest request) async {

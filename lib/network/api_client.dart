@@ -109,11 +109,11 @@ class ApiClient {
         final message = data?['message'] ?? error.message ?? 'Unknown error';
 
         if (statusCode == 401) {
-          return UnauthorizedException(message: message);
+          return UnauthorizedException(message: message, data: data);
         } else if (statusCode == 404) {
-          return NotFoundException(message: message);
+          return NotFoundException(message: message, data: data);
         } else if (statusCode != null && statusCode >= 500) {
-          return ServerException(message: 'Server error: $statusCode', statusCode: statusCode);
+          return ServerException(message: 'Server error: $statusCode', statusCode: statusCode, data: data);
         } else if (statusCode == 400 || statusCode == 422) {
             return ValidationException(message: message, data: data);
         }
@@ -124,9 +124,9 @@ class ApiClient {
         if (error.error.toString().contains('SocketException')) {
            return NetworkException(message: 'No internet connection');
         }
-        return ApiException(message: 'Unexpected error occurred');
+        return ApiException(message: 'Unexpected error occurred: ${error.message}', statusCode: error.response?.statusCode);
       default:
-        return ApiException(message: 'Something went wrong');
+        return ApiException(message: 'Something went wrong: ${error.message}', statusCode: error.response?.statusCode);
     }
   }
 }
