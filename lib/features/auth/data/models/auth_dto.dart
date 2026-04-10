@@ -32,7 +32,8 @@ class RegisterRequest with _$RegisterRequest {
 @freezed
 class AuthResponse with _$AuthResponse {
   const factory AuthResponse({
-    required String token,
+    @JsonKey(name: 'access_token') required String accessToken,
+    @JsonKey(name: 'refresh_token') required String refreshToken,
     required User user,
   }) = _AuthResponse;
 

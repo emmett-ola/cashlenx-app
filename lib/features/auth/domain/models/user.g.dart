@@ -9,7 +9,7 @@ part of 'user.dart';
 _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       id: json['id'] as String,
       username: json['username'] as String,
-      isActive: json['is_active'] as bool,
+      isActive: json['is_active'] as bool?,
       role: json['role'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

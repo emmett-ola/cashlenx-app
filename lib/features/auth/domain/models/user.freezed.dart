@@ -23,7 +23,7 @@ mixin _$User {
   String get id => throw _privateConstructorUsedError;
   String get username => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_active')
-  bool get isActive => throw _privateConstructorUsedError;
+  bool? get isActive => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -47,7 +47,7 @@ abstract class $UserCopyWith<$Res> {
   $Res call(
       {String id,
       String username,
-      @JsonKey(name: 'is_active') bool isActive,
+      @JsonKey(name: 'is_active') bool? isActive,
       String role,
       @JsonKey(name: 'created_at') DateTime createdAt,
       @JsonKey(name: 'updated_at') DateTime updatedAt});
@@ -70,7 +70,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
   $Res call({
     Object? id = null,
     Object? username = null,
-    Object? isActive = null,
+    Object? isActive = freezed,
     Object? role = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -84,10 +84,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.username
           : username // ignore: cast_nullable_to_non_nullable
               as String,
-      isActive: null == isActive
+      isActive: freezed == isActive
           ? _value.isActive
           : isActive // ignore: cast_nullable_to_non_nullable
-              as bool,
+              as bool?,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
@@ -114,7 +114,7 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
   $Res call(
       {String id,
       String username,
-      @JsonKey(name: 'is_active') bool isActive,
+      @JsonKey(name: 'is_active') bool? isActive,
       String role,
       @JsonKey(name: 'created_at') DateTime createdAt,
       @JsonKey(name: 'updated_at') DateTime updatedAt});
@@ -134,7 +134,7 @@ class __$$UserImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? username = null,
-    Object? isActive = null,
+    Object? isActive = freezed,
     Object? role = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -148,10 +148,10 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.username
           : username // ignore: cast_nullable_to_non_nullable
               as String,
-      isActive: null == isActive
+      isActive: freezed == isActive
           ? _value.isActive
           : isActive // ignore: cast_nullable_to_non_nullable
-              as bool,
+              as bool?,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
@@ -174,7 +174,7 @@ class _$UserImpl implements _User {
   const _$UserImpl(
       {required this.id,
       required this.username,
-      @JsonKey(name: 'is_active') required this.isActive,
+      @JsonKey(name: 'is_active') this.isActive,
       required this.role,
       @JsonKey(name: 'created_at') required this.createdAt,
       @JsonKey(name: 'updated_at') required this.updatedAt});
@@ -188,7 +188,7 @@ class _$UserImpl implements _User {
   final String username;
   @override
   @JsonKey(name: 'is_active')
-  final bool isActive;
+  final bool? isActive;
   @override
   final String role;
   @override
@@ -245,7 +245,7 @@ abstract class _User implements User {
   const factory _User(
           {required final String id,
           required final String username,
-          @JsonKey(name: 'is_active') required final bool isActive,
+          @JsonKey(name: 'is_active') final bool? isActive,
           required final String role,
           @JsonKey(name: 'created_at') required final DateTime createdAt,
           @JsonKey(name: 'updated_at') required final DateTime updatedAt}) =
@@ -259,7 +259,7 @@ abstract class _User implements User {
   String get username;
   @override
   @JsonKey(name: 'is_active')
-  bool get isActive;
+  bool? get isActive;
   @override
   String get role;
   @override

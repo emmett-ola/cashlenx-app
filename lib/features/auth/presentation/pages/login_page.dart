@@ -17,14 +17,14 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -33,7 +33,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (_formKey.currentState!.validate()) {
       // Trigger login
       await ref.read(authNotifierProvider.notifier).login(
-            _emailController.text.trim(),
+            _identifierController.text.trim(),
             _passwordController.text,
           );
       
@@ -52,10 +52,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.hasError) {
         ToastUtils.showServerErrors(context, next.error);
-      } else if (next.hasValue && next.value != null && previous?.isLoading == true) {
+      } else if (next.hasValue && next.value != null && (previous?.isLoading == true || previous == null)) {
         // Only show success if we were loading (avoids showing on initial app load check)
-        ToastUtils.showSuccess(context, 'Login Success');
-        context.go('/home');
+        ToastUtils.showSuccess(context, 'OK');
+        // context.go('/home'); // Commented out until home page is ready
       }
     });
 
@@ -64,20 +64,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         key: _formKey,
         child: Column(
           children: [
-            // Email Input
+            // Identifier Input (Email or Username)
             CustomInput(
-              label: 'Email',
-              controller: _emailController,
-              placeholder: 'email@example.com',
+              label: 'Email or Username',
+              controller: _identifierController,
+              placeholder: 'Enter your email or username',
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+              prefixIcon: Icon(Icons.person_outline, color: Colors.grey[500]),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please fill in all fields.';
-                }
-                final emailRegex = RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$");
-                if (!emailRegex.hasMatch(value)) {
-                  return 'Please enter a valid email address.';
                 }
                 return null;
               },
