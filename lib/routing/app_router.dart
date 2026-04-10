@@ -14,7 +14,7 @@ GoRouter router(RouterRef ref) {
   final authNotifier = ref.read(authNotifierProvider.notifier);
   
   // Create a Listenable that notifies GoRouter when auth state changes
-  final listenable = ValueNotifier<AsyncValue<User?>>(const AsyncLoading());
+  final listenable = ValueNotifier<AsyncValue<User?>>(ref.read(authNotifierProvider));
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = next;
   });
@@ -59,12 +59,12 @@ GoRouter router(RouterRef ref) {
       } 
       // If not logged in
       else {
-        // If not on login, go to login
+        // If not on login and not on splash, go to login
         if (!isLoggingIn && !isSplash) {
           return '/login';
         }
-        // If on splash, go to login (once loading is done)
-        if (isSplash && !authState.isLoading) {
+        // If on splash, go to login
+        if (isSplash) {
           return '/login';
         }
       }

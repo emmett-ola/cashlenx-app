@@ -22,15 +22,28 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._remoteDataSource, this._secureStorage);
 
   @override
-  Future<User> login(String username, String password) async {
+  Future<User> login(String username, String password, {bool rememberMe = false}) async {
     final request = LoginRequest(username: username, password: password);
     final response = await _remoteDataSource.login(request);
     
+    // Save tokens and preference
+    await _secureStorage.saveToken(response.accessToken);
+    await _secureStorage.saveRefreshToken(response.refreshToken);
+    await _secureStorage.saveRememberMe(rememberMe);
+    
+    // Return user
+    return response.user;
+  }
+
+  @override
+  Future<User> loginWithRefreshToken(String refreshToken) async {
+    final request = LoginRequest(refreshToken: refreshToken);
+    final response = await _remoteDataSource.login(request);
+
     // Save tokens
     await _secureStorage.saveToken(response.accessToken);
     await _secureStorage.saveRefreshToken(response.refreshToken);
-    
-    // Return user
+
     return response.user;
   }
 
@@ -45,19 +58,11 @@ class AuthRepositoryImpl implements AuthRepository {
     // Try to notify server, but don't block if fails
     try {
       final token = await _secureStorage.getToken();
-      // Ideally we send refresh token, but if we don't have it, maybe access token?
-      // The API expects refresh_token. If we don't store it, we can't send it.
-      // We'll just call logout without it (which invalidates all sessions according to doc? No.)
-      // Doc: "If provided, only this session... If omitted, all sessions"
-      // Wait, that's dangerous. We shouldn't logout all sessions by default.
-      // But if we don't have refresh token, we have no choice?
-      // Or maybe we just delete local token.
-      
-      // For now, let's just delete local token.
-      // await _remoteDataSource.logout(); 
+      // ...
     } catch (_) {}
     
-    await _secureStorage.clearAll();
+    // Only clear session tokens, keep the rememberMe preference
+    await _secureStorage.clearSession();
   }
 
   @override

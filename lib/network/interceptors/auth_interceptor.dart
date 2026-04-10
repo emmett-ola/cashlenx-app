@@ -18,10 +18,16 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
-      // TODO: Handle Token Refresh logic here if supported
-      // For now, we can perhaps trigger a logout or refresh if API supports it.
-      // Since refresh token logic is complex (queueing requests), we'll skip for Phase 2 MVP.
+    final response = err.response;
+    final data = response?.data;
+    final code = data is Map ? data['code'] : null;
+
+    if (err.response?.statusCode == 401 || code == 'UNAUTHORIZED') {
+      // If we get an unauthorized error, we might want to trigger a refresh
+      // But for the "Auto Login on start" logic, it's handled in AuthNotifier.
+      
+      // For now, if any request fails with 401, we just let it be.
+      // In the future, we will implement silent refresh here.
     }
     super.onError(err, handler);
   }

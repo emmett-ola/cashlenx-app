@@ -7,6 +7,9 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).value;
+    final username = user?.username ?? 'User';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
@@ -19,8 +22,18 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Welcome to CashLenX!'),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Welcome, $username!',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text('Welcome to CashLenX!'),
+          ],
+        ),
       ),
     );
   }

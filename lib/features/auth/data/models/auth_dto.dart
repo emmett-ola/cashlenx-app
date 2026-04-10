@@ -6,8 +6,9 @@ part 'auth_dto.g.dart';
 
 // --- Requests ---
 
-@freezed
+@Freezed(toJson: true)
 class LoginRequest with _$LoginRequest {
+  @JsonSerializable(includeIfNull: false)
   const factory LoginRequest({
     String? username,
     String? password,

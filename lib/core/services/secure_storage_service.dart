@@ -12,7 +12,8 @@ class SecureStorageService {
   final _storage = const FlutterSecureStorage();
 
   static const _tokenKey = 'auth_token';
-  static const _refreshTokenKey = 'auth_refresh_token'; // Prepared for future
+  static const _refreshTokenKey = 'auth_refresh_token';
+  static const _rememberMeKey = 'auth_remember_me';
 
   Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);
@@ -36,6 +37,20 @@ class SecureStorageService {
 
   Future<void> deleteRefreshToken() async {
     await _storage.delete(key: _refreshTokenKey);
+  }
+
+  Future<void> clearSession() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _refreshTokenKey);
+  }
+
+  Future<void> saveRememberMe(bool rememberMe) async {
+    await _storage.write(key: _rememberMeKey, value: rememberMe.toString());
+  }
+
+  Future<bool> getRememberMe() async {
+    final value = await _storage.read(key: _rememberMeKey);
+    return value == 'true';
   }
 
   Future<void> clearAll() async {

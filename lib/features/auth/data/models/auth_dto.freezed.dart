@@ -132,7 +132,8 @@ class __$$LoginRequestImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(includeIfNull: false)
 class _$LoginRequestImpl implements _LoginRequest {
   const _$LoginRequestImpl(
       {this.username,

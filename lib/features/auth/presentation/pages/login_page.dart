@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/services/secure_storage_service.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
@@ -23,6 +24,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberMe();
+  }
+
+  Future<void> _loadRememberMe() async {
+    final secureStorage = ref.read(secureStorageServiceProvider);
+    final value = await secureStorage.getRememberMe();
+    if (mounted) {
+      setState(() {
+        _rememberMe = value;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
@@ -35,6 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await ref.read(authNotifierProvider.notifier).login(
             _identifierController.text.trim(),
             _passwordController.text,
+            rememberMe: _rememberMe,
           );
       
       // Check state for error or success
@@ -119,27 +137,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Flexible(
                   child: Row(
                     children: [
-                      SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: Checkbox(
-                          value: _rememberMe,
-                          activeColor: AppTheme.primaryColor,
-                          onChanged: (value) {
-                            setState(() {
-                              _rememberMe = value ?? false;
-                            });
-                          },
+                      Tooltip(
+                        message: 'We will keep you signed in for 30 days',
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            activeColor: AppTheme.primaryColor,
+                            onChanged: (value) {
+                              setState(() {
+                                _rememberMe = value ?? false;
+                              });
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Flexible(
-                        child: Text(
-                          'Remember me',
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _rememberMe = !_rememberMe;
+                            });
+                          },
+                          child: Tooltip(
+                            message: 'We will keep you signed in for 30 days',
+                            child: Text(
+                              'Remember me',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
                           ),
                         ),
                       ),

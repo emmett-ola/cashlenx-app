@@ -15,9 +15,9 @@ _$LoginRequestImpl _$$LoginRequestImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$LoginRequestImplToJson(_$LoginRequestImpl instance) =>
     <String, dynamic>{
-      'username': instance.username,
-      'password': instance.password,
-      'refresh_token': instance.refreshToken,
+      if (instance.username case final value?) 'username': value,
+      if (instance.password case final value?) 'password': value,
+      if (instance.refreshToken case final value?) 'refresh_token': value,
     };
 
 _$RegisterRequestImpl _$$RegisterRequestImplFromJson(
