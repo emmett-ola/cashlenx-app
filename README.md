@@ -87,6 +87,7 @@ See [Testing Strategy](docs/testing.md) for the current mocking and coverage pla
 ## 📚 Documentation
 
 - [Architecture Guide](docs/ARCHITECTURE.md)
+- [Infrastructure Foundation](docs/infrastructure.md)
 - [Development Roadmap](docs/roadmap.md)
 - [Testing Strategy](docs/testing.md)
 

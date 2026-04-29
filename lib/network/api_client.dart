@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'api_exceptions.dart';
+import '../core/infrastructure/http/dio_exception_mapper.dart';
+import '../core/infrastructure/http/rest_client.dart';
 import 'dio_provider.dart';
 
 part 'api_client.g.dart';
@@ -10,11 +11,16 @@ ApiClient apiClient(ApiClientRef ref) {
   return ApiClient(ref.watch(dioProvider));
 }
 
-class ApiClient {
+class ApiClient implements RestClient {
   final Dio _dio;
+  final DioExceptionMapper _exceptionMapper;
 
-  ApiClient(this._dio);
+  ApiClient(
+    this._dio, {
+    DioExceptionMapper exceptionMapper = const DioExceptionMapper(),
+  }) : _exceptionMapper = exceptionMapper;
 
+  @override
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -30,10 +36,11 @@ class ApiClient {
       );
       return response.data as T;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw _exceptionMapper.map(e);
     }
   }
 
+  @override
   Future<T> post<T>(
     String path, {
     dynamic data,
@@ -51,10 +58,11 @@ class ApiClient {
       );
       return response.data as T;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw _exceptionMapper.map(e);
     }
   }
 
+  @override
   Future<T> put<T>(
     String path, {
     dynamic data,
@@ -72,10 +80,11 @@ class ApiClient {
       );
       return response.data as T;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw _exceptionMapper.map(e);
     }
   }
 
+  @override
   Future<T> delete<T>(
     String path, {
     dynamic data,
@@ -93,40 +102,7 @@ class ApiClient {
       );
       return response.data as T;
     } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
-
-  ApiException _handleDioError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return NetworkException(message: 'Connection timed out');
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        final data = error.response?.data;
-        final message = data?['message'] ?? error.message ?? 'Unknown error';
-
-        if (statusCode == 401) {
-          return UnauthorizedException(message: message, data: data);
-        } else if (statusCode == 404) {
-          return NotFoundException(message: message, data: data);
-        } else if (statusCode != null && statusCode >= 500) {
-          return ServerException(message: 'Server error: $statusCode', statusCode: statusCode, data: data);
-        } else if (statusCode == 400 || statusCode == 422) {
-            return ValidationException(message: message, data: data);
-        }
-        return ApiException(message: message, statusCode: statusCode, data: data);
-      case DioExceptionType.cancel:
-        return ApiException(message: 'Request cancelled');
-      case DioExceptionType.unknown:
-        if (error.error.toString().contains('SocketException')) {
-           return NetworkException(message: 'No internet connection');
-        }
-        return ApiException(message: 'Unexpected error occurred: ${error.message}', statusCode: error.response?.statusCode);
-      default:
-        return ApiException(message: 'Something went wrong: ${error.message}', statusCode: error.response?.statusCode);
+      throw _exceptionMapper.map(e);
     }
   }
 }

@@ -1,11 +1,13 @@
 import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../infrastructure/logging/app_logger.dart';
+import '../infrastructure/logging/logger_app_logger.dart';
 
 enum Environment { dev, staging, prod }
 
 class AppConfig {
   static late Environment _environment;
-  static late Logger _logger;
+  static late AppLogger _logger;
   static late String _apiBaseUrl;
 
   static Future<void> init() async {
@@ -20,14 +22,16 @@ class AppConfig {
 
     _apiBaseUrl = _getBaseUrl();
 
-    _logger = Logger(
-      printer: PrettyPrinter(
-        methodCount: 0,
-        errorMethodCount: 8,
-        lineLength: 120,
-        colors: true,
-        printEmojis: true,
-        dateTimeFormat: DateTimeFormat.none,
+    _logger = LoggerAppLogger(
+      Logger(
+        printer: PrettyPrinter(
+          methodCount: 0,
+          errorMethodCount: 8,
+          lineLength: 120,
+          colors: true,
+          printEmojis: true,
+          dateTimeFormat: DateTimeFormat.none,
+        ),
       ),
     );
   }
@@ -44,7 +48,7 @@ class AppConfig {
     return '$scheme://$domain/$version';
   }
 
-  static Logger get logger => _logger;
+  static AppLogger get logger => _logger;
   static String get apiBaseUrl => _apiBaseUrl;
   static Environment get environment => _environment;
 }

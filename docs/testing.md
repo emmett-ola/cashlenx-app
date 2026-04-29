@@ -14,6 +14,7 @@ Both commands should pass before committing.
 ## What To Test
 
 - Unit tests for pure Dart behavior: DTO parsing, repositories with fake data sources, storage policy, and small helpers.
+- Infrastructure tests for HTTP error mapping, error-message resolution, request tracking, route redirect policy, and persistence adapters.
 - Provider tests for auth state: initial logged-out state, remember-me refresh success, refresh failure, login success, login failure, logout, password-reset request, and password-reset confirm.
 - Widget tests for routed auth flows: splash to login, login to register, login to forgot password, form validation, loading states, and success/error messages.
 - Integration tests later for server-backed flows: registration, login, refresh, logout, profile fetch, and core finance workflows.

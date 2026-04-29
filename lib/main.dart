@@ -6,7 +6,7 @@ import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Config (Env, Logging, etc.)
   await AppConfig.init();
 
@@ -28,12 +28,12 @@ class CashLenXApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'CashLenX',
       debugShowCheckedModeBanner: false,
-      
+
       // Theme
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      
+
       // Routing
       routerConfig: router,
     );

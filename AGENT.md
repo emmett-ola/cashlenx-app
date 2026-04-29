@@ -33,6 +33,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 - `README.md`: project overview, setup, planned features.
 - `docs/ARCHITECTURE.md`: architecture and development guide.
+- `docs/infrastructure.md`: reusable infrastructure foundation guide.
 - `docs/roadmap.md`: staged development plan for future implementation.
 - `docs/testing.md`: current test/mocking strategy.
 - `pubspec.yaml`: dependencies, assets, launcher icon config.
@@ -49,7 +50,8 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 Follow the existing feature-first layout:
 
 - `lib/core/`: app-wide config, utilities, response wrappers, secure storage.
-- `lib/network/`: Dio setup, API client, interceptors, network exceptions.
+- `lib/core/infrastructure/`: reusable HTTP, routing, error, logging, and persistence contracts/adapters.
+- `lib/network/`: app-specific Dio setup, API client adapter, and interceptors.
 - `lib/features/<feature>/data/`: DTOs, remote data sources, repository implementations.
 - `lib/features/<feature>/domain/`: entities/models and repository interfaces. Keep Flutter dependencies out of domain code.
 - `lib/features/<feature>/presentation/`: pages, widgets, Riverpod providers/state.
@@ -107,8 +109,10 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
   - `sample.env` points to `http://localhost:10063/api/v0`.
 - All HTTP should go through `ApiClient` and `dioProvider`.
+- Shared infrastructure contracts are exported from `lib/core/infrastructure/infrastructure.dart`.
 - `AuthInterceptor` injects `Authorization: Bearer <token>` when a token exists.
 - `AuthInterceptor` attempts one silent refresh on 401/UNAUTHORIZED when remember-me is enabled and a refresh token exists, then retries the failed request.
+- `RequestTrackingInterceptor` adds `x-request-id` and logs method/path/status/timing without request or response bodies.
 - `ResponseWrapper<T>` matches the server wrapper shape: `code`, `message`, `data`, `meta`, `errors`, `extra`.
 - `ToastUtils.showServerErrors(...)` expects backend errors such as `{"errors":[{"message":"..."}]}`.
 
