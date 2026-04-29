@@ -56,8 +56,15 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    // Only clear session tokens, keep the rememberMe preference
-    await _secureStorage.clearSession();
+    try {
+      final refreshToken = await _secureStorage.getRefreshToken();
+      await _remoteDataSource.logout(refreshToken: refreshToken);
+    } catch (_) {
+      // Local logout should still complete if the server session is already gone.
+    } finally {
+      // Only clear session tokens, keep the rememberMe preference.
+      await _secureStorage.clearSession();
+    }
   }
 
   @override

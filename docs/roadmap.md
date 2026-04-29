@@ -11,17 +11,19 @@ Implemented:
 - Riverpod, GoRouter, Dio, Freezed/json_serializable setup.
 - Splash screen with logo animation.
 - Login screen connected to the real CashLenX server auth endpoint.
+- Registration screen connected to the real CashLenX server auth endpoint.
 - Auth response parsing for `access_token`, `refresh_token`, and `user`.
 - Error notifications for server validation/API errors.
 - Remember-me based startup login through refresh token.
+- Demo mode route into the temporary home screen.
+- Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
 - Temporary `/home` welcome screen after login.
+- `flutter analyze` and `flutter test` are clean.
 
 Known gaps:
 
 - Dashboard/home is temporary.
-- Registration screen is not wired.
-- Forgot-password and demo mode are placeholders.
-- Logout currently clears local session only.
+- Forgot-password is still a placeholder.
 - No silent refresh/retry path for normal API requests that receive 401.
 - Test coverage is still minimal.
 
@@ -40,10 +42,10 @@ Goal: make the app easier to run, verify, and extend before adding larger financ
 - Finalize root documentation layout.
 - Keep `README.md` as the entry point and `AGENT.md` as the AI collaboration handoff.
 - Keep detailed docs in `docs/`.
-- Verify `.env` setup and document local server assumptions.
-- Add basic test/mocking strategy for config, routing, and auth state.
-- Run and fix `flutter analyze`.
-- Review generated files and ensure source/generation workflow is clean.
+- [x] Verify `.env` setup and document local server assumptions.
+- [ ] Add basic test/mocking strategy for config, routing, and auth state.
+- [x] Run and fix `flutter analyze`.
+- [x] Review generated files and ensure source/generation workflow is clean.
 
 Exit criteria:
 
@@ -54,9 +56,9 @@ Exit criteria:
 
 Goal: turn the current login flow into a complete auth module.
 
-- Wire backend logout through `POST /open/auth/logout`.
+- [x] Wire backend logout through `POST /open/auth/logout`.
 - Decide expected logout behavior for remember-me: local logout, logout this device, or logout all devices.
-- Implement registration screen using existing `AuthRepository.register`.
+- [x] Implement registration screen using existing `AuthRepository.register`.
 - Add forgot-password request/confirm flows if supported by the server.
 - Add authenticated profile fetch/update if needed for account setup.
 - Add silent refresh for 401 responses or define why startup-only refresh is enough for now.
