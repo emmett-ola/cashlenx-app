@@ -1,0 +1,241 @@
+# CashLenX Agent Notes
+
+This file is the handoff point for future AI coding sessions in this repo. Read it before making changes.
+
+## Project Snapshot
+
+- App: CashLenX, a cross-platform Flutter finance app for personal finance, expense tracking, budgets, and reports.
+- Current state: early development. Splash, login, real auth request handling, auth persistence, and a temporary home/welcome screen exist.
+- Language/runtime: Dart SDK `>=3.2.0 <4.0.0`, Flutter.
+- Architecture: feature-first Clean Architecture.
+- State management: Riverpod with code generation (`riverpod_annotation`, generated `*.g.dart`).
+- Routing: GoRouter.
+- Networking: Dio through local wrappers and interceptors.
+- Serialization: Freezed + json_serializable.
+- Dependency injection packages are present (`get_it`, `injectable`) but the active code currently uses Riverpod providers.
+
+## Related Repositories
+
+This repo is one part of a three-repo local workspace:
+
+- `../cashlenx-app`: this Flutter app.
+- `../cashlenx-server`: Go API server built separately. Use it as the implementation source for API behavior when local app docs are stale.
+- `../cashlenx-design`: Figma-exported React/Vite design reference. Use it as the visual/interaction reference before inventing new UI.
+
+The app also includes a local API contract copy at `server/docs/openapi.yaml`. Cross-check this with `../cashlenx-server/docs/openapi.yaml` when backend behavior is uncertain.
+
+## Current Branch
+
+- Active development branch: `dev/init`.
+- Keep preparation and initial project setup work on this branch unless the user asks for another branch.
+
+## Important Files
+
+- `README.md`: project overview, setup, planned features.
+- `docs/ARCHITECTURE.md`: architecture and development guide.
+- `docs/roadmap.md`: staged development plan for future implementation.
+- `pubspec.yaml`: dependencies, assets, launcher icon config.
+- `analysis_options.yaml`: lint rules.
+- `sample.env`: environment template.
+- `.env`: required by `AppConfig.init()` at runtime and listed as a Flutter asset. Do not commit real secrets.
+- `server/docs/openapi.yaml`: local API contract reference.
+- `lib/main.dart`: initializes `AppConfig`, `ProviderScope`, themes, and `MaterialApp.router`.
+- `lib/routing/app_router.dart`: GoRouter setup and auth redirects.
+- `lib/core/config/app_config.dart`: loads `.env` and builds `AppConfig.apiBaseUrl`.
+
+## App Structure
+
+Follow the existing feature-first layout:
+
+- `lib/core/`: app-wide config, utilities, response wrappers, secure storage.
+- `lib/network/`: Dio setup, API client, interceptors, network exceptions.
+- `lib/features/<feature>/data/`: DTOs, remote data sources, repository implementations.
+- `lib/features/<feature>/domain/`: entities/models and repository interfaces. Keep Flutter dependencies out of domain code.
+- `lib/features/<feature>/presentation/`: pages, widgets, Riverpod providers/state.
+- `lib/shared/`: reusable UI widgets.
+- `lib/routing/`: GoRouter configuration.
+- `lib/theme/`: app theme and theme mode provider.
+
+Prefer adding new functionality inside the relevant feature folder instead of growing global folders.
+
+## Implemented App Behavior
+
+- Splash screen: `lib/features/splash/presentation/pages/splash_screen.dart`
+  - Teal gradient, white logo, app name, slogan, pulse/entrance animation, small loading indicator.
+  - Auth provider intentionally waits 2 seconds so the splash is visible.
+
+- Login screen: `lib/features/auth/presentation/pages/login_page.dart`
+  - Email-or-username field, password field, visibility toggle, remember-me checkbox, forgot-password placeholder, demo-mode placeholder, sign-up placeholder.
+  - Calls real backend login through `AuthNotifier.login(...)`.
+  - Shows server errors using `ToastUtils.showServerErrors(...)`.
+  - Shows a success toast on successful manual login.
+
+- Auth state: `lib/features/auth/presentation/providers/auth_provider.dart`
+  - `AuthNotifier` is `keepAlive`.
+  - On app start, it checks `SecureStorageService.getRememberMe()`.
+  - If remember-me is false, it clears stored auth data and treats the user as logged out.
+  - If remember-me is true and a refresh token exists, it calls refresh-token login.
+  - Failed refresh clears storage and returns logged out.
+
+- Auth persistence: `lib/core/services/secure_storage_service.dart`
+  - Stores `auth_token`, `auth_refresh_token`, and `auth_remember_me` with `flutter_secure_storage`.
+  - `clearSession()` removes tokens only.
+  - `clearAll()` removes tokens and remember-me state.
+
+- Routing: `lib/routing/app_router.dart`
+  - Routes: `/` splash, `/login`, `/home`.
+  - Logged-in users on splash/login redirect to `/home`.
+  - Logged-out users redirect to `/login` after splash/loading.
+  - `/home` is a temporary welcome page, not the final dashboard.
+
+- Home/welcome screen: `lib/features/home/presentation/pages/home_page.dart`
+  - Displays `Welcome, <username>!`.
+  - Logout button calls `AuthNotifier.logout()`.
+
+## Backend/API Integration
+
+- API base URL is built from `.env`:
+  - `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
+  - `sample.env` points to `http://localhost:10063/api/v0`.
+- All HTTP should go through `ApiClient` and `dioProvider`.
+- `AuthInterceptor` injects `Authorization: Bearer <token>` when a token exists.
+- Silent token refresh on arbitrary 401 responses is not implemented yet; startup refresh is handled by `AuthNotifier`.
+- `ResponseWrapper<T>` matches the server wrapper shape: `code`, `message`, `data`, `meta`, `errors`, `extra`.
+- `ToastUtils.showServerErrors(...)` expects backend errors such as `{"errors":[{"message":"..."}]}`.
+
+Auth endpoints currently used:
+
+- `POST /open/auth/login`
+  - Username/password login body: `{ "username": "...", "password": "..." }`
+  - Refresh login body: `{ "refresh_token": "..." }`
+  - Server returns wrapped data containing `access_token`, `refresh_token`, and `user`.
+  - Verified against the current `../cashlenx-server/controller/auth_controller/auth.go`, `../cashlenx-server/model/refresh_token.go`, and `../cashlenx-server/docs/openapi.yaml`.
+- `POST /open/auth/register`
+  - Implemented in data source/repository but no registration page is wired yet.
+- `POST /open/auth/logout`
+  - Data source has a method, but repository logout currently only clears local session.
+- `GET /user/profile`
+  - Used by `getCurrentUser()` when a token exists, but startup usually prefers refresh-token login if remember-me is enabled.
+
+## Design Reference
+
+Use `../cashlenx-design` before changing major UI. Useful files:
+
+- `src/components/screens/SplashScreen.tsx`
+- `src/components/screens/Login.tsx`
+- `src/components/screens/HomeScreen.tsx`
+- `src/components/screens/Dashboard.tsx`
+- `src/components/screens/AddTransaction.tsx`
+- `src/components/screens/Transactions.tsx`
+- `src/components/screens/Budget.tsx`
+- `src/components/screens/Stats.tsx`
+- `src/components/screens/Settings.tsx`
+- `src/components/atoms/*`
+- `src/components/molecules/*`
+- `src/constants/colors.ts`
+
+Current visual tokens from design:
+
+- Primary teal: `#008080`
+- Secondary/light teal: `#4DB6AC`
+- Accent/coral in design reference: `#FF8A65`
+- Design reference uses 8px-ish radii for buttons/inputs and a clean mobile-first finance-app layout.
+
+Flutter currently mirrors the splash/login reference broadly, with a few text differences:
+
+- Flutter splash subtitle: `Your Financial Companion`
+- Design splash subtitle: `Your Money, Simplified`
+- Flutter login label: `Email or Username`
+- Design login label: `Email`
+
+Ask the user before changing product copy if the difference looks intentional.
+
+## Known Gaps / Next Likely Work
+
+- Final dashboard/home feature is not implemented; `/home` is temporary.
+- Registration UI is not wired.
+- Forgot-password flow is not implemented.
+- Demo mode is not implemented.
+- Logout does not currently call the backend logout endpoint.
+- Silent refresh on 401 is not implemented in `AuthInterceptor`.
+- Tests are minimal. `test/widget_test.dart` is only a smoke test and may need mocking because `AppConfig.init()` requires `.env`.
+- Some README/architecture text is aspirational and may not match current code exactly.
+
+## Generated Files
+
+The repo contains generated Dart files:
+
+- `*.g.dart`
+- `*.freezed.dart`
+
+Do not hand-edit generated files. Edit the source files and regenerate with:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Use watch mode during longer development sessions:
+
+```bash
+dart run build_runner watch --delete-conflicting-outputs
+```
+
+## Standard Commands
+
+Install dependencies:
+
+```bash
+flutter pub get
+```
+
+Analyze:
+
+```bash
+flutter analyze
+```
+
+Run tests:
+
+```bash
+flutter test
+```
+
+Run the app:
+
+```bash
+flutter run
+```
+
+Run the API server locally from the sibling repo when needed:
+
+```bash
+cd ../cashlenx-server
+go run main.go server start -p 10063
+```
+
+Run the design reference locally when needed:
+
+```bash
+cd ../cashlenx-design
+npm install
+npm run dev
+```
+
+## Development Rules
+
+- Preserve Clean Architecture dependency direction: presentation -> domain contracts -> data implementations.
+- Keep domain models and business logic pure Dart where possible.
+- Use Riverpod annotation/codegen patterns that already exist in the repo.
+- Use Dio through the existing networking layer instead of creating ad hoc HTTP clients.
+- Keep API parsing aligned with `ResponseWrapper<T>` and the OpenAPI/server contract.
+- Keep UI consistent with `../cashlenx-design`, `AppTheme`, and existing shared widgets before adding new styling patterns.
+- Prefer small, focused changes and verify with `flutter analyze` and relevant tests.
+- Do not commit `.env` or local secrets. Use `sample.env` for documented variables.
+- Avoid unrelated platform-folder edits unless the task explicitly needs Android/iOS/web/desktop changes.
+- If a generated file changes, mention the source file that caused it.
+
+## Session Memory
+
+- Initial collaboration branch `dev/init` was created from `main`.
+- The first preparation task was to add this `AGENT.md` file for future sessions.
+- This file was expanded after reviewing the app, the local OpenAPI copy, `../cashlenx-server`, and `../cashlenx-design`.

@@ -81,5 +81,10 @@ Run unit and widget tests:
 flutter test
 ```
 
+## 📚 Documentation
+
+- [Architecture Guide](docs/ARCHITECTURE.md)
+- [Development Roadmap](docs/roadmap.md)
+
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
