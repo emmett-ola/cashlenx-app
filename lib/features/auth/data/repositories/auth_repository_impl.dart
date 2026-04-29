@@ -22,15 +22,16 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._remoteDataSource, this._secureStorage);
 
   @override
-  Future<User> login(String username, String password, {bool rememberMe = false}) async {
+  Future<User> login(String username, String password,
+      {bool rememberMe = false}) async {
     final request = LoginRequest(username: username, password: password);
     final response = await _remoteDataSource.login(request);
-    
+
     // Save tokens and preference
     await _secureStorage.saveToken(response.accessToken);
     await _secureStorage.saveRefreshToken(response.refreshToken);
     await _secureStorage.saveRememberMe(rememberMe);
-    
+
     // Return user
     return response.user;
   }
@@ -55,12 +56,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    // Try to notify server, but don't block if fails
-    try {
-      final token = await _secureStorage.getToken();
-      // ...
-    } catch (_) {}
-    
     // Only clear session tokens, keep the rememberMe preference
     await _secureStorage.clearSession();
   }

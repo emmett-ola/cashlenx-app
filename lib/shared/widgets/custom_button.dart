@@ -21,13 +21,12 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     if (isOutlined) {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: backgroundColor ?? AppTheme.primaryColor, width: 2),
+          side: BorderSide(
+              color: backgroundColor ?? AppTheme.primaryColor, width: 2),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           foregroundColor: backgroundColor ?? AppTheme.primaryColor,
@@ -40,7 +39,8 @@ class CustomButton extends StatelessWidget {
               )
             : Text(
                 text,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
       );
     }
@@ -53,13 +53,15 @@ class CustomButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        disabledBackgroundColor: (backgroundColor ?? AppTheme.primaryColor).withOpacity(0.5),
+        disabledBackgroundColor:
+            (backgroundColor ?? AppTheme.primaryColor).withValues(alpha: 0.5),
       ),
       child: isLoading
           ? const SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : Text(
               text,

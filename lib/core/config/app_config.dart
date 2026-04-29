@@ -17,9 +17,9 @@ class AppConfig {
       (e) => e.name == envStr,
       orElse: () => Environment.dev,
     );
-    
+
     _apiBaseUrl = _getBaseUrl();
-    
+
     _logger = Logger(
       printer: PrettyPrinter(
         methodCount: 0,
@@ -27,7 +27,7 @@ class AppConfig {
         lineLength: 120,
         colors: true,
         printEmojis: true,
-        printTime: false,
+        dateTimeFormat: DateTimeFormat.none,
       ),
     );
   }
@@ -37,7 +37,7 @@ class AppConfig {
     final domain = dotenv.env['API_DOMAIN'] ?? 'api.cashlenx.com';
     final port = dotenv.env['API_PORT'];
     final version = dotenv.env['API_VERSION'] ?? 'v1';
-    
+
     if (port != null && port.isNotEmpty) {
       return '$scheme://$domain:$port/$version';
     }
