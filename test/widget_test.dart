@@ -25,5 +25,12 @@ void main() {
 
     expect(find.byType(MaterialApp), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Sign Up'));
+    await tester.tap(find.text('Sign Up'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Create Account'), findsOneWidget);
   });
 }

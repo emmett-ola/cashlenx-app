@@ -52,9 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      await ref
-          .read(authNotifierProvider.notifier)
-          .login(
+      await ref.read(authNotifierProvider.notifier).login(
             _emailController.text.trim(),
             _passwordController.text,
             rememberMe: _rememberMe,
@@ -108,9 +106,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 return null;
               },
             ),
-
             const SizedBox(height: 20),
-
             CustomInput(
               label: 'Password',
               controller: _passwordController,
@@ -140,9 +136,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 return null;
               },
             ),
-
             const SizedBox(height: 16),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -209,9 +203,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 24),
-
             SizedBox(
               width: double.infinity,
               child: CustomButton(
@@ -220,9 +212,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 isLoading: isLoading,
               ),
             ),
-
             const SizedBox(height: 24),
-
             Row(
               children: [
                 Expanded(child: Divider(color: Colors.grey[300])),
@@ -236,9 +226,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Expanded(child: Divider(color: Colors.grey[300])),
               ],
             ),
-
             const SizedBox(height: 24),
-
             SizedBox(
               width: double.infinity,
               child: CustomButton(
@@ -247,9 +235,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _handleDemoMode,
               ),
             ),
-
             const SizedBox(height: 24),
-
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -259,10 +245,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 TextButton(
-                  onPressed: () {
-                    // Navigate to Register
-                    // context.push('/register');
-                  },
+                  onPressed: () => context.go('/register'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.primaryColor,
                     padding: EdgeInsets.zero,

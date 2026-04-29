@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../features/auth/domain/models/user.dart';
 import '../features/splash/presentation/pages/splash_screen.dart';
 import '../features/auth/presentation/pages/login_page.dart';
+import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/home/presentation/pages/home_page.dart';
 
@@ -33,6 +34,11 @@ GoRouter router(RouterRef ref) {
         builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomePage(),
@@ -46,19 +52,20 @@ GoRouter router(RouterRef ref) {
 
       final isLoggedIn = authState.value != null;
       final isLoggingIn = state.matchedLocation == '/login';
+      final isRegistering = state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/';
 
       // If logged in
       if (isLoggedIn) {
         // If on splash or login, go to home
-        if (isSplash || isLoggingIn) {
+        if (isSplash || isLoggingIn || isRegistering) {
           return '/home';
         }
       }
       // If not logged in
       else {
         // If not on login and not on splash, go to login
-        if (!isLoggingIn && !isSplash) {
+        if (!isLoggingIn && !isRegistering && !isSplash) {
           return '/login';
         }
         // If on splash, go to login
