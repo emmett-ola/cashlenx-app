@@ -75,16 +75,20 @@ lib/
 
 ## 🧪 Testing
 
-Run unit and widget tests:
+Run analysis plus unit/widget tests:
 
 ```bash
+flutter analyze
 flutter test
 ```
+
+See [Testing Strategy](docs/testing.md) for the current mocking and coverage plan.
 
 ## 📚 Documentation
 
 - [Architecture Guide](docs/ARCHITECTURE.md)
 - [Development Roadmap](docs/roadmap.md)
+- [Testing Strategy](docs/testing.md)
 
 ## 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.

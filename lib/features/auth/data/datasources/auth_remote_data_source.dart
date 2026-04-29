@@ -45,6 +45,23 @@ class AuthRemoteDataSource {
     );
   }
 
+  Future<void> requestPasswordReset(String emailOrUsername) async {
+    await _apiClient.post<Map<String, dynamic>>(
+      '/open/auth/reset-password',
+      data: {'email_or_username': emailOrUsername},
+    );
+  }
+
+  Future<void> confirmPasswordReset(String token, String password) async {
+    await _apiClient.post<Map<String, dynamic>>(
+      '/open/auth/reset-password/confirm',
+      data: {
+        'token': token,
+        'password': password,
+      },
+    );
+  }
+
   Future<void> logout({String? refreshToken}) async {
     await _apiClient.post(
       '/open/auth/logout',

@@ -81,6 +81,16 @@ class AuthNotifier extends _$AuthNotifier {
     await repository.register(username, password);
   }
 
+  Future<void> requestPasswordReset(String emailOrUsername) async {
+    final repository = ref.read(authRepositoryProvider);
+    await repository.requestPasswordReset(emailOrUsername);
+  }
+
+  Future<void> confirmPasswordReset(String token, String password) async {
+    final repository = ref.read(authRepositoryProvider);
+    await repository.confirmPasswordReset(token, password);
+  }
+
   Future<void> logout() async {
     state = const AsyncValue.loading();
     await ref.read(authRepositoryProvider).logout();

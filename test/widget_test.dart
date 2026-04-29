@@ -32,5 +32,16 @@ void main() {
 
     expect(find.text('Create your account'), findsOneWidget);
     expect(find.text('Create Account'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Forgot Password?'));
+    await tester.tap(find.text('Forgot Password?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset your password'), findsOneWidget);
+    expect(find.text('Send Reset Token'), findsOneWidget);
   });
 }

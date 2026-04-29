@@ -5,7 +5,7 @@ This file is the handoff point for future AI coding sessions in this repo. Read 
 ## Project Snapshot
 
 - App: CashLenX, a cross-platform Flutter finance app for personal finance, expense tracking, budgets, and reports.
-- Current state: early development. Splash, login, real auth request handling, auth persistence, and a temporary home/welcome screen exist.
+- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, and a temporary home/welcome screen exist.
 - Language/runtime: Dart SDK `>=3.2.0 <4.0.0`, Flutter.
 - Architecture: feature-first Clean Architecture.
 - State management: Riverpod with code generation (`riverpod_annotation`, generated `*.g.dart`).
@@ -26,7 +26,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 ## Current Branch
 
-- Active development branch: `dev/init`.
+- Active development branch: `dev/v0.1.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
 
 ## Important Files
@@ -34,6 +34,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 - `README.md`: project overview, setup, planned features.
 - `docs/ARCHITECTURE.md`: architecture and development guide.
 - `docs/roadmap.md`: staged development plan for future implementation.
+- `docs/testing.md`: current test/mocking strategy.
 - `pubspec.yaml`: dependencies, assets, launcher icon config.
 - `analysis_options.yaml`: lint rules.
 - `sample.env`: environment template.
@@ -61,14 +62,22 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
 ## Implemented App Behavior
 
 - Splash screen: `lib/features/splash/presentation/pages/splash_screen.dart`
-  - Teal gradient, white logo, app name, slogan, pulse/entrance animation, small loading indicator.
+  - Teal gradient, white logo, app name, slogan, pulse/entrance animation.
   - Auth provider intentionally waits 2 seconds so the splash is visible.
 
 - Login screen: `lib/features/auth/presentation/pages/login_page.dart`
-  - Email-or-username field, password field, visibility toggle, remember-me checkbox, forgot-password placeholder, demo-mode placeholder, sign-up placeholder.
+  - Email field, password field, visibility toggle, remember-me checkbox, forgot-password link, demo-mode action, sign-up link.
   - Calls real backend login through `AuthNotifier.login(...)`.
   - Shows server errors using `ToastUtils.showServerErrors(...)`.
   - Shows a success toast on successful manual login.
+
+- Registration screen: `lib/features/auth/presentation/pages/register_page.dart`
+  - Email, password, confirm-password fields, validation, and real backend registration through `AuthNotifier.register(...)`.
+  - Successful registration returns the user to login.
+
+- Forgot password screen: `lib/features/auth/presentation/pages/forgot_password_page.dart`
+  - Requests reset token through `/open/auth/reset-password`.
+  - Confirms token and new password through `/open/auth/reset-password/confirm`.
 
 - Auth state: `lib/features/auth/presentation/providers/auth_provider.dart`
   - `AuthNotifier` is `keepAlive`.
@@ -83,8 +92,8 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - `clearAll()` removes tokens and remember-me state.
 
 - Routing: `lib/routing/app_router.dart`
-  - Routes: `/` splash, `/login`, `/home`.
-  - Logged-in users on splash/login redirect to `/home`.
+  - Routes: `/` splash, `/login`, `/register`, `/forgot-password`, `/home`.
+  - Logged-in users on splash/login/register/forgot-password redirect to `/home`.
   - Logged-out users redirect to `/login` after splash/loading.
   - `/home` is a temporary welcome page, not the final dashboard.
 
@@ -99,7 +108,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - `sample.env` points to `http://localhost:10063/api/v0`.
 - All HTTP should go through `ApiClient` and `dioProvider`.
 - `AuthInterceptor` injects `Authorization: Bearer <token>` when a token exists.
-- Silent token refresh on arbitrary 401 responses is not implemented yet; startup refresh is handled by `AuthNotifier`.
+- `AuthInterceptor` attempts one silent refresh on 401/UNAUTHORIZED when remember-me is enabled and a refresh token exists, then retries the failed request.
 - `ResponseWrapper<T>` matches the server wrapper shape: `code`, `message`, `data`, `meta`, `errors`, `extra`.
 - `ToastUtils.showServerErrors(...)` expects backend errors such as `{"errors":[{"message":"..."}]}`.
 
@@ -111,9 +120,13 @@ Auth endpoints currently used:
   - Server returns wrapped data containing `access_token`, `refresh_token`, and `user`.
   - Verified against the current `../cashlenx-server/controller/auth_controller/auth.go`, `../cashlenx-server/model/refresh_token.go`, and `../cashlenx-server/docs/openapi.yaml`.
 - `POST /open/auth/register`
-  - Implemented in data source/repository but no registration page is wired yet.
+  - Registration page is wired and uses email as username.
 - `POST /open/auth/logout`
-  - Data source has a method, but repository logout currently only clears local session.
+  - Repository logout sends the stored refresh token when available to revoke the current session, then clears local session tokens.
+- `POST /open/auth/reset-password`
+  - Forgot-password request flow.
+- `POST /open/auth/reset-password/confirm`
+  - Forgot-password confirm flow.
 - `GET /user/profile`
   - Used by `getCurrentUser()` when a token exists, but startup usually prefers refresh-token login if remember-me is enabled.
 
@@ -141,24 +154,12 @@ Current visual tokens from design:
 - Accent/coral in design reference: `#FF8A65`
 - Design reference uses 8px-ish radii for buttons/inputs and a clean mobile-first finance-app layout.
 
-Flutter currently mirrors the splash/login reference broadly, with a few text differences:
-
-- Flutter splash subtitle: `Your Financial Companion`
-- Design splash subtitle: `Your Money, Simplified`
-- Flutter login label: `Email or Username`
-- Design login label: `Email`
-
-Ask the user before changing product copy if the difference looks intentional.
+Flutter auth screens should stay aligned with the `AuthLayout`, `Login`, and `SignUp` design reference. The selected splash/auth subtitle is `Your Financial Companion`.
 
 ## Known Gaps / Next Likely Work
 
 - Final dashboard/home feature is not implemented; `/home` is temporary.
-- Registration UI is not wired.
-- Forgot-password flow is not implemented.
-- Demo mode is not implemented.
-- Logout does not currently call the backend logout endpoint.
-- Silent refresh on 401 is not implemented in `AuthInterceptor`.
-- Tests are minimal. `test/widget_test.dart` is only a smoke test and may need mocking because `AppConfig.init()` requires `.env`.
+- Auth tests are still light. Add provider tests with Riverpod overrides for login, register, reset, refresh, and logout behavior.
 - Some README/architecture text is aspirational and may not match current code exactly.
 
 ## Generated Files

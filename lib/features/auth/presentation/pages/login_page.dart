@@ -184,15 +184,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Password reset functionality coming soon!",
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: () => context.go('/forgot-password'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppTheme.primaryColor,
                     padding: EdgeInsets.zero,

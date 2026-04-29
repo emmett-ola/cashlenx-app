@@ -24,7 +24,6 @@ Known gaps:
 
 - Dashboard/home is temporary.
 - Forgot-password is still a placeholder.
-- No silent refresh/retry path for normal API requests that receive 401.
 - Test coverage is still minimal.
 
 ## Guiding Principles
@@ -43,7 +42,7 @@ Goal: make the app easier to run, verify, and extend before adding larger financ
 - Keep `README.md` as the entry point and `AGENT.md` as the AI collaboration handoff.
 - Keep detailed docs in `docs/`.
 - [x] Verify `.env` setup and document local server assumptions.
-- [ ] Add basic test/mocking strategy for config, routing, and auth state.
+- [x] Add basic test/mocking strategy for config, routing, and auth state.
 - [x] Run and fix `flutter analyze`.
 - [x] Review generated files and ensure source/generation workflow is clean.
 
@@ -57,11 +56,11 @@ Exit criteria:
 Goal: turn the current login flow into a complete auth module.
 
 - [x] Wire backend logout through `POST /open/auth/logout`.
-- Decide expected logout behavior for remember-me: local logout, logout this device, or logout all devices.
+- [x] Decide expected logout behavior for remember-me: app logout revokes the current refresh token when available, then clears local session tokens while keeping the remember-me preference.
 - [x] Implement registration screen using existing `AuthRepository.register`.
-- Add forgot-password request/confirm flows if supported by the server.
-- Add authenticated profile fetch/update if needed for account setup.
-- Add silent refresh for 401 responses or define why startup-only refresh is enough for now.
+- [x] Add forgot-password request/confirm flows if supported by the server.
+- [x] Add authenticated profile fetch/update if needed for account setup. Current profile fetch is used for token-backed startup state; profile update is deferred until profile/settings scope.
+- [x] Add silent refresh for 401 responses or define why startup-only refresh is enough for now.
 - Improve auth tests around login success, login failure, remember-me startup, refresh failure, and logout.
 
 Exit criteria:
