@@ -136,7 +136,7 @@ Auth endpoints currently used:
 
 ## Design Reference
 
-Use `../cashlenx-design` before changing major UI. Useful files:
+Use `../cashlenx-design` as the source of truth before changing UI. Match the design reference as closely as practical for Material component sizes, border radii, spacing, and overall layout rather than guessing from Flutter defaults. Useful files:
 
 - `src/components/screens/SplashScreen.tsx`
 - `src/components/screens/Login.tsx`
@@ -156,7 +156,7 @@ Current visual tokens from design:
 - Primary teal: `#008080`
 - Secondary/light teal: `#4DB6AC`
 - Accent/coral in design reference: `#FF8A65`
-- Design reference uses 8px-ish radii for buttons/inputs and a clean mobile-first finance-app layout.
+- Design reference uses a clean mobile-first finance-app layout. Match exact component geometry from the relevant reference file when it is visible there; for example auth primary/demo buttons are tall pill-style controls (`48px` height with a fully rounded radius in the Flutter app).
 
 Flutter auth screens should stay aligned with the `AuthLayout`, `Login`, and `SignUp` design reference. The selected splash/auth subtitle is `Your Financial Companion`.
 
