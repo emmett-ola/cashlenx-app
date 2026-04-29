@@ -19,7 +19,7 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       final repository = ref.read(authRepositoryProvider);
       final secureStorage = ref.read(secureStorageServiceProvider);
-      
+
       final rememberMe = await secureStorage.getRememberMe();
       if (!rememberMe) {
         // If not remember me, we still want to check if there is a session for this app run,
@@ -48,12 +48,30 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  Future<void> login(String username, String password, {bool rememberMe = false}) async {
+  Future<void> login(
+    String username,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(authRepositoryProvider);
       return await repository.login(username, password, rememberMe: rememberMe);
     });
+  }
+
+  void continueAsDemo() {
+    final now = DateTime.now();
+    state = AsyncValue.data(
+      User(
+        id: 'demo-user',
+        username: 'Demo User',
+        isActive: true,
+        role: 'demo',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
   }
 
   Future<void> register(String username, String password) async {

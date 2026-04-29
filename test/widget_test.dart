@@ -20,9 +20,10 @@ void main() {
       ),
     );
 
-    // Verify that Splash or Login screen appears
-    // Since we can't easily test async state changes in a simple smoke test without mocking,
-    // we'll just check if the app builds without crashing.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+
     expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

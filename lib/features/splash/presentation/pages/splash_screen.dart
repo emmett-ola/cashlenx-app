@@ -8,7 +8,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
@@ -20,7 +21,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    // Entrance Animation (Zoom In + Fade In) - Duration 700ms
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -29,12 +29,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _entranceController, curve: Curves.easeOutBack),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _entranceController, curve: Curves.easeIn),
     );
 
-    // Pulse Animation for Logo - Continuous
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -44,7 +43,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Start animations
     _entranceController.forward().then((_) {
       _pulseController.repeat(reverse: true);
     });
@@ -67,11 +65,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            // Gradient from #008080 to #4DB6AC (Teal to Light Teal)
-            colors: [
-              Color(0xFF008080),
-              Color(0xFF4DB6AC),
-            ],
+            colors: [Color(0xFF008080), Color(0xFF4DB6AC)],
           ),
         ),
         child: Center(
@@ -82,49 +76,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo with Pulse
                   ScaleTransition(
                     scale: _pulseAnimation,
                     child: SvgPicture.asset(
                       'assets/images/logo_white.svg',
-                      height: 112, // w-28 = 7rem = 112px
+                      height: 112,
                       width: 112,
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
-                  // App Name
                   const Text(
                     'CashLenX',
                     style: TextStyle(
-                      fontSize: 36, // text-4xl
+                      fontSize: 36,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      letterSpacing: -0.5, // tracking-tight
                     ),
                   ),
-                  
                   const SizedBox(height: 8),
-                  
-                  // Slogan
                   const Text(
                     'Your Financial Companion',
                     style: TextStyle(
-                      fontSize: 18, // text-lg
+                      fontSize: 18,
                       fontWeight: FontWeight.w400,
-                      color: Colors.white70, // text-white/80
-                    ),
-                  ),
-
-                  // Optional: Loading Indicator can be hidden or styled to match
-                  // Design doesn't show one explicitly, but good for UX if waiting
-                  const SizedBox(height: 48),
-                  const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
-                      strokeWidth: 2,
+                      color: Colors.white70,
                     ),
                   ),
                 ],

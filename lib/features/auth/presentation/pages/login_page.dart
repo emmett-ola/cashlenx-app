@@ -18,7 +18,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _identifierController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
@@ -41,24 +41,30 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   void dispose() {
-    _identifierController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  bool get _canSubmit =>
+      _emailController.text.trim().isNotEmpty &&
+      _passwordController.text.isNotEmpty;
+
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      // Trigger login
-      await ref.read(authNotifierProvider.notifier).login(
-            _identifierController.text.trim(),
+      await ref
+          .read(authNotifierProvider.notifier)
+          .login(
+            _emailController.text.trim(),
             _passwordController.text,
             rememberMe: _rememberMe,
           );
-      
-      // Check state for error or success
-      // Note: Navigation should ideally be handled by a Router Listener listening to auth state,
-      // but for now we can check result here or rely on the listener in main.dart/app_router.dart
     }
+  }
+
+  void _handleDemoMode() {
+    ref.read(authNotifierProvider.notifier).continueAsDemo();
+    context.go('/home');
   }
 
   @override
@@ -70,10 +76,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.hasError) {
         ToastUtils.showServerErrors(context, next.error);
-      } else if (next.hasValue && next.value != null && (previous?.isLoading == true || previous == null)) {
-        // Only show success if we were loading (avoids showing on initial app load check)
-        ToastUtils.showSuccess(context, 'OK');
-        // context.go('/home'); // Commented out until home page is ready
+      } else if (next.hasValue &&
+          next.value != null &&
+          (previous?.isLoading == true || previous == null)) {
+        final username = next.value?.username ?? 'User';
+        ToastUtils.showSuccess(context, 'Welcome back, $username!');
       }
     });
 
@@ -82,16 +89,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         key: _formKey,
         child: Column(
           children: [
-            // Identifier Input (Email or Username)
             CustomInput(
-              label: 'Email or Username',
-              controller: _identifierController,
-              placeholder: 'Enter your email or username',
+              label: 'Email',
+              controller: _emailController,
+              placeholder: 'email@example.com',
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icon(Icons.person_outline, color: Colors.grey[500]),
+              prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+              onChanged: (_) => setState(() {}),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                final email = value?.trim() ?? '';
+                if (email.isEmpty) {
                   return 'Please fill in all fields.';
+                }
+                final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                if (!emailRegex.hasMatch(email)) {
+                  return 'Please enter a valid email address.';
                 }
                 return null;
               },
@@ -99,7 +111,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             const SizedBox(height: 20),
 
-            // Password Input
             CustomInput(
               label: 'Password',
               controller: _passwordController,
@@ -107,6 +118,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               obscureText: !_isPasswordVisible,
               prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
               suffixIcon: IconButton(
+                tooltip: _isPasswordVisible ? 'Hide password' : 'Show password',
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                   color: Colors.grey[500],
@@ -117,6 +129,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   });
                 },
               ),
+              onChanged: (_) => setState(() {}),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please fill in all fields.';
@@ -130,7 +143,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             const SizedBox(height: 16),
 
-            // Remember Me & Forgot Password
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -180,7 +192,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 TextButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Password reset functionality coming soon!")),
+                      const SnackBar(
+                        content: Text(
+                          "Password reset functionality coming soon!",
+                        ),
+                      ),
                     );
                   },
                   style: TextButton.styleFrom(
@@ -196,25 +212,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             const SizedBox(height: 24),
 
-            // Login Button
             SizedBox(
               width: double.infinity,
               child: CustomButton(
                 text: 'Sign In',
-                onPressed: _handleLogin,
+                onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
               ),
             ),
 
             const SizedBox(height: 24),
 
-            // Divider
             Row(
               children: [
                 Expanded(child: Divider(color: Colors.grey[300])),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('or', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                  child: Text(
+                    'or',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                  ),
                 ),
                 Expanded(child: Divider(color: Colors.grey[300])),
               ],
@@ -222,23 +239,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             const SizedBox(height: 24),
 
-            // Demo Mode Button
             SizedBox(
               width: double.infinity,
               child: CustomButton(
                 text: 'Continue with Demo Mode',
                 isOutlined: true,
-                onPressed: () {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Demo mode not implemented yet")),
-                    );
-                },
+                onPressed: _handleDemoMode,
               ),
             ),
 
             const SizedBox(height: 24),
 
-            // Sign Up Link
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
