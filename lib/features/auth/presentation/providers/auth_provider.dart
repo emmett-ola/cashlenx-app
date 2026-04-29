@@ -97,3 +97,5 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AsyncValue.data(null);
   }
 }
+
+final authNotifierProvider = authProvider;

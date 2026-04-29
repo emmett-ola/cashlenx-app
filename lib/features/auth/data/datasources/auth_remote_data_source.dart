@@ -7,7 +7,7 @@ import '../../domain/models/user.dart';
 part 'auth_remote_data_source.g.dart';
 
 @riverpod
-AuthRemoteDataSource authRemoteDataSource(AuthRemoteDataSourceRef ref) {
+AuthRemoteDataSource authRemoteDataSource(Ref ref) {
   return AuthRemoteDataSource(ref.watch(apiClientProvider));
 }
 
@@ -55,10 +55,7 @@ class AuthRemoteDataSource {
   Future<void> confirmPasswordReset(String token, String password) async {
     await _apiClient.post<Map<String, dynamic>>(
       '/open/auth/reset-password/confirm',
-      data: {
-        'token': token,
-        'password': password,
-      },
+      data: {'token': token, 'password': password},
     );
   }
 
@@ -70,8 +67,9 @@ class AuthRemoteDataSource {
   }
 
   Future<User> getProfile() async {
-    final response =
-        await _apiClient.get<Map<String, dynamic>>('/user/profile');
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      '/user/profile',
+    );
 
     final wrapper = ResponseWrapper<User>.fromJson(
       response,

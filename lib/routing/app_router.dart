@@ -16,17 +16,14 @@ const _authRedirectPolicy = AuthRedirectPolicy(
   splashPath: '/',
   loginPath: '/login',
   authenticatedHomePath: '/home',
-  publicAuthPaths: {
-    '/login',
-    '/register',
-    '/forgot-password',
-  },
+  publicAuthPaths: {'/login', '/register', '/forgot-password'},
 );
 
 @Riverpod(keepAlive: true)
-GoRouter router(RouterRef ref) {
-  final listenable =
-      ValueNotifier<AsyncValue<User?>>(ref.read(authNotifierProvider));
+GoRouter router(Ref ref) {
+  final listenable = ValueNotifier<AsyncValue<User?>>(
+    ref.read(authNotifierProvider),
+  );
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = next;
   });
@@ -68,8 +65,8 @@ GoRouter router(RouterRef ref) {
         authStatus: authState.isLoading
             ? AuthStatus.loading
             : authState.value != null
-                ? AuthStatus.authenticated
-                : AuthStatus.unauthenticated,
+            ? AuthStatus.authenticated
+            : AuthStatus.unauthenticated,
         location: state.matchedLocation,
       );
     },

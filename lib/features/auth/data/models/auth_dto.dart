@@ -7,7 +7,7 @@ part 'auth_dto.g.dart';
 // --- Requests ---
 
 @Freezed(toJson: true)
-class LoginRequest with _$LoginRequest {
+abstract class LoginRequest with _$LoginRequest {
   @JsonSerializable(includeIfNull: false)
   const factory LoginRequest({
     String? username,
@@ -20,7 +20,7 @@ class LoginRequest with _$LoginRequest {
 }
 
 @freezed
-class RegisterRequest with _$RegisterRequest {
+abstract class RegisterRequest with _$RegisterRequest {
   const factory RegisterRequest({
     required String username,
     required String password,
@@ -33,7 +33,7 @@ class RegisterRequest with _$RegisterRequest {
 // --- Responses ---
 
 @freezed
-class AuthResponse with _$AuthResponse {
+abstract class AuthResponse with _$AuthResponse {
   const factory AuthResponse({
     @JsonKey(name: 'access_token') required String accessToken,
     @JsonKey(name: 'refresh_token') required String refreshToken,
