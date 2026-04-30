@@ -15,7 +15,8 @@ class LoginRequest with _$LoginRequest {
     @JsonKey(name: 'refresh_token') String? refreshToken,
   }) = _LoginRequest;
 
-  factory LoginRequest.fromJson(Map<String, dynamic> json) => _$LoginRequestFromJson(json);
+  factory LoginRequest.fromJson(Map<String, dynamic> json) =>
+      _$LoginRequestFromJson(json);
 }
 
 @freezed
@@ -25,7 +26,8 @@ class RegisterRequest with _$RegisterRequest {
     required String password,
   }) = _RegisterRequest;
 
-  factory RegisterRequest.fromJson(Map<String, dynamic> json) => _$RegisterRequestFromJson(json);
+  factory RegisterRequest.fromJson(Map<String, dynamic> json) =>
+      _$RegisterRequestFromJson(json);
 }
 
 // --- Responses ---
@@ -38,5 +40,6 @@ class AuthResponse with _$AuthResponse {
     required User user,
   }) = _AuthResponse;
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);
+  factory AuthResponse.fromJson(Map<String, dynamic> json) =>
+      _$AuthResponseFromJson(json);
 }

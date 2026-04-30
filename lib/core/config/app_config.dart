@@ -1,11 +1,13 @@
 import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../infrastructure/logging/app_logger.dart';
+import '../infrastructure/logging/logger_app_logger.dart';
 
 enum Environment { dev, staging, prod }
 
 class AppConfig {
   static late Environment _environment;
-  static late Logger _logger;
+  static late AppLogger _logger;
   static late String _apiBaseUrl;
 
   static Future<void> init() async {
@@ -17,17 +19,19 @@ class AppConfig {
       (e) => e.name == envStr,
       orElse: () => Environment.dev,
     );
-    
+
     _apiBaseUrl = _getBaseUrl();
-    
-    _logger = Logger(
-      printer: PrettyPrinter(
-        methodCount: 0,
-        errorMethodCount: 8,
-        lineLength: 120,
-        colors: true,
-        printEmojis: true,
-        printTime: false,
+
+    _logger = LoggerAppLogger(
+      Logger(
+        printer: PrettyPrinter(
+          methodCount: 0,
+          errorMethodCount: 8,
+          lineLength: 120,
+          colors: true,
+          printEmojis: true,
+          dateTimeFormat: DateTimeFormat.none,
+        ),
       ),
     );
   }
@@ -37,14 +41,14 @@ class AppConfig {
     final domain = dotenv.env['API_DOMAIN'] ?? 'api.cashlenx.com';
     final port = dotenv.env['API_PORT'];
     final version = dotenv.env['API_VERSION'] ?? 'v1';
-    
+
     if (port != null && port.isNotEmpty) {
       return '$scheme://$domain:$port/$version';
     }
     return '$scheme://$domain/$version';
   }
 
-  static Logger get logger => _logger;
+  static AppLogger get logger => _logger;
   static String get apiBaseUrl => _apiBaseUrl;
   static Environment get environment => _environment;
 }

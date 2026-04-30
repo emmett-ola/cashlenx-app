@@ -5,10 +5,16 @@ We follow a **Feature-First** structure combined with **Clean Architecture**. Th
 
 ```
 lib/
- ├─ core/           # Global utilities, configs, and exceptions (Low-level)
- │   ├─ config/     # Environment configurations (Dev, Prod)
- │   └─ constants/  # App-wide constants
- ├─ network/        # Networking layer (Dio client, Interceptors, Exceptions)
+ ├─ core/           # Global utilities, config, and reusable infrastructure
+ │   ├─ config/     # Environment configuration
+ │   ├─ infrastructure/
+ │   │   ├─ errors/       # Exception taxonomy and error-message normalization
+ │   │   ├─ http/         # REST contract, Dio mapping, request tracking
+ │   │   ├─ logging/      # AppLogger contract and adapters
+ │   │   ├─ persistence/  # Key-value storage contracts and adapters
+ │   │   └─ routing/      # Pure route redirect policies
+ │   └─ services/   # App services built on infrastructure contracts
+ ├─ network/        # App-specific HTTP composition and Dio adapters
  ├─ auth/           # Authentication domain (User session, Tokens)
  ├─ features/       # Business modules (Splash, Login, Dashboard)
  │   └─ [feature]/  # Inside each feature:
@@ -45,21 +51,32 @@ Selected **Riverpod** (with Code Generation) because:
 - **No Context**: specific logic doesn't need `BuildContext`, making it easier to test and use in pure logic classes.
 - **Caching/Auto-dispose**: Built-in support for caching API responses and disposing unused state.
 
-## 4. Networking Layer
-Implemented in `lib/network/`.
-- **Dio**: Powerful HTTP client.
-- **ApiClient**: Wrapper to handle standard error mapping (`ApiException`).
-- **Interceptors**: 
-    - `LogInterceptor`: For debugging.
-    - `AuthInterceptor` (Planned): To inject JWT tokens automatically.
-- **Error Handling**: Centralized mapping of HTTP status codes to Domain Exceptions.
+## 4. Infrastructure Layer
+Reusable foundation code is in `lib/core/infrastructure/` and is intentionally decoupled from business features.
 
-## 5. Environment & Configuration
+- **Errors**: `ApiException` taxonomy and `ErrorMessageResolver`.
+- **HTTP**: `RestClient` contract, Dio exception mapping, and request tracking.
+- **Logging**: `AppLogger` interface plus adapters.
+- **Persistence**: `KeyValueStore` interface, secure storage adapter, and memory adapter for tests.
+- **Routing**: pure `AuthRedirectPolicy` used by the app router.
+
+App-specific composition remains in `lib/network/`, `lib/routing/`, and feature folders. This keeps infrastructure reusable without forcing feature code into global modules.
+
+## 5. Networking Layer
+Implemented through infrastructure contracts and app adapters.
+
+- **Dio**: concrete HTTP engine.
+- **ApiClient**: app `RestClient` adapter backed by Dio.
+- **AuthInterceptor**: injects JWT tokens and attempts one silent refresh/retry for eligible 401 responses.
+- **RequestTrackingInterceptor**: adds request IDs and logs timing/status without logging secrets or bodies.
+- **Error Handling**: `DioExceptionMapper` maps transport errors to the shared exception taxonomy.
+
+## 6. Environment & Configuration
 Implemented in `lib/core/config/app_config.dart`.
 - Supports `dev`, `staging`, `prod`.
 - Uses static initialization in `main.dart`.
 - Allows switching API endpoints and logging levels based on environment.
 
-## 6. Platform Adaptation
+## 7. Platform Adaptation
 - **GoRouter**: Handles deep linking and web URL routing natively.
 - **Responsive Design**: We will use `LayoutBuilder` and flexible widgets in `shared/` to adapt to Desktop/Mobile.

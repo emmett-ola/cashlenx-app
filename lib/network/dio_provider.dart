@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/config/app_config.dart';
+import '../core/infrastructure/http/request_tracking_interceptor.dart';
 import 'interceptors/auth_interceptor.dart';
 
 part 'dio_provider.g.dart';
@@ -19,14 +20,9 @@ Dio dio(DioRef ref) {
     ),
   );
 
-  // Add Interceptors
   dio.interceptors.addAll([
+    RequestTrackingInterceptor(AppConfig.logger),
     AuthInterceptor(ref),
-    // LogInterceptor(
-    //   requestBody: true,
-    //   responseBody: true,
-    //   logPrint: (obj) => AppConfig.logger.d(obj),
-    // ),
   ]);
 
   return dio;

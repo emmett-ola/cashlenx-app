@@ -20,9 +20,28 @@ void main() {
       ),
     );
 
-    // Verify that Splash or Login screen appears
-    // Since we can't easily test async state changes in a simple smoke test without mocking,
-    // we'll just check if the app builds without crashing.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+
     expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Sign Up'));
+    await tester.tap(find.text('Sign Up'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Create Account'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Forgot Password?'));
+    await tester.tap(find.text('Forgot Password?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset your password'), findsOneWidget);
+    expect(find.text('Send Reset Token'), findsOneWidget);
   });
 }

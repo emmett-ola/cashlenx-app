@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../infrastructure/persistence/key_value_store.dart';
+import '../infrastructure/persistence/secure_key_value_store.dart';
 
 part 'secure_storage_service.g.dart';
 
@@ -9,51 +11,55 @@ SecureStorageService secureStorageService(SecureStorageServiceRef ref) {
 }
 
 class SecureStorageService {
-  final _storage = const FlutterSecureStorage();
+  final KeyValueStore _store;
+
+  SecureStorageService([
+    KeyValueStore store = const SecureKeyValueStore(FlutterSecureStorage()),
+  ]) : _store = store;
 
   static const _tokenKey = 'auth_token';
   static const _refreshTokenKey = 'auth_refresh_token';
   static const _rememberMeKey = 'auth_remember_me';
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: _tokenKey, value: token);
+    await _store.write(_tokenKey, token);
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    return await _store.read(_tokenKey);
   }
 
   Future<void> deleteToken() async {
-    await _storage.delete(key: _tokenKey);
+    await _store.delete(_tokenKey);
   }
 
   Future<void> saveRefreshToken(String token) async {
-    await _storage.write(key: _refreshTokenKey, value: token);
+    await _store.write(_refreshTokenKey, token);
   }
 
   Future<String?> getRefreshToken() async {
-    return await _storage.read(key: _refreshTokenKey);
+    return await _store.read(_refreshTokenKey);
   }
 
   Future<void> deleteRefreshToken() async {
-    await _storage.delete(key: _refreshTokenKey);
+    await _store.delete(_refreshTokenKey);
   }
 
   Future<void> clearSession() async {
-    await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _refreshTokenKey);
+    await _store.delete(_tokenKey);
+    await _store.delete(_refreshTokenKey);
   }
 
   Future<void> saveRememberMe(bool rememberMe) async {
-    await _storage.write(key: _rememberMeKey, value: rememberMe.toString());
+    await _store.write(_rememberMeKey, rememberMe.toString());
   }
 
   Future<bool> getRememberMe() async {
-    final value = await _storage.read(key: _rememberMeKey);
+    final value = await _store.read(_rememberMeKey);
     return value == 'true';
   }
 
   Future<void> clearAll() async {
-    await _storage.deleteAll();
+    await _store.clear();
   }
 }

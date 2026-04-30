@@ -22,15 +22,16 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._remoteDataSource, this._secureStorage);
 
   @override
-  Future<User> login(String username, String password, {bool rememberMe = false}) async {
+  Future<User> login(String username, String password,
+      {bool rememberMe = false}) async {
     final request = LoginRequest(username: username, password: password);
     final response = await _remoteDataSource.login(request);
-    
+
     // Save tokens and preference
     await _secureStorage.saveToken(response.accessToken);
     await _secureStorage.saveRefreshToken(response.refreshToken);
     await _secureStorage.saveRememberMe(rememberMe);
-    
+
     // Return user
     return response.user;
   }
@@ -54,15 +55,26 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> requestPasswordReset(String emailOrUsername) async {
+    await _remoteDataSource.requestPasswordReset(emailOrUsername);
+  }
+
+  @override
+  Future<void> confirmPasswordReset(String token, String password) async {
+    await _remoteDataSource.confirmPasswordReset(token, password);
+  }
+
+  @override
   Future<void> logout() async {
-    // Try to notify server, but don't block if fails
     try {
-      final token = await _secureStorage.getToken();
-      // ...
-    } catch (_) {}
-    
-    // Only clear session tokens, keep the rememberMe preference
-    await _secureStorage.clearSession();
+      final refreshToken = await _secureStorage.getRefreshToken();
+      await _remoteDataSource.logout(refreshToken: refreshToken);
+    } catch (_) {
+      // Local logout should still complete if the server session is already gone.
+    } finally {
+      // Only clear session tokens, keep the rememberMe preference.
+      await _secureStorage.clearSession();
+    }
   }
 
   @override
