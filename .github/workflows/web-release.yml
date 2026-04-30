@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - dev/v0.2.0
+      - dev/**
   workflow_dispatch:
 
 jobs:
@@ -46,10 +46,19 @@ jobs:
       - name: Build web
         run: flutter build web --release
 
+      - name: Select release branch
+        id: release-branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=develop" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish web build
         uses: peaceiris/actions-gh-pages@v4
         with:
           external_repository: emmett-ola/cashlenx-app-release
-          publish_branch: main
+          publish_branch: ${{ steps.release-branch.outputs.branch }}
           publish_dir: ./build/web
           personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
