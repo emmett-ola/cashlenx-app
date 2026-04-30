@@ -1,0 +1,55 @@
+name: Web Release
+
+on:
+  push:
+    branches:
+      - main
+      - dev/v0.2.0
+  workflow_dispatch:
+
+jobs:
+  build-and-publish-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create production env file
+        run: |
+          {
+            echo "APP_ENV=${{ vars.APP_ENV }}"
+            echo "API_SCHEME=${{ vars.API_SCHEME }}"
+            echo "API_DOMAIN=${{ vars.API_DOMAIN }}"
+            echo "API_PORT=${{ vars.API_PORT }}"
+            echo "API_VERSION=${{ vars.API_VERSION }}"
+          } > .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build web
+        run: flutter build web --release
+
+      - name: Publish web build
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          external_repository: emmett-ola/cashlenx-app-release
+          publish_branch: main
+          publish_dir: ./build/web
+          personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
