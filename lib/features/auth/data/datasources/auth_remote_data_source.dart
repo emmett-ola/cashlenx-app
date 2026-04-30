@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../network/api_client.dart';
 import '../../../../core/network/response_wrapper.dart';
+import '../../../../network/cashlenx_api.dart';
 import '../models/auth_dto.dart';
 import '../../domain/models/user.dart';
 
@@ -8,19 +8,20 @@ part 'auth_remote_data_source.g.dart';
 
 @riverpod
 AuthRemoteDataSource authRemoteDataSource(AuthRemoteDataSourceRef ref) {
-  return AuthRemoteDataSource(ref.watch(apiClientProvider));
+  return AuthRemoteDataSource(ref.watch(cashlenxApiProvider));
 }
 
 class AuthRemoteDataSource {
-  final ApiClient _apiClient;
+  final CashlenxApi _api;
 
-  AuthRemoteDataSource(this._apiClient);
+  AuthRemoteDataSource(this._api);
 
   Future<AuthResponse> login(LoginRequest request) async {
     try {
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '/open/auth/login',
-        data: request.toJson(),
+      final response = await _api.login(
+        username: request.username,
+        password: request.password,
+        refreshToken: request.refreshToken,
       );
 
       final wrapper = ResponseWrapper<AuthResponse>.fromJson(
@@ -39,39 +40,29 @@ class AuthRemoteDataSource {
   }
 
   Future<void> register(RegisterRequest request) async {
-    await _apiClient.post<Map<String, dynamic>>(
-      '/open/auth/register',
-      data: request.toJson(),
+    await _api.register(
+      username: request.username,
+      password: request.password,
     );
   }
 
   Future<void> requestPasswordReset(String emailOrUsername) async {
-    await _apiClient.post<Map<String, dynamic>>(
-      '/open/auth/reset-password',
-      data: {'email_or_username': emailOrUsername},
-    );
+    await _api.requestPasswordReset(emailOrUsername);
   }
 
   Future<void> confirmPasswordReset(String token, String password) async {
-    await _apiClient.post<Map<String, dynamic>>(
-      '/open/auth/reset-password/confirm',
-      data: {
-        'token': token,
-        'password': password,
-      },
+    await _api.confirmPasswordReset(
+      token: token,
+      password: password,
     );
   }
 
   Future<void> logout({String? refreshToken}) async {
-    await _apiClient.post(
-      '/open/auth/logout',
-      data: refreshToken != null ? {'refresh_token': refreshToken} : null,
-    );
+    await _api.logout(refreshToken: refreshToken);
   }
 
   Future<User> getProfile() async {
-    final response =
-        await _apiClient.get<Map<String, dynamic>>('/user/profile');
+    final response = await _api.getUserProfile();
 
     final wrapper = ResponseWrapper<User>.fromJson(
       response,

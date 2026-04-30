@@ -12,6 +12,11 @@ class AuthInterceptor extends Interceptor {
   @override
   void onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
+    if (_isAnonymousRequest(options)) {
+      super.onRequest(options, handler);
+      return;
+    }
+
     final token = await _ref.read(secureStorageServiceProvider).getToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -27,6 +32,7 @@ class AuthInterceptor extends Interceptor {
     final statusCode = response?.statusCode;
 
     if ((statusCode == 401 || code == 'UNAUTHORIZED') &&
+        !_isAnonymousRequest(err.requestOptions) &&
         err.requestOptions.extra['skipAuthRefresh'] != true) {
       final retryResponse = await _refreshAndRetry(err.requestOptions);
       if (retryResponse != null) {
@@ -36,6 +42,14 @@ class AuthInterceptor extends Interceptor {
     }
 
     super.onError(err, handler);
+  }
+
+  bool _isAnonymousRequest(RequestOptions options) {
+    return options.extra['skipAuth'] == true ||
+        options.path == '/open/auth/login' ||
+        options.path == '/open/auth/register' ||
+        options.path == '/open/auth/reset-password' ||
+        options.path == '/open/auth/reset-password/confirm';
   }
 
   Future<Response<dynamic>?> _refreshAndRetry(

@@ -109,6 +109,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
   - `sample.env` points to `http://localhost:10063/api/v0`.
 - All HTTP should go through `ApiClient` and `dioProvider`.
+- Feature code can call `CashlenxApi` from `lib/network/cashlenx_api.dart` for ready-to-use methods covering the current `server/docs/openapi.yaml` contract. Prefer adding feature-specific parsing/repositories around those methods instead of duplicating endpoint paths.
 - Shared infrastructure contracts are exported from `lib/core/infrastructure/infrastructure.dart`.
 - `AuthInterceptor` injects `Authorization: Bearer <token>` when a token exists.
 - `AuthInterceptor` attempts one silent refresh on 401/UNAUTHORIZED when remember-me is enabled and a refresh token exists, then retries the failed request.
