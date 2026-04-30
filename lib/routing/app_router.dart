@@ -2,33 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/infrastructure/routing/auth_redirect_policy.dart';
-import '../features/auth/domain/models/user.dart';
 import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/splash/presentation/pages/splash_screen.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/onboarding/data/onboarding_service.dart';
+import '../features/onboarding/presentation/pages/onboarding_page.dart';
 
 part 'app_router.g.dart';
 
 const _authRedirectPolicy = AuthRedirectPolicy(
   splashPath: '/',
+  onboardingPath: '/onboarding',
   loginPath: '/login',
   authenticatedHomePath: '/home',
-  publicAuthPaths: {
-    '/login',
-    '/register',
-    '/forgot-password',
-  },
+  publicAuthPaths: {'/login', '/register', '/forgot-password'},
 );
 
 @Riverpod(keepAlive: true)
 GoRouter router(RouterRef ref) {
-  final listenable =
-      ValueNotifier<AsyncValue<User?>>(ref.read(authNotifierProvider));
+  final listenable = ValueNotifier<Object>(Object());
   ref.listen(authNotifierProvider, (previous, next) {
-    listenable.value = next;
+    listenable.value = Object();
+  });
+  ref.listen(onboardingSeenProvider, (previous, next) {
+    listenable.value = Object();
   });
 
   return GoRouter(
@@ -45,6 +45,11 @@ GoRouter router(RouterRef ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         path: '/register',
@@ -64,6 +69,11 @@ GoRouter router(RouterRef ref) {
     ],
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
+      final onboardingState = ref.read(onboardingSeenProvider);
+      final hasSeenOnboarding = onboardingState.valueOrNull;
+
+      if (hasSeenOnboarding == null) return null;
+
       return _authRedirectPolicy.redirect(
         authStatus: authState.isLoading
             ? AuthStatus.loading
@@ -71,6 +81,7 @@ GoRouter router(RouterRef ref) {
                 ? AuthStatus.authenticated
                 : AuthStatus.unauthenticated,
         location: state.matchedLocation,
+        hasSeenOnboarding: hasSeenOnboarding,
       );
     },
   );
