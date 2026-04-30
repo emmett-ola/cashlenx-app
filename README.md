@@ -81,8 +81,8 @@ Build and run the Flutter web app with Docker Compose:
 docker compose up -d --build
 ```
 
-The container serves the built web app on internal port `8080`. By default,
-Compose exposes it on host port `8080`:
+Compose reads `compose.yml`. The container serves the built web app on internal
+port `8080`, and by default Compose exposes it on host port `8080`:
 
 ```text
 http://SERVER_IP:8080
@@ -107,6 +107,10 @@ Then rebuild or restart the service:
 docker compose up -d --build
 ```
 
+The Docker image performs a release Flutter web build and serves `build/web`
+with nginx. The nginx config lives at `docker/nginx.conf` and falls back to
+`index.html` for client-side routes.
+
 For an external nginx reverse proxy, point the upstream to the exposed host
 port, for example:
 
@@ -116,6 +120,25 @@ port, for example:
 
 The `.env` file is included in both the Docker build context and the running
 container via Compose `env_file`.
+
+## 🚢 Web Release Workflow
+
+`.github/workflows/web-release.yml` publishes static web builds to the external
+release repository `emmett-ola/cashlenx-app-release`.
+
+The workflow runs on pushes to `main`, pushes to `dev/**`, and manual dispatch.
+It creates `.env` from repository variables, installs dependencies, regenerates
+code, runs analysis and tests, builds Flutter web, and publishes `build/web`.
+
+Branch routing:
+
+- Source branch `main` publishes to release branch `main`.
+- Source branches under `dev/**` publish to release branch `develop`.
+
+Required GitHub configuration:
+
+- Variables: `APP_ENV`, `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
+- Secret: `RELEASE_REPO_TOKEN` with permission to push to the release repo.
 
 ## 🧪 Testing
 

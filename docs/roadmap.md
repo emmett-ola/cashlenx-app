@@ -18,6 +18,8 @@ Implemented:
 - Demo mode route into the authenticated home shell.
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
 - First `/home` app shell with fixed mock dashboard, stats, budget, add placeholder, settings, and bottom navigation.
+- Docker-based Flutter web deployment using `Dockerfile`, `compose.yml`, and nginx route fallback.
+- GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
 
 Known gaps:
@@ -158,6 +160,7 @@ Goal: make the app reliable across target platforms.
 - Harden secure storage and token lifecycle behavior per platform.
 - Add integration tests for auth and key finance workflows.
 - Review app icons, web manifest, metadata, and release build settings.
+- Keep Docker web deployment and GitHub Actions release docs aligned with workflow changes.
 
 Exit criteria:
 
