@@ -73,6 +73,50 @@ lib/
     flutter run
     ```
 
+## 🐳 Container Usage
+
+Build and run the Flutter web app with Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+The container serves the built web app on internal port `8080`. By default,
+Compose exposes it on host port `8080`:
+
+```text
+http://SERVER_IP:8080
+```
+
+To use a different host port, set `WEB_PORT` in `.env`:
+
+```env
+WEB_PORT=3000
+```
+
+The image name and tag can also be configured from `.env`:
+
+```env
+IMAGE_NAME=cashlenx-web
+IMAGE_TAG=latest
+```
+
+Then rebuild or restart the service:
+
+```bash
+docker compose up -d --build
+```
+
+For an external nginx reverse proxy, point the upstream to the exposed host
+port, for example:
+
+```text
+127.0.0.1:8080
+```
+
+The `.env` file is included in both the Docker build context and the running
+container via Compose `env_file`.
+
 ## 🧪 Testing
 
 Run analysis plus unit/widget tests:

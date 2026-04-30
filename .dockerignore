@@ -1,0 +1,13 @@
+.dart_tool/
+.git/
+build/
+coverage/
+
+android/.gradle/
+ios/Pods/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+
+*.log
+.DS_Store
