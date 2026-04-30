@@ -32,8 +32,174 @@
 
   <title>CashLenX</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: #f8fafc;
+    }
+
+    #cashlenx-boot-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 32%, rgba(77, 182, 172, 0.14), transparent 32%),
+        linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      color: #0f172a;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      pointer-events: none;
+    }
+
+    #cashlenx-boot-loader.cashlenx-boot-loader-visible {
+      opacity: 1;
+    }
+
+    #cashlenx-boot-loader.cashlenx-boot-loader-done {
+      opacity: 0;
+    }
+
+    .cashlenx-boot-card {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      padding: 28px;
+    }
+
+    .cashlenx-boot-mark {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #008080, #4db6ac);
+      box-shadow: 0 18px 42px rgba(0, 128, 128, 0.24);
+    }
+
+    .cashlenx-boot-mark::before,
+    .cashlenx-boot-mark::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.92);
+      border-radius: 999px;
+    }
+
+    .cashlenx-boot-mark::after {
+      inset: 26px;
+      border-color: rgba(255, 255, 255, 0.54);
+      animation: cashlenx-boot-pulse 1200ms ease-in-out infinite;
+    }
+
+    .cashlenx-boot-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(0, 128, 128, 0.18);
+      border-top-color: #008080;
+      border-radius: 50%;
+      animation: cashlenx-boot-spin 780ms linear infinite;
+    }
+
+    .cashlenx-boot-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .cashlenx-boot-subtitle {
+      margin: -8px 0 0;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    @keyframes cashlenx-boot-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes cashlenx-boot-pulse {
+      0%,
+      100% {
+        transform: scale(0.92);
+        opacity: 0.72;
+      }
+
+      50% {
+        transform: scale(1.18);
+        opacity: 0.18;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #cashlenx-boot-loader,
+      .cashlenx-boot-mark::after,
+      .cashlenx-boot-spinner {
+        animation: none;
+        transition: none;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="cashlenx-boot-loader" aria-live="polite" aria-label="Loading CashLenX">
+    <div class="cashlenx-boot-card">
+      <div class="cashlenx-boot-mark" aria-hidden="true"></div>
+      <h1 class="cashlenx-boot-title">CashLenX</h1>
+      <p class="cashlenx-boot-subtitle">Preparing your finance workspace</p>
+      <div class="cashlenx-boot-spinner" aria-hidden="true"></div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var loader = document.getElementById('cashlenx-boot-loader');
+      var didFinish = false;
+      var showDelay = window.setTimeout(function () {
+        if (!didFinish && loader) {
+          loader.classList.add('cashlenx-boot-loader-visible');
+        }
+      }, 450);
+
+      function removeLoader() {
+        didFinish = true;
+        window.clearTimeout(showDelay);
+
+        if (!loader) {
+          return;
+        }
+
+        loader.classList.add('cashlenx-boot-loader-done');
+        window.setTimeout(function () {
+          if (loader && loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+          loader = null;
+        }, 220);
+      }
+
+      window.addEventListener('flutter-first-frame', removeLoader, { once: true });
+      window.setTimeout(removeLoader, 15000);
+    })();
+  </script>
+  <noscript>
+    <style>
+      #cashlenx-boot-loader {
+        opacity: 1;
+      }
+
+      .cashlenx-boot-spinner {
+        display: none;
+      }
+    </style>
+  </noscript>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
