@@ -92,8 +92,16 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> logout() async {
+    final currentUser = state.value;
+    if (currentUser?.role == 'demo') {
+      state = const AsyncValue.data(null);
+      return;
+    }
+
     state = const AsyncValue.loading();
     await ref.read(authRepositoryProvider).logout();
     state = const AsyncValue.data(null);
   }
 }
+
+final authNotifierProvider = authProvider;

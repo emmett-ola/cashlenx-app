@@ -7,7 +7,7 @@ import '../../domain/models/user.dart';
 part 'auth_remote_data_source.g.dart';
 
 @riverpod
-AuthRemoteDataSource authRemoteDataSource(AuthRemoteDataSourceRef ref) {
+AuthRemoteDataSource authRemoteDataSource(Ref ref) {
   return AuthRemoteDataSource(ref.watch(cashlenxApiProvider));
 }
 

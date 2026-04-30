@@ -8,6 +8,9 @@ class CustomButton extends StatelessWidget {
   final bool isOutlined;
   final Color? backgroundColor;
   final Color? textColor;
+  final double height;
+  final double fontSize;
+  final double borderRadius;
 
   const CustomButton({
     super.key,
@@ -17,6 +20,9 @@ class CustomButton extends StatelessWidget {
     this.isOutlined = false,
     this.backgroundColor,
     this.textColor,
+    this.height = 48,
+    this.fontSize = 16,
+    this.borderRadius = 8,
   });
 
   @override
@@ -26,9 +32,16 @@ class CustomButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
           side: BorderSide(
-              color: backgroundColor ?? AppTheme.primaryColor, width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            color: backgroundColor ?? AppTheme.primaryColor,
+            width: 2,
+          ),
+          fixedSize: Size.fromHeight(height),
+          minimumSize: Size(0, height),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
           foregroundColor: backgroundColor ?? AppTheme.primaryColor,
         ),
         child: isLoading
@@ -39,8 +52,10 @@ class CustomButton extends StatelessWidget {
               )
             : Text(
                 text,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: fontSize,
+                ),
               ),
       );
     }
@@ -50,24 +65,32 @@ class CustomButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor ?? AppTheme.primaryColor,
         foregroundColor: textColor ?? Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        fixedSize: Size.fromHeight(height),
+        minimumSize: Size(0, height),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         elevation: 4,
-        shadowColor:
-            (backgroundColor ?? AppTheme.primaryColor).withValues(alpha: 0.25),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        disabledBackgroundColor:
-            (backgroundColor ?? AppTheme.primaryColor).withValues(alpha: 0.5),
+        shadowColor: (backgroundColor ?? AppTheme.primaryColor).withValues(
+          alpha: 0.25,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        disabledBackgroundColor: (backgroundColor ?? AppTheme.primaryColor)
+            .withValues(alpha: 0.5),
       ),
       child: isLoading
           ? const SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : Text(
               text,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
             ),
     );
   }

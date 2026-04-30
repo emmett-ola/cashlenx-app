@@ -6,42 +6,40 @@ part of 'auth_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$LoginRequestImpl _$$LoginRequestImplFromJson(Map<String, dynamic> json) =>
-    _$LoginRequestImpl(
+_LoginRequest _$LoginRequestFromJson(Map<String, dynamic> json) =>
+    _LoginRequest(
       username: json['username'] as String?,
       password: json['password'] as String?,
       refreshToken: json['refresh_token'] as String?,
     );
 
-Map<String, dynamic> _$$LoginRequestImplToJson(_$LoginRequestImpl instance) =>
+Map<String, dynamic> _$LoginRequestToJson(_LoginRequest instance) =>
     <String, dynamic>{
-      if (instance.username case final value?) 'username': value,
-      if (instance.password case final value?) 'password': value,
-      if (instance.refreshToken case final value?) 'refresh_token': value,
+      'username': ?instance.username,
+      'password': ?instance.password,
+      'refresh_token': ?instance.refreshToken,
     };
 
-_$RegisterRequestImpl _$$RegisterRequestImplFromJson(
-        Map<String, dynamic> json) =>
-    _$RegisterRequestImpl(
+_RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
+    _RegisterRequest(
       username: json['username'] as String,
       password: json['password'] as String,
     );
 
-Map<String, dynamic> _$$RegisterRequestImplToJson(
-        _$RegisterRequestImpl instance) =>
+Map<String, dynamic> _$RegisterRequestToJson(_RegisterRequest instance) =>
     <String, dynamic>{
       'username': instance.username,
       'password': instance.password,
     };
 
-_$AuthResponseImpl _$$AuthResponseImplFromJson(Map<String, dynamic> json) =>
-    _$AuthResponseImpl(
+_AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) =>
+    _AuthResponse(
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String,
       user: User.fromJson(json['user'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$$AuthResponseImplToJson(_$AuthResponseImpl instance) =>
+Map<String, dynamic> _$AuthResponseToJson(_AuthResponse instance) =>
     <String, dynamic>{
       'access_token': instance.accessToken,
       'refresh_token': instance.refreshToken,

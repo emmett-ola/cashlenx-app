@@ -22,7 +22,7 @@ const _authRedirectPolicy = AuthRedirectPolicy(
 );
 
 @Riverpod(keepAlive: true)
-GoRouter router(RouterRef ref) {
+GoRouter router(Ref ref) {
   final listenable = ValueNotifier<Object>(Object());
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = Object();
@@ -70,7 +70,7 @@ GoRouter router(RouterRef ref) {
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
       final onboardingState = ref.read(onboardingSeenProvider);
-      final hasSeenOnboarding = onboardingState.valueOrNull;
+      final hasSeenOnboarding = onboardingState.value;
 
       if (hasSeenOnboarding == null) return null;
 
@@ -78,8 +78,8 @@ GoRouter router(RouterRef ref) {
         authStatus: authState.isLoading
             ? AuthStatus.loading
             : authState.value != null
-                ? AuthStatus.authenticated
-                : AuthStatus.unauthenticated,
+            ? AuthStatus.authenticated
+            : AuthStatus.unauthenticated,
         location: state.matchedLocation,
         hasSeenOnboarding: hasSeenOnboarding,
       );

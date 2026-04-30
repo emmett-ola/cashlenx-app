@@ -6,20 +6,49 @@ part of 'auth_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authNotifierHash() => r'711e74eb7741614753bedf38e085e5d2b257938f';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [AuthNotifier].
 @ProviderFor(AuthNotifier)
-final authNotifierProvider =
-    AsyncNotifierProvider<AuthNotifier, User?>.internal(
-  AuthNotifier.new,
-  name: r'authNotifierProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$authNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final authProvider = AuthNotifierProvider._();
 
-typedef _$AuthNotifier = AsyncNotifier<User?>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class AuthNotifierProvider
+    extends $AsyncNotifierProvider<AuthNotifier, User?> {
+  AuthNotifierProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'authProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$authNotifierHash();
+
+  @$internal
+  @override
+  AuthNotifier create() => AuthNotifier();
+}
+
+String _$authNotifierHash() => r'9014bae6257d6647c292065f4b9a7149f583cccb';
+
+abstract class _$AuthNotifier extends $AsyncNotifier<User?> {
+  FutureOr<User?> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<User?>, User?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<User?>, User?>,
+              AsyncValue<User?>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

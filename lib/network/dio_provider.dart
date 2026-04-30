@@ -7,7 +7,7 @@ import 'interceptors/auth_interceptor.dart';
 part 'dio_provider.g.dart';
 
 @riverpod
-Dio dio(DioRef ref) {
+Dio dio(Ref ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,

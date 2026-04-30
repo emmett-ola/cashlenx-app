@@ -6,7 +6,7 @@ import '../infrastructure/persistence/secure_key_value_store.dart';
 part 'secure_storage_service.g.dart';
 
 @Riverpod(keepAlive: true)
-SecureStorageService secureStorageService(SecureStorageServiceRef ref) {
+SecureStorageService secureStorageService(Ref ref) {
   return SecureStorageService();
 }
 

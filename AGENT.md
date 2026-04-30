@@ -5,7 +5,7 @@ This file is the handoff point for future AI coding sessions in this repo. Read 
 ## Project Snapshot
 
 - App: CashLenX, a cross-platform Flutter finance app for personal finance, expense tracking, budgets, and reports.
-- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, and a temporary home/welcome screen exist.
+- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, a first authenticated home shell with fixed mock dashboard data, Docker web deployment, and GitHub Actions web release publishing exist.
 - Language/runtime: Dart SDK `>=3.2.0 <4.0.0`, Flutter.
 - Architecture: feature-first Clean Architecture.
 - State management: Riverpod with code generation (`riverpod_annotation`, generated `*.g.dart`).
@@ -26,7 +26,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 ## Current Branch
 
-- Active development branch: `dev/v0.1.0`.
+- Active development branch: `dev/v0.2.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
 
 ## Important Files
@@ -40,6 +40,10 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 - `analysis_options.yaml`: lint rules.
 - `sample.env`: environment template.
 - `.env`: required by `AppConfig.init()` at runtime and listed as a Flutter asset. Do not commit real secrets.
+- `Dockerfile`: multi-stage Flutter web build served by nginx on port `8080`.
+- `compose.yml`: local/server Compose service for the web build. Uses `WEB_PORT`, `IMAGE_NAME`, and `IMAGE_TAG` from `.env` when present.
+- `docker/nginx.conf`: nginx config for Flutter web history fallback.
+- `.github/workflows/web-release.yml`: builds, analyzes, tests, and publishes web releases to `emmett-ola/cashlenx-app-release`.
 - `server/docs/openapi.yaml`: local API contract reference.
 - `lib/main.dart`: initializes `AppConfig`, `ProviderScope`, themes, and `MaterialApp.router`.
 - `lib/routing/app_router.dart`: GoRouter setup and auth redirects.
@@ -97,11 +101,15 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - Routes: `/` splash, `/login`, `/register`, `/forgot-password`, `/home`.
   - Logged-in users on splash/login/register/forgot-password redirect to `/home`.
   - Logged-out users redirect to `/login` after splash/loading.
-  - `/home` is a temporary welcome page, not the final dashboard.
+  - `/home` hosts the first authenticated app shell.
 
-- Home/welcome screen: `lib/features/home/presentation/pages/home_page.dart`
-  - Displays `Welcome, <username>!`.
-  - Logout button calls `AuthNotifier.logout()`.
+- Home/app shell: `lib/features/home/presentation/pages/home_page.dart`
+  - Replaces the old temporary welcome page.
+  - Uses a bottom navigation shell based on `../cashlenx-design/src/components/organisms/BottomNav.tsx`.
+  - Includes Home, Stats, Add, Budget, and Settings tabs.
+  - Home uses a mock dashboard request provider returning fixed summary, budget, recent transaction, category, and merchant data.
+  - Non-wired interactions show a "coming soon" toast.
+  - Settings logout calls `AuthNotifier.logout()`.
 
 ## Backend/API Integration
 
@@ -116,6 +124,22 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
 - `RequestTrackingInterceptor` adds `x-request-id` and logs method/path/status/timing without request or response bodies.
 - `ResponseWrapper<T>` matches the server wrapper shape: `code`, `message`, `data`, `meta`, `errors`, `extra`.
 - `ToastUtils.showServerErrors(...)` expects backend errors such as `{"errors":[{"message":"..."}]}`.
+
+## Web Build and Release
+
+- Local/server container deployment uses `compose.yml`:
+
+```bash
+docker compose up -d --build
+```
+
+- The Compose service is `cashlenx-web`, builds from `Dockerfile`, and exposes container port `8080` as `${WEB_PORT:-8080}` on the host.
+- The Docker image builds Flutter web with `flutter build web --release`, then serves `build/web` with nginx.
+- `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` so Flutter web routes work on refresh/deep links.
+- `.env` is copied into the Docker image and loaded by Compose through `env_file`; keep real secrets out of commits.
+- GitHub Actions workflow `.github/workflows/web-release.yml` runs on pushes to `main`, pushes to `dev/**`, and manual dispatch.
+- The workflow creates `.env` from repository/environment variables, runs `flutter pub get`, code generation, `flutter analyze`, `flutter test`, and `flutter build web --release`.
+- Web release output is published to external repo `emmett-ola/cashlenx-app-release`: source branch `main` publishes to release branch `main`; all `dev/**` branches publish to release branch `develop`.
 
 Auth endpoints currently used:
 
@@ -137,7 +161,7 @@ Auth endpoints currently used:
 
 ## Design Reference
 
-Use `../cashlenx-design` before changing major UI. Useful files:
+Use `../cashlenx-design` as the source of truth before changing UI. Match the design reference as closely as practical for Material component sizes, border radii, spacing, and overall layout rather than guessing from Flutter defaults. Useful files:
 
 - `src/components/screens/SplashScreen.tsx`
 - `src/components/screens/Login.tsx`
@@ -157,13 +181,14 @@ Current visual tokens from design:
 - Primary teal: `#008080`
 - Secondary/light teal: `#4DB6AC`
 - Accent/coral in design reference: `#FF8A65`
-- Design reference uses 8px-ish radii for buttons/inputs and a clean mobile-first finance-app layout.
+- Design reference uses a clean mobile-first finance-app layout. Match exact component geometry from the relevant reference file when it is visible there; for example auth primary/demo buttons are tall pill-style controls (`48px` height with a fully rounded radius in the Flutter app).
 
 Flutter auth screens should stay aligned with the `AuthLayout`, `Login`, and `SignUp` design reference. The selected splash/auth subtitle is `Your Financial Companion`.
 
 ## Known Gaps / Next Likely Work
 
-- Final dashboard/home feature is not implemented; `/home` is temporary.
+- Dashboard/home uses fixed mock data and has no real API integration yet.
+- Transactions and add-transaction flows are still placeholders/coming-soon interactions.
 - Auth tests are still light. Add provider tests with Riverpod overrides for login, register, reset, refresh, and logout behavior.
 - Some README/architecture text is aspirational and may not match current code exactly.
 

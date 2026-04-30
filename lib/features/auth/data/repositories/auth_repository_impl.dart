@@ -8,7 +8,7 @@ import '../../domain/repositories/auth_repository.dart';
 part 'auth_repository_impl.g.dart';
 
 @riverpod
-AuthRepository authRepository(AuthRepositoryRef ref) {
+AuthRepository authRepository(Ref ref) {
   return AuthRepositoryImpl(
     ref.watch(authRemoteDataSourceProvider),
     ref.watch(secureStorageServiceProvider),
@@ -22,8 +22,11 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._remoteDataSource, this._secureStorage);
 
   @override
-  Future<User> login(String username, String password,
-      {bool rememberMe = false}) async {
+  Future<User> login(
+    String username,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     final request = LoginRequest(username: username, password: password);
     final response = await _remoteDataSource.login(request);
 

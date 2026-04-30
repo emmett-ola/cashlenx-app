@@ -6,23 +6,53 @@ part of 'secure_storage_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$secureStorageServiceHash() =>
-    r'7229b5875cdef595f068841d7673b516523197f7';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [secureStorageService].
 @ProviderFor(secureStorageService)
-final secureStorageServiceProvider = Provider<SecureStorageService>.internal(
-  secureStorageService,
-  name: r'secureStorageServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$secureStorageServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final secureStorageServiceProvider = SecureStorageServiceProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SecureStorageServiceRef = ProviderRef<SecureStorageService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class SecureStorageServiceProvider
+    extends
+        $FunctionalProvider<
+          SecureStorageService,
+          SecureStorageService,
+          SecureStorageService
+        >
+    with $Provider<SecureStorageService> {
+  SecureStorageServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'secureStorageServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$secureStorageServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<SecureStorageService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SecureStorageService create(Ref ref) {
+    return secureStorageService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SecureStorageService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SecureStorageService>(value),
+    );
+  }
+}
+
+String _$secureStorageServiceHash() =>
+    r'e6a02a22edfe9ccff4d341f7d1d14daf7cade897';

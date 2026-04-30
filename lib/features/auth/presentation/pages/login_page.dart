@@ -52,7 +52,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      await ref.read(authNotifierProvider.notifier).login(
+      await ref
+          .read(authNotifierProvider.notifier)
+          .login(
             _emailController.text.trim(),
             _passwordController.text,
             rememberMe: _rememberMe,
@@ -202,6 +204,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 text: 'Sign In',
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
+                height: 48,
+                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),
@@ -225,6 +229,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 text: 'Continue with Demo Mode',
                 isOutlined: true,
                 onPressed: _handleDemoMode,
+                height: 48,
+                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),

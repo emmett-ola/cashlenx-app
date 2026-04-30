@@ -1,0 +1,9 @@
+services:
+  cashlenx-web:
+    build: .
+    image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"

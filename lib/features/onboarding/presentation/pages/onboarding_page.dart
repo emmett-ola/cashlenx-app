@@ -53,7 +53,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
     if (!mounted) return;
 
-    final user = ref.read(authNotifierProvider).valueOrNull;
+    final user = ref.read(authNotifierProvider).value;
     context.go(user == null ? '/login' : '/home');
   }
 

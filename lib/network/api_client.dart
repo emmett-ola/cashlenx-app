@@ -7,7 +7,7 @@ import 'dio_provider.dart';
 part 'api_client.g.dart';
 
 @riverpod
-ApiClient apiClient(ApiClientRef ref) {
+ApiClient apiClient(Ref ref) {
   return ApiClient(ref.watch(dioProvider));
 }
 
