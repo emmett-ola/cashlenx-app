@@ -5,7 +5,7 @@ This file is the handoff point for future AI coding sessions in this repo. Read 
 ## Project Snapshot
 
 - App: CashLenX, a cross-platform Flutter finance app for personal finance, expense tracking, budgets, and reports.
-- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, and a temporary home/welcome screen exist.
+- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, and a first authenticated home shell with fixed mock dashboard data exist.
 - Language/runtime: Dart SDK `>=3.2.0 <4.0.0`, Flutter.
 - Architecture: feature-first Clean Architecture.
 - State management: Riverpod with code generation (`riverpod_annotation`, generated `*.g.dart`).
@@ -26,7 +26,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 ## Current Branch
 
-- Active development branch: `dev/v0.1.0`.
+- Active development branch: `dev/v0.2.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
 
 ## Important Files
@@ -97,11 +97,15 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - Routes: `/` splash, `/login`, `/register`, `/forgot-password`, `/home`.
   - Logged-in users on splash/login/register/forgot-password redirect to `/home`.
   - Logged-out users redirect to `/login` after splash/loading.
-  - `/home` is a temporary welcome page, not the final dashboard.
+  - `/home` hosts the first authenticated app shell.
 
-- Home/welcome screen: `lib/features/home/presentation/pages/home_page.dart`
-  - Displays `Welcome, <username>!`.
-  - Logout button calls `AuthNotifier.logout()`.
+- Home/app shell: `lib/features/home/presentation/pages/home_page.dart`
+  - Replaces the old temporary welcome page.
+  - Uses a bottom navigation shell based on `../cashlenx-design/src/components/organisms/BottomNav.tsx`.
+  - Includes Home, Stats, Add, Budget, and Settings tabs.
+  - Home uses a mock dashboard request provider returning fixed summary, budget, recent transaction, category, and merchant data.
+  - Non-wired interactions show a "coming soon" toast.
+  - Settings logout calls `AuthNotifier.logout()`.
 
 ## Backend/API Integration
 
@@ -162,7 +166,8 @@ Flutter auth screens should stay aligned with the `AuthLayout`, `Login`, and `Si
 
 ## Known Gaps / Next Likely Work
 
-- Final dashboard/home feature is not implemented; `/home` is temporary.
+- Dashboard/home uses fixed mock data and has no real API integration yet.
+- Transactions and add-transaction flows are still placeholders/coming-soon interactions.
 - Auth tests are still light. Add provider tests with Riverpod overrides for login, register, reset, refresh, and logout behavior.
 - Some README/architecture text is aspirational and may not match current code exactly.
 

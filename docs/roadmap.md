@@ -15,14 +15,15 @@ Implemented:
 - Auth response parsing for `access_token`, `refresh_token`, and `user`.
 - Error notifications for server validation/API errors.
 - Remember-me based startup login through refresh token.
-- Demo mode route into the temporary home screen.
+- Demo mode route into the authenticated home shell.
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
-- Temporary `/home` welcome screen after login.
+- First `/home` app shell with fixed mock dashboard, stats, budget, add placeholder, settings, and bottom navigation.
 - `flutter analyze` and `flutter test` are clean.
 
 Known gaps:
 
-- Dashboard/home is temporary.
+- Dashboard/home uses fixed mock data and is not connected to real statistic/cash-flow APIs yet.
+- Transactions and add-transaction flows are still coming-soon placeholders.
 - Auth provider/repository test coverage is still lighter than the UI smoke path.
 
 ## Guiding Principles
@@ -76,6 +77,15 @@ Goal: replace temporary `/home` with the real authenticated app frame.
 - Define top-level routes for dashboard, transactions, add transaction, budgets/categories, stats, and settings/profile.
 - Preserve auth redirect behavior across web/mobile/deep links.
 - Add loading and empty states for authenticated pages.
+
+Progress:
+
+- [x] Replaced temporary `/home` welcome screen with a first authenticated shell.
+- [x] Added bottom navigation for Home, Stats, Add, Budget, and Settings.
+- [x] Added fixed mock dashboard data behind a mock request provider.
+- [x] Kept unwired interactions as coming-soon toasts.
+- [ ] Connect transactions/add/profile/category flows to real screens.
+- [ ] Decide whether shell tabs should become URL-addressable routes.
 
 Exit criteria:
 
