@@ -72,7 +72,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - Auth provider intentionally waits 2 seconds so the splash is visible.
 
 - Login screen: `lib/features/auth/presentation/pages/login_page.dart`
-  - Email field, password field, visibility toggle, remember-me checkbox, forgot-password link, demo-mode action, sign-up link.
+  - Username-or-email field, password field, visibility toggle, remember-me checkbox, forgot-password link, demo-mode action, sign-up link.
   - Calls real backend login through `AuthNotifier.login(...)`.
   - Shows server errors using `ToastUtils.showServerErrors(...)`.
   - Shows a success toast on successful manual login.
