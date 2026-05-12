@@ -495,13 +495,22 @@ class _StandardHeader extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends StatefulWidget {
   const _SummaryCard({required this.summary});
 
   final _Summary summary;
 
   @override
+  State<_SummaryCard> createState() => _SummaryCardState();
+}
+
+class _SummaryCardState extends State<_SummaryCard> {
+  var _selectedRange = _SummaryRange.month;
+
+  @override
   Widget build(BuildContext context) {
+    final summary = widget.summary.range(_selectedRange);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -519,52 +528,137 @@ class _SummaryCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
+          Positioned(
+            top: 0,
+            right: 0,
+            child: _SummaryRangeSwitcher(
+              selectedRange: _selectedRange,
+              onChanged: (range) {
+                setState(() => _selectedRange = range);
+              },
             ),
           ),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              _money(summary.totalBalance),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 38,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _SummaryMetric(
-                  icon: Icons.south_west,
-                  label: 'Income',
-                  value: _money(summary.income, decimals: 0),
-                  iconColor: AppTheme.successColor,
+              Padding(
+                padding: const EdgeInsets.only(right: 120),
+                child: Text(
+                  summary.balanceLabel,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _SummaryMetric(
-                  icon: Icons.north_east,
-                  label: 'Expense',
-                  value: _money(summary.expense, decimals: 0),
-                  iconColor: const Color(0xFFFF8A65),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _money(summary.totalBalance),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 38,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryMetric(
+                      icon: Icons.south_west,
+                      label: 'Income',
+                      value: _money(summary.income),
+                      iconColor: AppTheme.successColor,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _SummaryMetric(
+                      icon: Icons.north_east,
+                      label: 'Expense',
+                      value: _money(summary.expense),
+                      iconColor: AppTheme.errorColor,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SummaryRangeSwitcher extends StatelessWidget {
+  const _SummaryRangeSwitcher({
+    required this.selectedRange,
+    required this.onChanged,
+  });
+
+  final _SummaryRange selectedRange;
+  final ValueChanged<_SummaryRange> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: _SummaryRange.values.map((range) {
+          final isSelected = range == selectedRange;
+
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => onChanged(range),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.3)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  range.label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -585,38 +679,47 @@ class _SummaryMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: iconColor, size: 22),
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: Colors.white, size: 17),
               ),
-              Text(
-                value,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1756,9 +1859,12 @@ class _DashboardResponse {
 
   factory _DashboardResponse.mock() {
     const summary = _Summary(
-      totalBalance: 8247.35,
-      income: 3500,
-      expense: 1215,
+      monthBalance: 8247.35,
+      monthIncome: 3500,
+      monthExpense: 1215,
+      yearBalance: 7010.25,
+      yearIncome: 2870,
+      yearExpense: 1069.20,
     );
     const budget = _BudgetSummary(spent: 1215, limit: 2000);
 
@@ -1881,14 +1987,66 @@ class _DashboardResponse {
 
 class _Summary {
   const _Summary({
+    required this.monthBalance,
+    required this.monthIncome,
+    required this.monthExpense,
+    required this.yearBalance,
+    required this.yearIncome,
+    required this.yearExpense,
+  });
+
+  final double monthBalance;
+  final double monthIncome;
+  final double monthExpense;
+  final double yearBalance;
+  final double yearIncome;
+  final double yearExpense;
+
+  double get totalBalance => monthBalance;
+
+  double get income => monthIncome;
+
+  double get expense => monthExpense;
+
+  _SummaryRangeValues range(_SummaryRange range) {
+    return switch (range) {
+      _SummaryRange.month => _SummaryRangeValues(
+        balanceLabel: 'Monthly Balance',
+        totalBalance: monthBalance,
+        income: monthIncome,
+        expense: monthExpense,
+      ),
+      _SummaryRange.year => _SummaryRangeValues(
+        balanceLabel: 'Yearly Balance',
+        totalBalance: yearBalance,
+        income: yearIncome,
+        expense: yearExpense,
+      ),
+    };
+  }
+}
+
+class _SummaryRangeValues {
+  const _SummaryRangeValues({
+    required this.balanceLabel,
     required this.totalBalance,
     required this.income,
     required this.expense,
   });
 
+  final String balanceLabel;
   final double totalBalance;
   final double income;
   final double expense;
+}
+
+enum _SummaryRange {
+  month('Month'),
+  year('Year');
+
+  const _SummaryRange(this.label);
+
+  final String label;
 }
 
 class _BudgetSummary {

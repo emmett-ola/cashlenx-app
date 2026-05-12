@@ -20,9 +20,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    expect(find.text('Total Balance'), findsOneWidget);
+    expect(find.text('Monthly Balance'), findsOneWidget);
+    expect(find.text('Month'), findsOneWidget);
+    expect(find.text('Year'), findsOneWidget);
     expect(find.text(r'$8,247.35'), findsOneWidget);
     expect(find.text('Grocery Shopping'), findsOneWidget);
+
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Yearly Balance'), findsOneWidget);
+    expect(find.text(r'$7,010.25'), findsOneWidget);
 
     await tester.tap(find.text('Budget').last);
     await tester.pumpAndSettle();
