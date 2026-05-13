@@ -1,6 +1,9 @@
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/home/presentation/pages/home_page.dart';
+import 'package:cashlenx/network/api_client.dart';
+import 'package:cashlenx/network/cashlenx_api.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +15,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [authNotifierProvider.overrideWith(_TestAuthNotifier.new)],
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
         child: const MaterialApp(home: HomePage()),
       ),
     );
@@ -23,14 +29,14 @@ void main() {
     expect(find.text('Monthly Balance'), findsOneWidget);
     expect(find.text('Month'), findsOneWidget);
     expect(find.text('Year'), findsOneWidget);
-    expect(find.text(r'$8,247.35'), findsOneWidget);
+    expect(find.text(r'$4,225.50'), findsOneWidget);
     expect(find.text('Grocery Shopping'), findsOneWidget);
 
     await tester.tap(find.text('Year'));
     await tester.pumpAndSettle();
 
     expect(find.text('Yearly Balance'), findsOneWidget);
-    expect(find.text(r'$7,010.25'), findsOneWidget);
+    expect(find.text(r'$39,420.25'), findsOneWidget);
 
     await tester.tap(find.text('Budget').last);
     await tester.pumpAndSettle();
@@ -62,5 +68,50 @@ class _TestAuthNotifier extends AuthNotifier {
       createdAt: now,
       updatedAt: now,
     );
+  }
+}
+
+class _FakeCashlenxApi extends CashlenxApi {
+  _FakeCashlenxApi() : super(ApiClient(Dio()));
+
+  @override
+  Future<ApiJson> getMonthlySummary(String month) async {
+    expect(month, matches(RegExp(r'^\d{6}$')));
+    return _wrappedSummary(
+      balance: 4225.50,
+      totalIncome: 5200,
+      totalExpense: 974.50,
+    );
+  }
+
+  @override
+  Future<ApiJson> getYearlySummary(String year) async {
+    expect(year, matches(RegExp(r'^\d{4}$')));
+    return _wrappedSummary(
+      balance: 39420.25,
+      totalIncome: 48600,
+      totalExpense: 9179.75,
+    );
+  }
+
+  ApiJson _wrappedSummary({
+    required double balance,
+    required double totalIncome,
+    required double totalExpense,
+  }) {
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': {
+        'balance': balance,
+        'total_income': totalIncome,
+        'total_expense': totalExpense,
+        'transaction_count': 12,
+        'category_breakdown': <String, double>{},
+      },
+      'meta': <String, dynamic>{},
+      'errors': <dynamic>[],
+      'extra': <String, dynamic>{},
+    };
   }
 }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
+import '../../../../network/cashlenx_api.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
-  return const _MockDashboardApi().fetchDashboard();
+  return _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
 });
 
 class HomePage extends ConsumerStatefulWidget {
@@ -1831,13 +1833,34 @@ enum _HomeTab {
   final IconData icon;
 }
 
-class _MockDashboardApi {
-  const _MockDashboardApi();
+class _DashboardApi {
+  const _DashboardApi(this._api);
+
+  final CashlenxApi _api;
 
   Future<_DashboardResponse> fetchDashboard() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return _DashboardResponse.mock();
+    final now = DateTime.now();
+    final month = _monthToken(now);
+    final year = _yearToken(now);
+
+    final responses = await Future.wait([
+      _api.getMonthlySummary(month),
+      _api.getYearlySummary(year),
+    ]);
+
+    return _DashboardResponse.mock(
+      summary: _Summary.fromApi(
+        month: _CashSummary.fromResponse(responses[0]),
+        year: _CashSummary.fromResponse(responses[1]),
+      ),
+    );
   }
+
+  static String _monthToken(DateTime date) {
+    return '${date.year}${date.month.toString().padLeft(2, '0')}';
+  }
+
+  static String _yearToken(DateTime date) => date.year.toString();
 }
 
 class _DashboardResponse {
@@ -1857,8 +1880,8 @@ class _DashboardResponse {
   final List<_Merchant> topMerchants;
   final List<_CategoryBudget> categoryBudgets;
 
-  factory _DashboardResponse.mock() {
-    const summary = _Summary(
+  factory _DashboardResponse.mock({_Summary? summary}) {
+    summary ??= const _Summary(
       monthBalance: 8247.35,
       monthIncome: 3500,
       monthExpense: 1215,
@@ -1868,10 +1891,10 @@ class _DashboardResponse {
     );
     const budget = _BudgetSummary(spent: 1215, limit: 2000);
 
-    return const _DashboardResponse(
+    return _DashboardResponse(
       summary: summary,
       budget: budget,
-      recentTransactions: [
+      recentTransactions: const [
         _Transaction(
           title: 'Grocery Shopping',
           dateLabel: 'Today, 2:30 PM',
@@ -1913,7 +1936,7 @@ class _DashboardResponse {
           color: AppTheme.successColor,
         ),
       ],
-      categoryBreakdown: [
+      categoryBreakdown: const [
         _CategoryBreakdownItem(
           name: 'Food',
           amount: 450,
@@ -1945,13 +1968,13 @@ class _DashboardResponse {
           color: Color(0xFF90A4AE),
         ),
       ],
-      topMerchants: [
+      topMerchants: const [
         _Merchant(name: 'Amazon', amount: 245.50),
         _Merchant(name: 'Walmart', amount: 187.30),
         _Merchant(name: 'Starbucks', amount: 156.80),
         _Merchant(name: 'Uber', amount: 142.20),
       ],
-      categoryBudgets: [
+      categoryBudgets: const [
         _CategoryBudget(
           category: 'Food & Dining',
           spent: 450,
@@ -2002,6 +2025,20 @@ class _Summary {
   final double yearIncome;
   final double yearExpense;
 
+  factory _Summary.fromApi({
+    required _CashSummary month,
+    required _CashSummary year,
+  }) {
+    return _Summary(
+      monthBalance: month.balance,
+      monthIncome: month.totalIncome,
+      monthExpense: month.totalExpense,
+      yearBalance: year.balance,
+      yearIncome: year.totalIncome,
+      yearExpense: year.totalExpense,
+    );
+  }
+
   double get totalBalance => monthBalance;
 
   double get income => monthIncome;
@@ -2047,6 +2084,39 @@ enum _SummaryRange {
   const _SummaryRange(this.label);
 
   final String label;
+}
+
+class _CashSummary {
+  const _CashSummary({
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.balance,
+  });
+
+  final double totalIncome;
+  final double totalExpense;
+  final double balance;
+
+  factory _CashSummary.fromResponse(ApiJson response) {
+    final wrapper = ResponseWrapper<_CashSummary>.fromJson(
+      response,
+      (json) => _CashSummary.fromJson(json as Map<String, dynamic>),
+    );
+
+    if (wrapper.data == null) {
+      throw Exception(wrapper.message);
+    }
+
+    return wrapper.data!;
+  }
+
+  factory _CashSummary.fromJson(Map<String, dynamic> json) {
+    return _CashSummary(
+      totalIncome: _jsonDouble(json['total_income']),
+      totalExpense: _jsonDouble(json['total_expense']),
+      balance: _jsonDouble(json['balance']),
+    );
+  }
 }
 
 class _BudgetSummary {
@@ -2153,6 +2223,14 @@ String _money(double value, {int decimals = 2}) {
 
   final cents = decimals == 0 ? '' : '.${parts[1]}';
   return '$sign\$${buffer.toString()}$cents';
+}
+
+double _jsonDouble(Object? value) {
+  return switch (value) {
+    num number => number.toDouble(),
+    String text => double.tryParse(text) ?? 0,
+    _ => 0,
+  };
 }
 
 TextStyle _pageTitle(BuildContext context) {
