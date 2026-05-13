@@ -38,6 +38,13 @@ void main() {
     expect(find.text('Yearly Balance'), findsOneWidget);
     expect(find.text(r'$39,420.25'), findsOneWidget);
 
+    await tester.tap(find.text('Stats').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your financial insights'), findsOneWidget);
+    expect(find.text('Dining'), findsWidgets);
+    expect(find.text('Top Spending Categories'), findsOneWidget);
+
     await tester.tap(find.text('Budget').last);
     await tester.pumpAndSettle();
 
@@ -107,7 +114,11 @@ class _FakeCashlenxApi extends CashlenxApi {
         'total_income': totalIncome,
         'total_expense': totalExpense,
         'transaction_count': 12,
-        'category_breakdown': <String, double>{},
+        'category_breakdown': {
+          'Dining': 420.25,
+          'Shopping': 300.75,
+          'Transport': 253.50,
+        },
       },
       'meta': <String, dynamic>{},
       'errors': <dynamic>[],

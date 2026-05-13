@@ -1144,7 +1144,7 @@ class _TopMerchants extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Top Spending Sources', style: _sectionTitle(context)),
+          Text('Top Spending Categories', style: _sectionTitle(context)),
           const SizedBox(height: 14),
           ...merchants.indexed.map((entry) {
             final index = entry.$1;
@@ -1848,11 +1848,12 @@ class _DashboardApi {
       _api.getYearlySummary(year),
     ]);
 
+    final monthSummary = _CashSummary.fromResponse(responses[0]);
+    final yearSummary = _CashSummary.fromResponse(responses[1]);
+
     return _DashboardResponse.mock(
-      summary: _Summary.fromApi(
-        month: _CashSummary.fromResponse(responses[0]),
-        year: _CashSummary.fromResponse(responses[1]),
-      ),
+      summary: _Summary.fromApi(month: monthSummary, year: yearSummary),
+      categoryBreakdown: _categoryBreakdownFromSummary(monthSummary),
     );
   }
 
@@ -1861,6 +1862,34 @@ class _DashboardApi {
   }
 
   static String _yearToken(DateTime date) => date.year.toString();
+
+  static List<_CategoryBreakdownItem> _categoryBreakdownFromSummary(
+    _CashSummary summary,
+  ) {
+    if (summary.categoryBreakdown.isEmpty) {
+      return const [];
+    }
+
+    final total = summary.categoryBreakdown.values.fold<double>(
+      0,
+      (sum, amount) => sum + amount,
+    );
+    final entries = summary.categoryBreakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return entries.indexed.map((entry) {
+      final index = entry.$1;
+      final category = entry.$2;
+      final percent = total == 0 ? 0.0 : (category.value / total) * 100;
+
+      return _CategoryBreakdownItem(
+        name: category.key,
+        amount: category.value,
+        percent: percent,
+        color: _categoryColors[index % _categoryColors.length],
+      );
+    }).toList();
+  }
 }
 
 class _DashboardResponse {
@@ -1880,7 +1909,10 @@ class _DashboardResponse {
   final List<_Merchant> topMerchants;
   final List<_CategoryBudget> categoryBudgets;
 
-  factory _DashboardResponse.mock({_Summary? summary}) {
+  factory _DashboardResponse.mock({
+    _Summary? summary,
+    List<_CategoryBreakdownItem>? categoryBreakdown,
+  }) {
     summary ??= const _Summary(
       monthBalance: 8247.35,
       monthIncome: 3500,
@@ -1890,6 +1922,40 @@ class _DashboardResponse {
       yearExpense: 1069.20,
     );
     const budget = _BudgetSummary(spent: 1215, limit: 2000);
+    final resolvedCategoryBreakdown =
+        categoryBreakdown ??
+        const [
+          _CategoryBreakdownItem(
+            name: 'Food',
+            amount: 450,
+            percent: 33,
+            color: Color(0xFFFF8A65),
+          ),
+          _CategoryBreakdownItem(
+            name: 'Shopping',
+            amount: 320,
+            percent: 24,
+            color: AppTheme.secondaryColor,
+          ),
+          _CategoryBreakdownItem(
+            name: 'Transport',
+            amount: 180,
+            percent: 13,
+            color: Color(0xFFFFB74D),
+          ),
+          _CategoryBreakdownItem(
+            name: 'Home',
+            amount: 280,
+            percent: 21,
+            color: Color(0xFF9575CD),
+          ),
+          _CategoryBreakdownItem(
+            name: 'Others',
+            amount: 120,
+            percent: 9,
+            color: Color(0xFF90A4AE),
+          ),
+        ];
 
     return _DashboardResponse(
       summary: summary,
@@ -1936,44 +2002,8 @@ class _DashboardResponse {
           color: AppTheme.successColor,
         ),
       ],
-      categoryBreakdown: const [
-        _CategoryBreakdownItem(
-          name: 'Food',
-          amount: 450,
-          percent: 33,
-          color: Color(0xFFFF8A65),
-        ),
-        _CategoryBreakdownItem(
-          name: 'Shopping',
-          amount: 320,
-          percent: 24,
-          color: AppTheme.secondaryColor,
-        ),
-        _CategoryBreakdownItem(
-          name: 'Transport',
-          amount: 180,
-          percent: 13,
-          color: Color(0xFFFFB74D),
-        ),
-        _CategoryBreakdownItem(
-          name: 'Home',
-          amount: 280,
-          percent: 21,
-          color: Color(0xFF9575CD),
-        ),
-        _CategoryBreakdownItem(
-          name: 'Others',
-          amount: 120,
-          percent: 9,
-          color: Color(0xFF90A4AE),
-        ),
-      ],
-      topMerchants: const [
-        _Merchant(name: 'Amazon', amount: 245.50),
-        _Merchant(name: 'Walmart', amount: 187.30),
-        _Merchant(name: 'Starbucks', amount: 156.80),
-        _Merchant(name: 'Uber', amount: 142.20),
-      ],
+      categoryBreakdown: resolvedCategoryBreakdown,
+      topMerchants: _topCategories(resolvedCategoryBreakdown),
       categoryBudgets: const [
         _CategoryBudget(
           category: 'Food & Dining',
@@ -2091,11 +2121,13 @@ class _CashSummary {
     required this.totalIncome,
     required this.totalExpense,
     required this.balance,
+    required this.categoryBreakdown,
   });
 
   final double totalIncome;
   final double totalExpense;
   final double balance;
+  final Map<String, double> categoryBreakdown;
 
   factory _CashSummary.fromResponse(ApiJson response) {
     final wrapper = ResponseWrapper<_CashSummary>.fromJson(
@@ -2115,6 +2147,7 @@ class _CashSummary {
       totalIncome: _jsonDouble(json['total_income']),
       totalExpense: _jsonDouble(json['total_expense']),
       balance: _jsonDouble(json['balance']),
+      categoryBreakdown: _jsonDoubleMap(json['category_breakdown']),
     );
   }
 }
@@ -2169,6 +2202,15 @@ class _Merchant {
   final double amount;
 }
 
+List<_Merchant> _topCategories(List<_CategoryBreakdownItem> categories) {
+  return categories
+      .take(4)
+      .map(
+        (category) => _Merchant(name: category.name, amount: category.amount),
+      )
+      .toList();
+}
+
 class _CategoryBudget {
   const _CategoryBudget({
     required this.category,
@@ -2199,6 +2241,15 @@ class _AppShellColors {
   static const softGray = Color(0xFFE5E7EB);
   static const text = Color(0xFF111827);
 }
+
+const _categoryColors = [
+  Color(0xFFFF8A65),
+  AppTheme.secondaryColor,
+  Color(0xFFFFB74D),
+  Color(0xFF9575CD),
+  Color(0xFF90A4AE),
+  Color(0xFF2563EB),
+];
 
 String _greeting() {
   final hour = DateTime.now().hour;
@@ -2231,6 +2282,16 @@ double _jsonDouble(Object? value) {
     String text => double.tryParse(text) ?? 0,
     _ => 0,
   };
+}
+
+Map<String, double> _jsonDoubleMap(Object? value) {
+  if (value is! Map) {
+    return const {};
+  }
+
+  return value.map(
+    (key, amount) => MapEntry(key.toString(), _jsonDouble(amount)),
+  );
 }
 
 TextStyle _pageTitle(BuildContext context) {
