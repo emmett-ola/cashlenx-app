@@ -26,24 +26,49 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    expect(find.text('Monthly Balance'), findsOneWidget);
+    expect(find.text('Total Balance'), findsOneWidget);
+    expect(find.text('Day'), findsOneWidget);
     expect(find.text('Month'), findsOneWidget);
     expect(find.text('Year'), findsOneWidget);
-    expect(find.text(r'$4,225.50'), findsOneWidget);
+    expect(find.text('Total'), findsOneWidget);
+    expect(find.text(r'$88,000.00'), findsOneWidget);
     expect(find.text('Grocery Shopping'), findsOneWidget);
+
+    await tester.tap(find.text('Day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today Balance'), findsOneWidget);
+    expect(find.text(r'$128.45'), findsOneWidget);
 
     await tester.tap(find.text('Year'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Yearly Balance'), findsOneWidget);
+    expect(find.text('Year Balance'), findsOneWidget);
     expect(find.text(r'$39,420.25'), findsOneWidget);
 
-    await tester.tap(find.text('Stats').last);
+    await tester.scrollUntilVisible(
+      find.text('Spending by Category'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Spending by Category'), findsOneWidget);
+    expect(find.text('More Statistics Charts'), findsOneWidget);
+
+    await tester.tap(find.text('Category').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Your financial insights'), findsOneWidget);
-    expect(find.text('Dining'), findsWidgets);
-    expect(find.text('Top Spending Categories'), findsOneWidget);
+    expect(find.text('Manage your categories'), findsOneWidget);
+    expect(find.text('Expense'), findsOneWidget);
+    expect(find.text('Income'), findsOneWidget);
+    expect(find.text('Food & Dining'), findsOneWidget);
+    expect(find.text('Restaurants'), findsOneWidget);
+    expect(find.text('Create New Category'), findsOneWidget);
+
+    await tester.tap(find.text('Income'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Salary'), findsOneWidget);
+    expect(find.text('Bonus'), findsOneWidget);
 
     await tester.tap(find.text('Budget').last);
     await tester.pumpAndSettle();
@@ -82,6 +107,16 @@ class _FakeCashlenxApi extends CashlenxApi {
   _FakeCashlenxApi() : super(ApiClient(Dio()));
 
   @override
+  Future<ApiJson> getDailySummary(String date) async {
+    expect(date, matches(RegExp(r'^\d{8}$')));
+    return _wrappedSummary(
+      balance: 128.45,
+      totalIncome: 300,
+      totalExpense: 171.55,
+    );
+  }
+
+  @override
   Future<ApiJson> getMonthlySummary(String month) async {
     expect(month, matches(RegExp(r'^\d{6}$')));
     return _wrappedSummary(
@@ -98,6 +133,15 @@ class _FakeCashlenxApi extends CashlenxApi {
       balance: 39420.25,
       totalIncome: 48600,
       totalExpense: 9179.75,
+    );
+  }
+
+  @override
+  Future<ApiJson> getTotalSummary() async {
+    return _wrappedSummary(
+      balance: 88000,
+      totalIncome: 120000,
+      totalExpense: 32000,
     );
   }
 

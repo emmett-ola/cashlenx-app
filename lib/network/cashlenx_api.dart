@@ -392,6 +392,10 @@ class CashlenxApi {
     return _get('/cash/summary/yearly/${_path(year)}');
   }
 
+  Future<ApiJson> getTotalSummary() {
+    return _get('/cash/summary/total');
+  }
+
   Future<ApiJson> getTransactionById(String id) {
     return _get('/cash/${_path(id)}');
   }

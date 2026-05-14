@@ -28,6 +28,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 - Active development branch: `dev/v0.2.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
+- After completing each user request, commit and push the completed work before ending the turn unless the user explicitly asks not to.
 
 ## Important Files
 

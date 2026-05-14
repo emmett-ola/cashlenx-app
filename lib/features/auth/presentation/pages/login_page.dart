@@ -90,19 +90,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: Column(
           children: [
             CustomInput(
-              label: 'Username or Email',
+              label: 'Email',
               controller: _identifierController,
-              placeholder: 'username or email@example.com',
-              keyboardType: TextInputType.text,
-              prefixIcon: Icon(
-                Icons.account_circle_outlined,
-                color: Colors.grey[500],
-              ),
+              placeholder: 'email@example.com',
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
               onChanged: (_) => setState(() {}),
               validator: (value) {
                 final identifier = value?.trim() ?? '';
                 if (identifier.isEmpty) {
                   return 'Please fill in all fields.';
+                }
+                final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                if (!emailRegex.hasMatch(identifier)) {
+                  return 'Please enter a valid email address.';
                 }
                 return null;
               },
@@ -204,7 +205,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
                 height: 48,
-                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),
@@ -229,7 +229,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 isOutlined: true,
                 onPressed: _handleDemoMode,
                 height: 48,
-                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),
