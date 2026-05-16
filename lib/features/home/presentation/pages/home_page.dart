@@ -202,9 +202,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
     });
 
     try {
-      final response = await ref
-          .read(cashlenxApiProvider)
-          .listAllCategories(type: _activeType.apiValue);
+      final response = await ref.read(cashlenxApiProvider).listAllCategories();
       final categories = _CategoryItem.listFromResponse(response);
 
       if (!mounted) return;

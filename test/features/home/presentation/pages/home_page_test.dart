@@ -152,6 +152,9 @@ class _FakeCashlenxApi extends CashlenxApi {
     String? type,
     String? parentId,
   }) async {
+    expect(type, isNull);
+    expect(parentId, isNull);
+
     final categories = [
       {
         'Id': '507f1f77bcf86cd799439011',
@@ -190,25 +193,16 @@ class _FakeCashlenxApi extends CashlenxApi {
         'parent_id': '000000000000000000000000',
       },
     ];
-    final filteredCategories = categories
-        .where((category) => type == null || category['type'] == type)
-        .where(
-          (category) => parentId == null || category['parent_id'] == parentId,
-        )
-        .toList();
 
     return {
       'code': 'OK',
       'message': '',
-      'data': {
-        'data': filteredCategories,
-        'meta': {
-          'total_count': filteredCategories.length,
-          'limit': limit ?? 50,
-          'offset': offset ?? 0,
-        },
+      'data': categories,
+      'meta': {
+        'total_count': categories.length,
+        'limit': limit ?? 50,
+        'offset': offset ?? 0,
       },
-      'meta': <String, dynamic>{},
       'errors': <dynamic>[],
       'extra': <String, dynamic>{},
     };
