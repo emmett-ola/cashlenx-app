@@ -90,20 +90,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: Column(
           children: [
             CustomInput(
-              label: 'Email',
+              label: 'Email or Username',
               controller: _identifierController,
-              placeholder: 'email@example.com',
-              keyboardType: TextInputType.emailAddress,
+              placeholder: 'email@example.com or username',
+              keyboardType: TextInputType.text,
               prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
               onChanged: (_) => setState(() {}),
               validator: (value) {
                 final identifier = value?.trim() ?? '';
                 if (identifier.isEmpty) {
                   return 'Please fill in all fields.';
-                }
-                final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-                if (!emailRegex.hasMatch(identifier)) {
-                  return 'Please enter a valid email address.';
                 }
                 return null;
               },

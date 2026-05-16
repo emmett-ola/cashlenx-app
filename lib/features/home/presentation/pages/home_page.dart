@@ -50,9 +50,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               username: username,
               email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
               onAction: _showComingSoon,
-              onLogout: () {
-                ref.read(authNotifierProvider.notifier).logout();
-              },
             ),
           ],
         ),
@@ -1092,7 +1089,7 @@ class _BudgetTab extends ConsumerWidget {
         },
       ),
       data: (data) => _PageScaffold(
-        title: 'Budget',
+        title: 'Budgets',
         subtitle: 'Manage your spending limits',
         trailing: _RoundIconButton(
           icon: Icons.add,
@@ -1102,16 +1099,18 @@ class _BudgetTab extends ConsumerWidget {
           _TotalBudgetCard(budget: data.budget),
           Text('Category Budgets', style: _sectionTitle(context)),
           ...data.categoryBudgets.map(_CategoryBudgetTile.new),
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: () => onAction('Add budget'),
             icon: const Icon(Icons.add),
             label: const Text('Add New Budget'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryColor,
-              side: const BorderSide(color: AppTheme.primaryColor),
-              minimumSize: const Size.fromHeight(52),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 8,
+              shadowColor: AppTheme.primaryColor.withValues(alpha: 0.28),
+              minimumSize: const Size.fromHeight(56),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -1144,44 +1143,44 @@ class _AddPlaceholderTab extends StatelessWidget {
   }
 }
 
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends StatefulWidget {
   const _SettingsTab({
     required this.username,
     required this.email,
     required this.onAction,
-    required this.onLogout,
   });
 
   final String username;
   final String email;
   final ValueChanged<String> onAction;
-  final VoidCallback onLogout;
+
+  @override
+  State<_SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<_SettingsTab> {
+  var _themeColor = AppTheme.primaryColor;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
       title: 'Settings',
+      subtitle: 'Personalize your experience',
       children: [
         _ProfileCard(
-          username: username,
-          email: email,
-          onTap: () => onAction('Profile'),
+          username: widget.username,
+          email: widget.email,
+          onTap: () => widget.onAction('Profile'),
         ),
         _SettingsSection(
           title: 'Preferences',
           children: [
             _SettingsTile(
               icon: Icons.palette_outlined,
-              color: AppTheme.primaryColor,
+              color: _themeColor,
               label: 'Theme Color',
-              trailing: const _ColorDot(color: AppTheme.primaryColor),
-              onTap: () => onAction('Theme Color'),
-            ),
-            _SettingsTile(
-              icon: Icons.account_tree_outlined,
-              color: AppTheme.primaryColor,
-              label: 'Manage Categories',
-              onTap: () => onAction('Manage Categories'),
+              trailing: _ColorDot(color: _themeColor),
+              onTap: _showThemeColorDialog,
             ),
           ],
         ),
@@ -1192,19 +1191,19 @@ class _SettingsTab extends StatelessWidget {
               icon: Icons.visibility_outlined,
               color: const Color(0xFF2563EB),
               label: 'Privacy Settings',
-              onTap: () => onAction('Privacy Settings'),
+              onTap: () => widget.onAction('Privacy Settings'),
             ),
             _SettingsTile(
               icon: Icons.lock_outline,
               color: const Color(0xFF7C3AED),
               label: 'Security',
-              onTap: () => onAction('Security'),
+              onTap: () => widget.onAction('Security'),
             ),
             _SettingsTile(
               icon: Icons.notifications_none,
               color: const Color(0xFFF97316),
               label: 'Notifications',
-              onTap: () => onAction('Notifications'),
+              onTap: () => widget.onAction('Notifications'),
             ),
           ],
         ),
@@ -1215,22 +1214,9 @@ class _SettingsTab extends StatelessWidget {
               icon: Icons.help_outline,
               color: AppTheme.successColor,
               label: 'Help & Support',
-              onTap: () => onAction('Help & Support'),
+              onTap: () => widget.onAction('Help & Support'),
             ),
           ],
-        ),
-        FilledButton.icon(
-          onPressed: onLogout,
-          icon: const Icon(Icons.logout),
-          label: const Text('Log Out'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppTheme.errorColor,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
         ),
         const Center(
           child: Text(
@@ -1239,6 +1225,142 @@ class _SettingsTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showThemeColorDialog() {
+    var draftColor = _themeColor;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Choose Theme Color',
+                            style: _sectionTitle(context),
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: draftColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: draftColor.withValues(alpha: 0.32),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Selected: ${_hexColor(draftColor).toUpperCase()}',
+                      style: const TextStyle(
+                        color: _AppShellColors.mutedText,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
+                      children: _categoryColorChoices.map((color) {
+                        final isSelected = color == draftColor;
+                        return _ColorChoice(
+                          color: color,
+                          isSelected: isSelected,
+                          onTap: () {
+                            setDialogState(() => draftColor = color);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 22),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'This theme color will be used throughout the app for primary buttons, accents, and highlights.',
+                        style: TextStyle(
+                          color: _AppShellColors.text,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              side: const BorderSide(
+                                color: _AppShellColors.border,
+                                width: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              setState(() => _themeColor = draftColor);
+                              Navigator.pop(context);
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: draftColor,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -1481,8 +1603,6 @@ class _SummaryCardState extends State<_SummaryCard> {
                   label: 'Income',
                   value: _money(summary.income),
                   iconColor: AppTheme.successColor,
-                  trendIcon: Icons.trending_up,
-                  trendLabel: '12% last month',
                 ),
               ),
               const SizedBox(width: 14),
@@ -1492,8 +1612,6 @@ class _SummaryCardState extends State<_SummaryCard> {
                   label: 'Expense',
                   value: _money(summary.expense),
                   iconColor: AppTheme.errorColor,
-                  trendIcon: Icons.trending_down,
-                  trendLabel: '8% last month',
                 ),
               ),
             ],
@@ -1575,16 +1693,12 @@ class _SummaryMetric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.iconColor,
-    required this.trendIcon,
-    required this.trendLabel,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final Color iconColor;
-  final IconData trendIcon;
-  final String trendLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1626,24 +1740,6 @@ class _SummaryMetric extends StatelessWidget {
               color: Colors.white,
               fontWeight: FontWeight.w800,
             ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(trendIcon, color: iconColor, size: 15),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  trendLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: iconColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -3161,6 +3257,11 @@ String _money(double value, {int decimals = 2}) {
 
   final cents = decimals == 0 ? '' : '.${parts[1]}';
   return '$sign\$${buffer.toString()}$cents';
+}
+
+String _hexColor(Color color) {
+  final value = color.toARGB32() & 0xFFFFFF;
+  return '#${value.toRadixString(16).padLeft(6, '0')}';
 }
 
 double _jsonDouble(Object? value) {

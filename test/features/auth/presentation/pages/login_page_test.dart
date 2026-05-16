@@ -9,7 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('accepts an email in the login identifier field', (tester) async {
+  testWidgets('accepts a username in the login identifier field', (
+    tester,
+  ) async {
     final repository = _FakeAuthRepository();
 
     await tester.pumpWidget(
@@ -28,14 +30,14 @@ void main() {
     await tester.pump();
 
     final fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'maca@example.com');
+    await tester.enterText(fields.at(0), 'maca');
     await tester.enterText(fields.at(1), 'secret1');
     await tester.pump();
 
     await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
     await tester.pump();
 
-    expect(repository.lastUsername, 'maca@example.com');
+    expect(repository.lastUsername, 'maca');
     expect(repository.lastPassword, 'secret1');
   });
 }
