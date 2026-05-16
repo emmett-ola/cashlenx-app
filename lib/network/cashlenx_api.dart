@@ -454,10 +454,20 @@ class CashlenxApi {
     );
   }
 
-  Future<ApiJson> listAllCategories({int? limit, int? offset, String? type}) {
+  Future<ApiJson> listAllCategories({
+    int? limit,
+    int? offset,
+    String? type,
+    String? parentId,
+  }) {
     return _get(
       '/category',
-      queryParameters: {'limit': limit, 'offset': offset, 'type': type},
+      queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        'type': type,
+        'parent_id': parentId,
+      },
     );
   }
 
@@ -469,8 +479,11 @@ class CashlenxApi {
     return _get('/category/${_path(parentId)}/children');
   }
 
-  Future<ApiJson> getCategoryTree({String? type}) {
-    return _get('/category/tree', queryParameters: {'type': type});
+  Future<ApiJson> getCategoryTree({String? type, int? maxDepth}) {
+    return _get(
+      '/category/tree',
+      queryParameters: {'type': type, 'max_depth': maxDepth},
+    );
   }
 
   Future<ApiJson> getCategoryById(String id) {

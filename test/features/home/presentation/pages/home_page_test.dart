@@ -145,6 +145,57 @@ class _FakeCashlenxApi extends CashlenxApi {
     );
   }
 
+  @override
+  Future<ApiJson> listAllCategories({
+    int? limit,
+    int? offset,
+    String? type,
+    String? parentId,
+  }) async {
+    final categories = [
+      {
+        'id': 'food',
+        'name': 'Food & Dining',
+        'type': 'expense',
+        'parent_id': null,
+      },
+      {
+        'id': 'restaurants',
+        'name': 'Restaurants',
+        'type': 'expense',
+        'parent_id': 'food',
+      },
+      {
+        'id': 'groceries',
+        'name': 'Groceries',
+        'type': 'expense',
+        'parent_id': 'food',
+      },
+      {
+        'id': 'transport',
+        'name': 'Transportation',
+        'type': 'expense',
+        'parent_id': null,
+      },
+      {'id': 'salary', 'name': 'Salary', 'type': 'income', 'parent_id': null},
+      {'id': 'bonus', 'name': 'Bonus', 'type': 'income', 'parent_id': null},
+    ];
+
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': categories
+          .where((category) => type == null || category['type'] == type)
+          .where(
+            (category) => parentId == null || category['parent_id'] == parentId,
+          )
+          .toList(),
+      'meta': <String, dynamic>{},
+      'errors': <dynamic>[],
+      'extra': <String, dynamic>{},
+    };
+  }
+
   ApiJson _wrappedSummary({
     required double balance,
     required double totalIncome,

@@ -118,33 +118,42 @@ class _DashboardTab extends ConsumerWidget {
   }
 }
 
-class _CategoryTab extends StatefulWidget {
+class _CategoryTab extends ConsumerStatefulWidget {
   const _CategoryTab({required this.onAction});
 
   final ValueChanged<String> onAction;
 
   @override
-  State<_CategoryTab> createState() => _CategoryTabState();
+  ConsumerState<_CategoryTab> createState() => _CategoryTabState();
 }
 
-class _CategoryTabState extends State<_CategoryTab> {
+class _CategoryTabState extends ConsumerState<_CategoryTab> {
   var _activeType = _CategoryType.expense;
-  final _expandedCategoryIds = <String>{'food', 'home'};
+  final _expandedCategoryIds = <String>{};
   String? _openMenuId;
+  var _isLoading = true;
+  Object? _error;
+  List<_CategoryItem> _categories = const [];
 
-  List<_MockCategory> get _visibleParents => _mockCategories
+  List<_CategoryItem> get _visibleParents => _categories
       .where(
         (category) => category.type == _activeType && category.parentId == null,
       )
       .toList(growable: false);
 
-  List<_MockCategory> _childrenOf(String parentId) {
-    return _mockCategories
+  List<_CategoryItem> _childrenOf(String parentId) {
+    return _categories
         .where(
           (category) =>
               category.type == _activeType && category.parentId == parentId,
         )
         .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
   }
 
   @override
@@ -160,23 +169,63 @@ class _CategoryTabState extends State<_CategoryTab> {
               _activeType = type;
               _openMenuId = null;
             });
+            _loadCategories();
           },
         ),
-        _CategoryListCard(
-          parentCategories: _visibleParents,
-          expandedCategoryIds: _expandedCategoryIds,
-          openMenuId: _openMenuId,
-          childrenOf: _childrenOf,
-          onToggleExpanded: _toggleExpanded,
-          onToggleMenu: _toggleMenu,
-          onAction: _handleCategoryAction,
-        ),
+        if (_isLoading)
+          const _CategoryLoadingCard()
+        else if (_error != null)
+          _CategoryErrorCard(onRetry: _loadCategories)
+        else
+          _CategoryListCard(
+            parentCategories: _visibleParents,
+            expandedCategoryIds: _expandedCategoryIds,
+            openMenuId: _openMenuId,
+            childrenOf: _childrenOf,
+            onToggleExpanded: _toggleExpanded,
+            onToggleMenu: _toggleMenu,
+            onAction: _handleCategoryAction,
+          ),
         _CreateCategoryButton(
           onPressed: () =>
               _showCategoryEditor(mode: _CategoryEditorMode.create),
         ),
       ],
     );
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _openMenuId = null;
+    });
+
+    try {
+      final response = await ref
+          .read(cashlenxApiProvider)
+          .listAllCategories(type: _activeType.apiValue);
+      final categories = _CategoryItem.listFromResponse(response);
+
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _expandedCategoryIds.addAll(
+          categories
+              .where((category) => category.parentId == null)
+              .take(2)
+              .map((category) => category.id),
+        );
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _isLoading = false;
+      });
+      ToastUtils.showServerErrors(context, error);
+    }
   }
 
   void _toggleExpanded(String id) {
@@ -198,7 +247,7 @@ class _CategoryTabState extends State<_CategoryTab> {
 
   void _handleCategoryAction(
     _CategoryRowAction action,
-    _MockCategory category,
+    _CategoryItem category,
   ) {
     setState(() => _openMenuId = null);
 
@@ -214,7 +263,7 @@ class _CategoryTabState extends State<_CategoryTab> {
 
   void _showCategoryEditor({
     required _CategoryEditorMode mode,
-    _MockCategory? category,
+    _CategoryItem? category,
   }) {
     final nameController = TextEditingController(text: category?.name ?? '');
     var selectedIcon = category?.icon ?? '🙂';
@@ -404,11 +453,16 @@ class _CategoryTabState extends State<_CategoryTab> {
                                 onPressed: nameController.text.trim().isEmpty
                                     ? null
                                     : () {
+                                        final request = _CategoryEditorRequest(
+                                          name: nameController.text.trim(),
+                                          type: _activeType,
+                                          parentId: selectedParentId,
+                                        );
                                         Navigator.pop(context);
-                                        widget.onAction(
-                                          mode == _CategoryEditorMode.edit
-                                              ? 'Save category'
-                                              : 'Create category',
+                                        _saveCategory(
+                                          mode: mode,
+                                          category: category,
+                                          request: request,
                                         );
                                       },
                                 style: FilledButton.styleFrom(
@@ -439,7 +493,45 @@ class _CategoryTabState extends State<_CategoryTab> {
     ).whenComplete(nameController.dispose);
   }
 
-  void _showMoveCategorySheet(_MockCategory category) {
+  Future<void> _saveCategory({
+    required _CategoryEditorMode mode,
+    required _CategoryEditorRequest request,
+    _CategoryItem? category,
+  }) async {
+    try {
+      if (mode == _CategoryEditorMode.edit && category != null) {
+        await ref
+            .read(cashlenxApiProvider)
+            .updateCategoryById(
+              category.id,
+              name: request.name,
+              type: request.type.apiValue,
+              parentId: request.parentId,
+              remark: category.remark,
+            );
+        if (mounted) {
+          ToastUtils.showSuccess(context, 'Category updated.');
+        }
+      } else {
+        await ref
+            .read(cashlenxApiProvider)
+            .createCategory(
+              name: request.name,
+              type: request.type.apiValue,
+              parentId: request.parentId,
+            );
+        if (mounted) {
+          ToastUtils.showSuccess(context, 'Category created.');
+        }
+      }
+      await _loadCategories();
+    } catch (error) {
+      if (!mounted) return;
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+
+  void _showMoveCategorySheet(_CategoryItem category) {
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -496,7 +588,7 @@ class _CategoryTabState extends State<_CategoryTab> {
                   selected: category.parentId == null,
                   onTap: () {
                     Navigator.pop(context);
-                    widget.onAction('Move category');
+                    _moveCategory(category, null);
                   },
                 ),
                 ...parents.map(
@@ -511,7 +603,7 @@ class _CategoryTabState extends State<_CategoryTab> {
                       selected: category.parentId == parent.id,
                       onTap: () {
                         Navigator.pop(context);
-                        widget.onAction('Move category');
+                        _moveCategory(category, parent.id);
                       },
                     ),
                   ),
@@ -539,7 +631,28 @@ class _CategoryTabState extends State<_CategoryTab> {
     );
   }
 
-  void _showDeleteCategoryDialog(_MockCategory category) {
+  Future<void> _moveCategory(_CategoryItem category, String? parentId) async {
+    try {
+      await ref
+          .read(cashlenxApiProvider)
+          .updateCategoryById(
+            category.id,
+            name: category.name,
+            type: category.type.apiValue,
+            parentId: parentId,
+            remark: category.remark,
+          );
+      if (mounted) {
+        ToastUtils.showSuccess(context, 'Category moved.');
+      }
+      await _loadCategories();
+    } catch (error) {
+      if (!mounted) return;
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+
+  void _showDeleteCategoryDialog(_CategoryItem category) {
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -566,7 +679,7 @@ class _CategoryTabState extends State<_CategoryTab> {
           content: Text(
             'This will delete "${category.name}"'
             '${childCount > 0 ? ' and all $childCount subcategories' : ''}, '
-            'including ${category.records} transaction records. This action cannot be undone.',
+            'This action cannot be undone.',
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -577,7 +690,7 @@ class _CategoryTabState extends State<_CategoryTab> {
             FilledButton(
               onPressed: () {
                 Navigator.pop(context);
-                widget.onAction('Delete category');
+                _deleteCategory(category);
               },
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
@@ -588,6 +701,19 @@ class _CategoryTabState extends State<_CategoryTab> {
         );
       },
     );
+  }
+
+  Future<void> _deleteCategory(_CategoryItem category) async {
+    try {
+      await ref.read(cashlenxApiProvider).deleteCategoryById(category.id);
+      if (mounted) {
+        ToastUtils.showSuccess(context, 'Category deleted.');
+      }
+      await _loadCategories();
+    } catch (error) {
+      if (!mounted) return;
+      ToastUtils.showServerErrors(context, error);
+    }
   }
 }
 
@@ -680,13 +806,13 @@ class _CategoryListCard extends StatelessWidget {
     required this.onAction,
   });
 
-  final List<_MockCategory> parentCategories;
+  final List<_CategoryItem> parentCategories;
   final Set<String> expandedCategoryIds;
   final String? openMenuId;
-  final List<_MockCategory> Function(String parentId) childrenOf;
+  final List<_CategoryItem> Function(String parentId) childrenOf;
   final ValueChanged<String> onToggleExpanded;
   final ValueChanged<String> onToggleMenu;
-  final void Function(_CategoryRowAction action, _MockCategory category)
+  final void Function(_CategoryRowAction action, _CategoryItem category)
   onAction;
 
   @override
@@ -752,6 +878,39 @@ class _CategoryListCard extends StatelessWidget {
   }
 }
 
+class _CategoryLoadingCard extends StatelessWidget {
+  const _CategoryLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _Card(
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(28),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryErrorCard extends StatelessWidget {
+  const _CategoryErrorCard({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _EmptyStateCard(
+      icon: Icons.error_outline,
+      title: 'Categories failed to load',
+      message: 'The category request did not complete.',
+      actionLabel: 'Retry',
+      onAction: onRetry,
+    );
+  }
+}
+
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
     required this.category,
@@ -764,14 +923,14 @@ class _CategoryRow extends StatelessWidget {
     required this.onAction,
   });
 
-  final _MockCategory category;
+  final _CategoryItem category;
   final int childrenCount;
   final bool isExpanded;
   final bool isChild;
   final bool isMenuOpen;
   final ValueChanged<String> onToggleExpanded;
   final ValueChanged<String> onToggleMenu;
-  final void Function(_CategoryRowAction action, _MockCategory category)
+  final void Function(_CategoryRowAction action, _CategoryItem category)
   onAction;
 
   @override
@@ -2627,36 +2786,80 @@ enum _HomeTab {
 }
 
 enum _CategoryType {
-  expense('Expense'),
-  income('Income');
+  expense('Expense', 'expense'),
+  income('Income', 'income');
 
-  const _CategoryType(this.label);
+  const _CategoryType(this.label, this.apiValue);
 
   final String label;
+  final String apiValue;
+
+  static _CategoryType fromApi(Object? value) {
+    return switch (value?.toString()) {
+      'income' => _CategoryType.income,
+      _ => _CategoryType.expense,
+    };
+  }
 }
 
 enum _CategoryRowAction { edit, move, delete }
 
 enum _CategoryEditorMode { create, edit }
 
-class _MockCategory {
-  const _MockCategory({
+class _CategoryEditorRequest {
+  const _CategoryEditorRequest({
+    required this.name,
+    required this.type,
+    this.parentId,
+  });
+
+  final String name;
+  final _CategoryType type;
+  final String? parentId;
+}
+
+class _CategoryItem {
+  const _CategoryItem({
     required this.id,
     required this.name,
     required this.type,
-    required this.icon,
-    required this.color,
-    required this.records,
     this.parentId,
+    this.remark,
   });
 
   final String id;
   final String name;
   final _CategoryType type;
-  final String icon;
-  final Color color;
-  final int records;
   final String? parentId;
+  final String? remark;
+
+  String get icon => _categoryIconFor(name);
+
+  Color get color => _categoryColorFor(name);
+
+  factory _CategoryItem.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] ?? json['_id'] ?? json['category_id'];
+    final parentId = json['parent_id'] ?? json['parentId'];
+    final name = json['name'] ?? json['category_name'] ?? 'Category';
+
+    return _CategoryItem(
+      id: id?.toString() ?? name.toString(),
+      name: name.toString(),
+      type: _CategoryType.fromApi(json['type']),
+      parentId: _nullableString(parentId),
+      remark: _nullableString(json['remark']),
+    );
+  }
+
+  static List<_CategoryItem> listFromResponse(ApiJson response) {
+    final data = _unwrapData(response);
+    final rawList = _asList(data);
+
+    return rawList
+        .whereType<Map>()
+        .map((item) => _CategoryItem.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
 }
 
 class _DashboardApi {
@@ -3142,97 +3345,53 @@ const _categoryIconChoices = [
   '📚',
 ];
 
-const _mockCategories = [
-  _MockCategory(
-    id: 'food',
-    name: 'Food & Dining',
-    type: _CategoryType.expense,
-    icon: '🍔',
-    color: Color(0xFFFF8A65),
-    records: 42,
-  ),
-  _MockCategory(
-    id: 'restaurants',
-    name: 'Restaurants',
-    type: _CategoryType.expense,
-    icon: '🍽️',
-    color: Color(0xFFFF8A65),
-    records: 18,
-    parentId: 'food',
-  ),
-  _MockCategory(
-    id: 'groceries',
-    name: 'Groceries',
-    type: _CategoryType.expense,
-    icon: '🛒',
-    color: Color(0xFFFFB74D),
-    records: 24,
-    parentId: 'food',
-  ),
-  _MockCategory(
-    id: 'transport',
-    name: 'Transportation',
-    type: _CategoryType.expense,
-    icon: '🚗',
-    color: AppTheme.primaryColor,
-    records: 19,
-  ),
-  _MockCategory(
-    id: 'home',
-    name: 'Home',
-    type: _CategoryType.expense,
-    icon: '🏠',
-    color: Color(0xFF9575CD),
-    records: 16,
-  ),
-  _MockCategory(
-    id: 'utilities',
-    name: 'Utilities',
-    type: _CategoryType.expense,
-    icon: '⚡',
-    color: Color(0xFF9575CD),
-    records: 7,
-    parentId: 'home',
-  ),
-  _MockCategory(
-    id: 'entertainment',
-    name: 'Entertainment',
-    type: _CategoryType.expense,
-    icon: '🎬',
-    color: Color(0xFF4A6363),
-    records: 11,
-  ),
-  _MockCategory(
-    id: 'salary',
-    name: 'Salary',
-    type: _CategoryType.income,
-    icon: '💼',
-    color: Color(0xFF10B981),
-    records: 12,
-  ),
-  _MockCategory(
-    id: 'bonus',
-    name: 'Bonus',
-    type: _CategoryType.income,
-    icon: '🎁',
-    color: Color(0xFF3B82F6),
-    records: 3,
-  ),
-  _MockCategory(
-    id: 'freelance',
-    name: 'Freelance',
-    type: _CategoryType.income,
-    icon: '💻',
-    color: AppTheme.secondaryColor,
-    records: 8,
-  ),
-];
-
 const _fieldLabelStyle = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.w600,
   color: _AppShellColors.text,
 );
+
+Object? _unwrapData(ApiJson response) {
+  if (response.containsKey('data')) return response['data'];
+  return response;
+}
+
+List<Object?> _asList(Object? data) {
+  if (data is List) return data.cast<Object?>();
+  if (data is Map) {
+    for (final key in ['items', 'categories', 'list', 'records', 'data']) {
+      final value = data[key];
+      if (value is List) return value.cast<Object?>();
+    }
+  }
+  return const [];
+}
+
+String? _nullableString(Object? value) {
+  final text = value?.toString();
+  if (text == null || text.isEmpty || text == 'null') return null;
+  return text;
+}
+
+String _categoryIconFor(String name) {
+  final lower = name.toLowerCase();
+  if (lower.contains('food') || lower.contains('dining')) return '🍔';
+  if (lower.contains('restaurant')) return '🍽️';
+  if (lower.contains('grocery') || lower.contains('shopping')) return '🛒';
+  if (lower.contains('transport') || lower.contains('car')) return '🚗';
+  if (lower.contains('home') || lower.contains('rent')) return '🏠';
+  if (lower.contains('utility') || lower.contains('electric')) return '⚡';
+  if (lower.contains('movie') || lower.contains('entertain')) return '🎬';
+  if (lower.contains('salary') || lower.contains('work')) return '💼';
+  if (lower.contains('bonus') || lower.contains('gift')) return '🎁';
+  if (lower.contains('freelance')) return '💻';
+  return '🙂';
+}
+
+Color _categoryColorFor(String name) {
+  final hash = name.runes.fold<int>(0, (value, rune) => value + rune);
+  return _categoryColorChoices[hash % _categoryColorChoices.length];
+}
 
 String _greeting() {
   final hour = DateTime.now().hour;
