@@ -2838,16 +2838,17 @@ class _CategoryItem {
   Color get color => _categoryColorFor(name);
 
   factory _CategoryItem.fromJson(Map<String, dynamic> json) {
-    final id = json['id'] ?? json['_id'] ?? json['category_id'];
-    final parentId = json['parent_id'] ?? json['parentId'];
-    final name = json['name'] ?? json['category_name'] ?? 'Category';
+    final id = json['id'] ?? json['Id'] ?? json['_id'] ?? json['category_id'];
+    final parentId = json['parent_id'] ?? json['parentId'] ?? json['ParentId'];
+    final name =
+        json['name'] ?? json['Name'] ?? json['category_name'] ?? 'Category';
 
     return _CategoryItem(
       id: id?.toString() ?? name.toString(),
       name: name.toString(),
-      type: _CategoryType.fromApi(json['type']),
+      type: _CategoryType.fromApi(json['type'] ?? json['Type']),
       parentId: _nullableString(parentId),
-      remark: _nullableString(json['remark']),
+      remark: _nullableString(json['remark'] ?? json['Remark']),
     );
   }
 
@@ -3359,17 +3360,27 @@ Object? _unwrapData(ApiJson response) {
 List<Object?> _asList(Object? data) {
   if (data is List) return data.cast<Object?>();
   if (data is Map) {
-    for (final key in ['items', 'categories', 'list', 'records', 'data']) {
+    for (final key in ['data', 'items', 'categories', 'list', 'records']) {
       final value = data[key];
       if (value is List) return value.cast<Object?>();
+      if (value is Map) {
+        final nestedList = _asList(value);
+        if (nestedList.isNotEmpty) return nestedList;
+      }
     }
   }
   return const [];
 }
 
 String? _nullableString(Object? value) {
-  final text = value?.toString();
-  if (text == null || text.isEmpty || text == 'null') return null;
+  final rawValue = value is Map ? (value[r'$oid'] ?? value['oid']) : value;
+  final text = rawValue?.toString().trim();
+  if (text == null ||
+      text.isEmpty ||
+      text == 'null' ||
+      text == '000000000000000000000000') {
+    return null;
+  }
   return text;
 }
 

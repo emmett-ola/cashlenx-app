@@ -154,42 +154,60 @@ class _FakeCashlenxApi extends CashlenxApi {
   }) async {
     final categories = [
       {
-        'id': 'food',
+        'Id': '507f1f77bcf86cd799439011',
         'name': 'Food & Dining',
         'type': 'expense',
-        'parent_id': null,
+        'parent_id': '000000000000000000000000',
       },
       {
-        'id': 'restaurants',
+        'Id': '507f1f77bcf86cd799439012',
         'name': 'Restaurants',
         'type': 'expense',
-        'parent_id': 'food',
+        'parent_id': '507f1f77bcf86cd799439011',
       },
       {
-        'id': 'groceries',
+        'Id': '507f1f77bcf86cd799439013',
         'name': 'Groceries',
         'type': 'expense',
-        'parent_id': 'food',
+        'parent_id': '507f1f77bcf86cd799439011',
       },
       {
-        'id': 'transport',
+        'Id': '507f1f77bcf86cd799439014',
         'name': 'Transportation',
         'type': 'expense',
-        'parent_id': null,
+        'parent_id': '000000000000000000000000',
       },
-      {'id': 'salary', 'name': 'Salary', 'type': 'income', 'parent_id': null},
-      {'id': 'bonus', 'name': 'Bonus', 'type': 'income', 'parent_id': null},
+      {
+        'Id': '507f1f77bcf86cd799439015',
+        'name': 'Salary',
+        'type': 'income',
+        'parent_id': '000000000000000000000000',
+      },
+      {
+        'Id': '507f1f77bcf86cd799439016',
+        'name': 'Bonus',
+        'type': 'income',
+        'parent_id': '000000000000000000000000',
+      },
     ];
+    final filteredCategories = categories
+        .where((category) => type == null || category['type'] == type)
+        .where(
+          (category) => parentId == null || category['parent_id'] == parentId,
+        )
+        .toList();
 
     return {
       'code': 'OK',
       'message': '',
-      'data': categories
-          .where((category) => type == null || category['type'] == type)
-          .where(
-            (category) => parentId == null || category['parent_id'] == parentId,
-          )
-          .toList(),
+      'data': {
+        'data': filteredCategories,
+        'meta': {
+          'total_count': filteredCategories.length,
+          'limit': limit ?? 50,
+          'offset': offset ?? 0,
+        },
+      },
       'meta': <String, dynamic>{},
       'errors': <dynamic>[],
       'extra': <String, dynamic>{},
