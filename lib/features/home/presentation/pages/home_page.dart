@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
-import '../../../../shared/widgets/custom_input.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -264,9 +264,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
     _CategoryItem? category,
   }) {
     final nameController = TextEditingController(text: category?.name ?? '');
-    var selectedIcon = category?.icon ?? '🙂';
+    var selectedIcon = category?.icon ?? _defaultCategoryEmoji;
     var selectedColor = category?.color ?? AppTheme.primaryColor;
     var selectedParentId = category?.parentId;
+    var showEmojiPicker = false;
 
     showModalBottomSheet<void>(
       context: context,
@@ -285,13 +286,13 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                 ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: Row(
                         children: [
                           Expanded(
@@ -302,9 +303,22 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               style: _sectionTitle(context),
                             ),
                           ),
-                          IconButton.filledTonal(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close),
+                          Material(
+                            color: const Color(0xFFF3F4F6),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => Navigator.pop(context),
+                              child: const SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: Icon(
+                                  Icons.close,
+                                  color: _AppShellColors.mutedText,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -312,7 +326,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                     const Divider(height: 1),
                     Flexible(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -342,46 +356,79 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            CustomInput(
-                              label: 'Name',
+                            const Text('Name', style: _fieldLabelStyle),
+                            const SizedBox(height: 8),
+                            TextField(
                               controller: nameController,
-                              placeholder: 'Enter category name',
+                              maxLength: 64,
                               onChanged: (_) => setSheetState(() {}),
+                              decoration: InputDecoration(
+                                hintText: 'Enter category name',
+                                hintStyle: const TextStyle(
+                                  color: _AppShellColors.navMuted,
+                                  fontSize: 14,
+                                ),
+                                counterStyle: const TextStyle(
+                                  color: _AppShellColors.navMuted,
+                                  fontSize: 12,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFD1D5DB),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFD1D5DB),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: AppTheme.primaryColor,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 18),
+                            const SizedBox(height: 6),
                             const Text('Icon', style: _fieldLabelStyle),
                             const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: _categoryIconChoices.map((icon) {
-                                final isSelected = selectedIcon == icon;
-                                return _CircleChoice(
-                                  label: icon,
-                                  isSelected: isSelected,
-                                  onTap: () {
-                                    setSheetState(() => selectedIcon = icon);
-                                  },
+                            _EmojiPickerButton(
+                              emoji: selectedIcon,
+                              onTap: () {
+                                setSheetState(
+                                  () => showEmojiPicker = !showEmojiPicker,
                                 );
-                              }).toList(),
+                              },
                             ),
-                            const SizedBox(height: 18),
+                            if (showEmojiPicker) ...[
+                              const SizedBox(height: 8),
+                              _CategoryEmojiPicker(
+                                onEmojiSelected: (emoji) {
+                                  setSheetState(() {
+                                    selectedIcon = emoji;
+                                    showEmojiPicker = false;
+                                  });
+                                },
+                              ),
+                            ],
+                            const SizedBox(height: 24),
                             const Text('Color', style: _fieldLabelStyle),
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: _categoryColorChoices.map((color) {
-                                return _ColorChoice(
-                                  color: color,
-                                  isSelected: selectedColor == color,
-                                  onTap: () {
-                                    setSheetState(() => selectedColor = color);
-                                  },
-                                );
-                              }).toList(),
+                            const SizedBox(height: 12),
+                            _CategoryColorPicker(
+                              selectedColor: selectedColor,
+                              onColorSelected: (color) {
+                                setSheetState(() => selectedColor = color);
+                              },
                             ),
-                            const SizedBox(height: 18),
+                            const SizedBox(height: 24),
                             const Text(
                               'Parent Category (Optional)',
                               style: _fieldLabelStyle,
@@ -419,14 +466,28 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                                 setSheetState(() => selectedParentId = value);
                               },
                             ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Select a parent to create a subcategory',
+                              style: TextStyle(
+                                color: _AppShellColors.navMuted,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                     SafeArea(
                       top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(
+                            top: BorderSide(color: _AppShellColors.border),
+                          ),
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -455,6 +516,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                                           name: nameController.text.trim(),
                                           type: _activeType,
                                           parentId: selectedParentId,
+                                          emoji: selectedIcon,
+                                          bgColor: selectedColor,
                                         );
                                         Navigator.pop(context);
                                         _saveCategory(
@@ -505,6 +568,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
               name: request.name,
               type: request.type.apiValue,
               parentId: request.parentId,
+              emoji: request.resolvedEmoji,
+              bgColor: request.resolvedBgColorHex,
               remark: category.remark,
             );
         if (mounted) {
@@ -517,6 +582,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
               name: request.name,
               type: request.type.apiValue,
               parentId: request.parentId,
+              emoji: request.resolvedEmoji,
+              bgColor: request.resolvedBgColorHex,
             );
         if (mounted) {
           ToastUtils.showSuccess(context, 'Category created.');
@@ -638,6 +705,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
             name: category.name,
             type: category.type.apiValue,
             parentId: parentId,
+            emoji: category.icon,
+            bgColor: _hexColor(category.color),
             remark: category.remark,
           );
       if (mounted) {
@@ -1075,39 +1144,6 @@ class _CreateCategoryButton extends StatelessWidget {
   }
 }
 
-class _CircleChoice extends StatelessWidget {
-  const _CircleChoice({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-            width: 3,
-          ),
-        ),
-        child: Center(child: Text(label, style: const TextStyle(fontSize: 22))),
-      ),
-    );
-  }
-}
-
 class _ColorChoice extends StatelessWidget {
   const _ColorChoice({
     required this.color,
@@ -1143,6 +1179,157 @@ class _ColorChoice extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EmojiPickerButton extends StatelessWidget {
+  const _EmojiPickerButton({required this.emoji, required this.onTap});
+
+  final String emoji;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD1D5DB)),
+          ),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Tap to change emoji',
+                  style: TextStyle(color: _AppShellColors.mutedText),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryEmojiPicker extends StatelessWidget {
+  const _CategoryEmojiPicker({required this.onEmojiSelected});
+
+  final ValueChanged<String> onEmojiSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: _AppShellColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: EmojiPicker(
+          onEmojiSelected: (_, emoji) => onEmojiSelected(emoji.emoji),
+          config: const Config(
+            height: 400,
+            emojiViewConfig: EmojiViewConfig(
+              columns: 8,
+              emojiSizeMax: 28,
+              backgroundColor: Colors.white,
+              gridPadding: EdgeInsets.all(8),
+            ),
+            searchViewConfig: SearchViewConfig(
+              hintText: 'Search emoji...',
+              backgroundColor: Color(0xFFF3F4F6),
+            ),
+            categoryViewConfig: CategoryViewConfig(
+              backgroundColor: Colors.white,
+              indicatorColor: AppTheme.primaryColor,
+              iconColorSelected: AppTheme.primaryColor,
+            ),
+            bottomActionBarConfig: BottomActionBarConfig(
+              backgroundColor: Colors.white,
+              buttonColor: AppTheme.primaryColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryColorPicker extends StatelessWidget {
+  const _CategoryColorPicker({
+    required this.selectedColor,
+    required this.onColorSelected,
+  });
+
+  final Color selectedColor;
+  final ValueChanged<Color> onColorSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      clipBehavior: Clip.none,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisExtent: 60,
+        mainAxisSpacing: 0,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: _categoryColorChoices.length,
+      itemBuilder: (context, index) {
+        final color = _categoryColorChoices[index];
+        final isSelected = selectedColor == color;
+
+        return Center(
+          child: Semantics(
+            button: true,
+            selected: isSelected,
+            label: 'Select color ${_hexColor(color)}',
+            child: GestureDetector(
+              onTap: () => onColorSelected(color),
+              child: AnimatedScale(
+                scale: isSelected ? 1.1 : 1,
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeOut,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: isSelected
+                        ? const [
+                            BoxShadow(
+                              color: Colors.white,
+                              spreadRadius: 2,
+                              blurRadius: 0,
+                            ),
+                            BoxShadow(
+                              color: AppTheme.primaryColor,
+                              spreadRadius: 6,
+                              blurRadius: 0,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1577,7 +1764,7 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: _AppShellColors.border)),
@@ -1588,27 +1775,27 @@ class _DashboardHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                GestureDetector(
+                  onTap: onProfileTap,
+                  child: Text(
+                    username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _AppShellColors.text,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  '${_greeting()},',
+                  _greeting(),
                   style: const TextStyle(
                     color: _AppShellColors.mutedText,
                     fontSize: 14,
                   ),
-                ),
-                const SizedBox(height: 2),
-                TextButton(
-                  onPressed: onProfileTap,
-                  style: TextButton.styleFrom(
-                    foregroundColor: _AppShellColors.text,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  child: Text(username, overflow: TextOverflow.ellipsis),
                 ),
               ],
             ),
@@ -1950,7 +2137,7 @@ class _TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = transaction.amount >= 0;
+    final isIncome = transaction.flowType == _CashFlowType.income;
 
     return Material(
       color: Colors.white,
@@ -1966,7 +2153,12 @@ class _TransactionTile extends StatelessWidget {
                 color: transaction.color,
                 shape: BoxShape.circle,
               ),
-              child: Icon(transaction.icon, color: Colors.white, size: 22),
+              child: Center(
+                child: Text(
+                  transaction.icon,
+                  style: const TextStyle(fontSize: 22),
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1995,9 +2187,9 @@ class _TransactionTile extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              '${isPositive ? '+' : '-'}${_money(transaction.amount.abs())}',
+              '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
               style: TextStyle(
-                color: isPositive ? AppTheme.successColor : AppTheme.errorColor,
+                color: isIncome ? AppTheme.errorColor : AppTheme.successColor,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -2616,8 +2808,8 @@ class _AvatarBadge extends StatelessWidget {
     final initial = username.trim().isEmpty ? 'U' : username.trim()[0];
 
     return Container(
-      width: 48,
-      height: 48,
+      width: 56,
+      height: 56,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -2632,7 +2824,7 @@ class _AvatarBadge extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -2809,11 +3001,19 @@ class _CategoryEditorRequest {
     required this.name,
     required this.type,
     this.parentId,
+    this.emoji,
+    this.bgColor,
   });
 
   final String name;
   final _CategoryType type;
   final String? parentId;
+  final String? emoji;
+  final Color? bgColor;
+
+  String get resolvedEmoji => _categoryEmojiOrDefault(emoji);
+
+  String get resolvedBgColorHex => _hexColor(bgColor ?? _defaultCategoryColor);
 }
 
 class _CategoryItem {
@@ -2821,6 +3021,8 @@ class _CategoryItem {
     required this.id,
     required this.name,
     required this.type,
+    required this.emoji,
+    required this.bgColor,
     this.parentId,
     this.remark,
   });
@@ -2828,12 +3030,14 @@ class _CategoryItem {
   final String id;
   final String name;
   final _CategoryType type;
+  final String emoji;
+  final Color bgColor;
   final String? parentId;
   final String? remark;
 
-  String get icon => _categoryIconFor(name);
+  String get icon => emoji;
 
-  Color get color => _categoryColorFor(name);
+  Color get color => bgColor;
 
   factory _CategoryItem.fromJson(Map<String, dynamic> json) {
     final id = json['id'] ?? json['Id'] ?? json['_id'] ?? json['category_id'];
@@ -2845,6 +3049,8 @@ class _CategoryItem {
       id: id?.toString() ?? name.toString(),
       name: name.toString(),
       type: _CategoryType.fromApi(json['type'] ?? json['Type']),
+      emoji: _categoryEmojiOrDefault(json['emoji'] ?? json['Emoji']),
+      bgColor: _categoryColorOrDefault(json['bg_color'] ?? json['bgColor']),
       parentId: _nullableString(parentId),
       remark: _nullableString(json['remark'] ?? json['Remark']),
     );
@@ -2877,12 +3083,14 @@ class _DashboardApi {
       _api.getMonthlySummary(month),
       _api.getYearlySummary(year),
       _api.getTotalSummary(),
+      _api.listAllTransactions(limit: 5),
     ]);
 
     final daySummary = _CashSummary.fromResponse(responses[0]);
     final monthSummary = _CashSummary.fromResponse(responses[1]);
     final yearSummary = _CashSummary.fromResponse(responses[2]);
     final totalSummary = _CashSummary.fromResponse(responses[3]);
+    final recentTransactions = _Transaction.listFromResponse(responses[4]);
 
     return _DashboardResponse.mock(
       summary: _Summary.fromApi(
@@ -2891,6 +3099,7 @@ class _DashboardApi {
         year: yearSummary,
         total: totalSummary,
       ),
+      recentTransactions: recentTransactions,
       categoryBreakdown: _categoryBreakdownFromSummary(monthSummary),
     );
   }
@@ -2953,6 +3162,7 @@ class _DashboardResponse {
 
   factory _DashboardResponse.mock({
     _Summary? summary,
+    List<_Transaction>? recentTransactions,
     List<_CategoryBreakdownItem>? categoryBreakdown,
   }) {
     summary ??= const _Summary(
@@ -3008,48 +3218,7 @@ class _DashboardResponse {
     return _DashboardResponse(
       summary: summary,
       budget: budget,
-      recentTransactions: const [
-        _Transaction(
-          title: 'Grocery Shopping',
-          dateLabel: 'Today, 2:30 PM',
-          amount: -85.50,
-          category: 'Shopping',
-          icon: Icons.shopping_cart_outlined,
-          color: Color(0xFFFF8A65),
-        ),
-        _Transaction(
-          title: 'Coffee Shop',
-          dateLabel: 'Today, 9:15 AM',
-          amount: -12.50,
-          category: 'Food',
-          icon: Icons.local_cafe_outlined,
-          color: Color(0xFFF59E0B),
-        ),
-        _Transaction(
-          title: 'Uber Ride',
-          dateLabel: 'Yesterday, 6:45 PM',
-          amount: -18.00,
-          category: 'Transport',
-          icon: Icons.directions_car_outlined,
-          color: AppTheme.primaryColor,
-        ),
-        _Transaction(
-          title: 'Movie Tickets',
-          dateLabel: 'Yesterday, 7:00 PM',
-          amount: -35.00,
-          category: 'Entertainment',
-          icon: Icons.movie_outlined,
-          color: Color(0xFF4A6363),
-        ),
-        _Transaction(
-          title: 'Salary Deposit',
-          dateLabel: 'Feb 1, 9:00 AM',
-          amount: 3500.00,
-          category: 'Income',
-          icon: Icons.bolt_outlined,
-          color: AppTheme.successColor,
-        ),
-      ],
+      recentTransactions: recentTransactions ?? const [],
       categoryBreakdown: resolvedCategoryBreakdown,
       categoryBudgets: const [
         _CategoryBudget(
@@ -3195,6 +3364,18 @@ enum _SummaryRange {
   final String label;
 }
 
+enum _CashFlowType {
+  expense,
+  income;
+
+  static _CashFlowType fromApi(Object? value) {
+    return switch (value?.toString()) {
+      'income' => _CashFlowType.income,
+      _ => _CashFlowType.expense,
+    };
+  }
+}
+
 class _CashSummary {
   const _CashSummary({
     required this.totalIncome,
@@ -3248,6 +3429,7 @@ class _Transaction {
     required this.dateLabel,
     required this.amount,
     required this.category,
+    required this.flowType,
     required this.icon,
     required this.color,
   });
@@ -3256,8 +3438,62 @@ class _Transaction {
   final String dateLabel;
   final double amount;
   final String category;
-  final IconData icon;
+  final _CashFlowType flowType;
+  final String icon;
   final Color color;
+
+  factory _Transaction.fromJson(Map<String, dynamic> json) {
+    final flowType = _CashFlowType.fromApi(
+      json['flow_type'] ?? json['flowType'] ?? json['type'] ?? json['Type'],
+    );
+    final category = _jsonMap(json['category'] ?? json['Category']);
+    final categoryName =
+        _nullableString(
+          json['category_name'] ??
+              json['categoryName'] ??
+              category?['name'] ??
+              category?['category_name'] ??
+              json['Category'],
+        ) ??
+        'Uncategorized';
+    final description = _nullableString(
+      json['description'] ?? json['Description'],
+    );
+    final rawAmount = _jsonDouble(json['amount'] ?? json['Amount']);
+    final amount = flowType == _CashFlowType.expense
+        ? -rawAmount.abs()
+        : rawAmount.abs();
+
+    return _Transaction(
+      title: description ?? categoryName,
+      dateLabel: _transactionDateLabel(json['belongs_date'] ?? json['date']),
+      amount: amount,
+      category: categoryName,
+      flowType: flowType,
+      icon: _categoryEmojiOrDefault(
+        json['category_emoji'] ??
+            json['categoryEmoji'] ??
+            json['emoji'] ??
+            category?['emoji'],
+      ),
+      color: _categoryColorOrDefault(
+        json['category_bg_color'] ??
+            json['categoryBgColor'] ??
+            json['bg_color'] ??
+            category?['bg_color'],
+      ),
+    );
+  }
+
+  static List<_Transaction> listFromResponse(ApiJson response) {
+    final data = _unwrapData(response);
+    final rawList = _asList(data);
+
+    return rawList
+        .whereType<Map>()
+        .map((item) => _Transaction.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
 }
 
 class _CategoryBreakdownItem {
@@ -3314,34 +3550,22 @@ const _categoryColors = [
   Color(0xFF2563EB),
 ];
 
-const _categoryColorChoices = [
-  AppTheme.primaryColor,
-  AppTheme.secondaryColor,
-  Color(0xFFFF8A65),
-  Color(0xFFFFB74D),
-  Color(0xFF9575CD),
-  Color(0xFF90A4AE),
-  Color(0xFF10B981),
-  Color(0xFFEF4444),
-  Color(0xFF3B82F6),
-  Color(0xFFF59E0B),
-  Color(0xFFEC4899),
-  Color(0xFF4A6363),
-];
+const _defaultCategoryEmoji = '🙂';
+const _defaultCategoryColor = Color(0xFFE5E7EB);
 
-const _categoryIconChoices = [
-  '🙂',
-  '🍔',
-  '🛒',
-  '🚗',
-  '🏠',
-  '🎬',
-  '⚡',
-  '💼',
-  '🎁',
-  '💊',
-  '✈️',
-  '📚',
+const _categoryColorChoices = [
+  Color(0xFFF48FB1),
+  Color(0xFFEC407A),
+  Color(0xFFBA68C8),
+  Color(0xFF9575CD),
+  Color(0xFFFFCC80),
+  Color(0xFFFFB74D),
+  Color(0xFF81C784),
+  Color(0xFF66BB6A),
+  Color(0xFF80CBC4),
+  Color(0xFF4DB6AC),
+  Color(0xFF64B5F6),
+  Color(0xFF42A5F5),
 ];
 
 const _fieldLabelStyle = TextStyle(
@@ -3370,6 +3594,11 @@ List<Object?> _asList(Object? data) {
   return const [];
 }
 
+Map<String, dynamic>? _jsonMap(Object? value) {
+  if (value is! Map) return null;
+  return Map<String, dynamic>.from(value);
+}
+
 String? _nullableString(Object? value) {
   final rawValue = value is Map ? (value[r'$oid'] ?? value['oid']) : value;
   final text = rawValue?.toString().trim();
@@ -3382,24 +3611,43 @@ String? _nullableString(Object? value) {
   return text;
 }
 
-String _categoryIconFor(String name) {
-  final lower = name.toLowerCase();
-  if (lower.contains('food') || lower.contains('dining')) return '🍔';
-  if (lower.contains('restaurant')) return '🍽️';
-  if (lower.contains('grocery') || lower.contains('shopping')) return '🛒';
-  if (lower.contains('transport') || lower.contains('car')) return '🚗';
-  if (lower.contains('home') || lower.contains('rent')) return '🏠';
-  if (lower.contains('utility') || lower.contains('electric')) return '⚡';
-  if (lower.contains('movie') || lower.contains('entertain')) return '🎬';
-  if (lower.contains('salary') || lower.contains('work')) return '💼';
-  if (lower.contains('bonus') || lower.contains('gift')) return '🎁';
-  if (lower.contains('freelance')) return '💻';
-  return '🙂';
+String _categoryEmojiOrDefault(Object? value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty) return _defaultCategoryEmoji;
+  return text;
 }
 
-Color _categoryColorFor(String name) {
-  final hash = name.runes.fold<int>(0, (value, rune) => value + rune);
-  return _categoryColorChoices[hash % _categoryColorChoices.length];
+Color _categoryColorOrDefault(Object? value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty) return _defaultCategoryColor;
+
+  final match = RegExp(r'^#?([0-9a-fA-F]{6})$').firstMatch(text);
+  if (match == null) return _defaultCategoryColor;
+
+  final rgb = int.parse(match.group(1)!, radix: 16);
+  return Color(0xFF000000 | rgb);
+}
+
+String _transactionDateLabel(Object? value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty) return 'Recent';
+
+  final compact = RegExp(r'^(\d{4})(\d{2})(\d{2})$').firstMatch(text);
+  final dateText = compact == null
+      ? text.replaceAll('/', '-')
+      : '${compact.group(1)}-${compact.group(2)}-${compact.group(3)}';
+  final date = DateTime.tryParse(dateText);
+  if (date == null) return text;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final transactionDay = DateTime(date.year, date.month, date.day);
+  final dayDelta = today.difference(transactionDay).inDays;
+  if (dayDelta == 0) return 'Today';
+  if (dayDelta == 1) return 'Yesterday';
+
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }
 
 String _greeting() {
@@ -3429,7 +3677,7 @@ String _money(double value, {int decimals = 2}) {
 
 String _hexColor(Color color) {
   final value = color.toARGB32() & 0xFFFFFF;
-  return '#${value.toRadixString(16).padLeft(6, '0')}';
+  return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
 }
 
 double _jsonDouble(Object? value) {

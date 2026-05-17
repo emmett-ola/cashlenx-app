@@ -441,6 +441,8 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _post(
@@ -449,6 +451,8 @@ class CashlenxApi {
         name: name,
         type: type,
         parentId: parentId,
+        emoji: emoji,
+        bgColor: bgColor,
         remark: remark,
       ),
     );
@@ -495,6 +499,8 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _put(
@@ -503,6 +509,8 @@ class CashlenxApi {
         name: name,
         type: type,
         parentId: parentId,
+        emoji: emoji,
+        bgColor: bgColor,
         remark: remark,
       ),
     );
@@ -516,12 +524,16 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _withoutNulls({
       'name': name,
       'type': type,
       'parent_id': parentId,
+      'emoji': emoji,
+      'bg_color': bgColor,
       'remark': remark,
     })!;
   }

@@ -3,6 +3,7 @@ import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart
 import 'package:cashlenx/features/home/presentation/pages/home_page.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
+import 'package:cashlenx/theme/app_theme.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,16 @@ void main() {
     expect(find.text('Year'), findsOneWidget);
     expect(find.text('Total'), findsOneWidget);
     expect(find.text(r'$88,000.00'), findsOneWidget);
-    expect(find.text('Grocery Shopping'), findsOneWidget);
+    expect(find.text('Coffee beans'), findsOneWidget);
+    expect(find.text('-\$12.50'), findsOneWidget);
+    expect(find.text('+\$3,500.00'), findsOneWidget);
+    expect(find.text('\u{1F35C}'), findsOneWidget);
+    expect(find.text('\u{1F4BC}'), findsOneWidget);
+
+    final expenseAmount = tester.widget<Text>(find.text('-\$12.50'));
+    final incomeAmount = tester.widget<Text>(find.text('+\$3,500.00'));
+    expect(expenseAmount.style?.color, AppTheme.successColor);
+    expect(incomeAmount.style?.color, AppTheme.errorColor);
 
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
@@ -61,7 +71,9 @@ void main() {
     expect(find.text('Expense'), findsOneWidget);
     expect(find.text('Income'), findsOneWidget);
     expect(find.text('Food & Dining'), findsOneWidget);
+    expect(find.text('\u{1F35C}'), findsOneWidget);
     expect(find.text('Restaurants'), findsOneWidget);
+    expect(find.text('\u{1F642}'), findsAtLeastNWidgets(1));
     expect(find.text('Create New Category'), findsOneWidget);
 
     await tester.tap(find.text('Income'));
@@ -146,6 +158,50 @@ class _FakeCashlenxApi extends CashlenxApi {
   }
 
   @override
+  Future<ApiJson> listAllTransactions({
+    int? limit,
+    int? offset,
+    String? type,
+    String? categoryId,
+    String? description,
+  }) async {
+    expect(limit, 5);
+    expect(offset, isNull);
+    expect(type, isNull);
+    expect(categoryId, isNull);
+    expect(description, isNull);
+
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': [
+        {
+          'id': '507f1f77bcf86cd799439101',
+          'belongs_date': '20260517',
+          'category_name': 'Food',
+          'flow_type': 'expense',
+          'amount': 12.5,
+          'description': 'Coffee beans',
+          'category': {'emoji': '\u{1F35C}', 'bg_color': '#FF8A65'},
+        },
+        {
+          'id': '507f1f77bcf86cd799439102',
+          'belongs_date': '2026-05-16',
+          'category_name': 'Salary',
+          'flow_type': 'income',
+          'amount': 3500,
+          'description': '',
+          'category_emoji': '\u{1F4BC}',
+          'category_bg_color': '#10B981',
+        },
+      ],
+      'meta': {'total_count': 2, 'limit': limit, 'offset': offset ?? 0},
+      'errors': <dynamic>[],
+      'extra': <String, dynamic>{},
+    };
+  }
+
+  @override
   Future<ApiJson> listAllCategories({
     int? limit,
     int? offset,
@@ -161,12 +217,16 @@ class _FakeCashlenxApi extends CashlenxApi {
         'name': 'Food & Dining',
         'type': 'expense',
         'parent_id': '000000000000000000000000',
+        'emoji': '\u{1F35C}',
+        'bg_color': '#FF8A65',
       },
       {
         'Id': '507f1f77bcf86cd799439012',
         'name': 'Restaurants',
         'type': 'expense',
         'parent_id': '507f1f77bcf86cd799439011',
+        'emoji': '',
+        'bg_color': '',
       },
       {
         'Id': '507f1f77bcf86cd799439013',
