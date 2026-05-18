@@ -28,6 +28,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 - Active development branch: `dev/v0.2.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
+- After completing each user request, commit and push the completed work before ending the turn unless the user explicitly asks not to.
 
 ## Important Files
 
@@ -72,7 +73,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - Auth provider intentionally waits 2 seconds so the splash is visible.
 
 - Login screen: `lib/features/auth/presentation/pages/login_page.dart`
-  - Email field, password field, visibility toggle, remember-me checkbox, forgot-password link, demo-mode action, sign-up link.
+  - Username-or-email field, password field, visibility toggle, remember-me checkbox, forgot-password link, demo-mode action, sign-up link.
   - Calls real backend login through `AuthNotifier.login(...)`.
   - Shows server errors using `ToastUtils.showServerErrors(...)`.
   - Shows a success toast on successful manual login.

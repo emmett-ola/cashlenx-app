@@ -18,7 +18,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
@@ -41,13 +41,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   bool get _canSubmit =>
-      _emailController.text.trim().isNotEmpty &&
+      _identifierController.text.trim().isNotEmpty &&
       _passwordController.text.isNotEmpty;
 
   void _handleLogin() async {
@@ -55,7 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       await ref
           .read(authNotifierProvider.notifier)
           .login(
-            _emailController.text.trim(),
+            _identifierController.text.trim(),
             _passwordController.text,
             rememberMe: _rememberMe,
           );
@@ -90,20 +90,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: Column(
           children: [
             CustomInput(
-              label: 'Email',
-              controller: _emailController,
-              placeholder: 'email@example.com',
-              keyboardType: TextInputType.emailAddress,
+              label: 'Email or Username',
+              controller: _identifierController,
+              placeholder: 'email@example.com or username',
+              keyboardType: TextInputType.text,
               prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
               onChanged: (_) => setState(() {}),
               validator: (value) {
-                final email = value?.trim() ?? '';
-                if (email.isEmpty) {
+                final identifier = value?.trim() ?? '';
+                if (identifier.isEmpty) {
                   return 'Please fill in all fields.';
-                }
-                final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-                if (!emailRegex.hasMatch(email)) {
-                  return 'Please enter a valid email address.';
                 }
                 return null;
               },
@@ -205,7 +201,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
                 height: 48,
-                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),
@@ -230,7 +225,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 isOutlined: true,
                 onPressed: _handleDemoMode,
                 height: 48,
-                borderRadius: 24,
               ),
             ),
             const SizedBox(height: 24),

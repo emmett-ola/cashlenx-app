@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/app_config.dart';
 import 'api_client.dart';
 
 typedef ApiJson = Map<String, dynamic>;
@@ -14,11 +16,10 @@ class CashlenxApi {
 
   CashlenxApi(this._client);
 
+  static const _jsonRequestTimeout = Duration(seconds: 20);
+
   static final Options _anonymousOptions = Options(
-    extra: const {
-      'skipAuth': true,
-      'skipAuthRefresh': true,
-    },
+    extra: const {'skipAuth': true, 'skipAuthRefresh': true},
   );
 
   static final Options _downloadOptions = Options(
@@ -30,11 +31,14 @@ class CashlenxApi {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _client.get<ApiJson>(
-      path,
-      queryParameters: _withoutNulls(queryParameters),
-      options: options,
-    );
+    _logRequest('GET', path);
+    return _client
+        .get<ApiJson>(
+          path,
+          queryParameters: _withoutNulls(queryParameters),
+          options: options,
+        )
+        .timeout(_jsonRequestTimeout);
   }
 
   Future<ApiJson> _post(
@@ -43,12 +47,15 @@ class CashlenxApi {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _client.post<ApiJson>(
-      path,
-      data: data,
-      queryParameters: _withoutNulls(queryParameters),
-      options: options,
-    );
+    _logRequest('POST', path);
+    return _client
+        .post<ApiJson>(
+          path,
+          data: data,
+          queryParameters: _withoutNulls(queryParameters),
+          options: options,
+        )
+        .timeout(_jsonRequestTimeout);
   }
 
   Future<ApiJson> _put(
@@ -56,11 +63,14 @@ class CashlenxApi {
     dynamic data,
     Map<String, dynamic>? queryParameters,
   }) {
-    return _client.put<ApiJson>(
-      path,
-      data: data,
-      queryParameters: _withoutNulls(queryParameters),
-    );
+    _logRequest('PUT', path);
+    return _client
+        .put<ApiJson>(
+          path,
+          data: data,
+          queryParameters: _withoutNulls(queryParameters),
+        )
+        .timeout(_jsonRequestTimeout);
   }
 
   Future<ApiJson> _delete(
@@ -68,11 +78,14 @@ class CashlenxApi {
     dynamic data,
     Map<String, dynamic>? queryParameters,
   }) {
-    return _client.delete<ApiJson>(
-      path,
-      data: data,
-      queryParameters: _withoutNulls(queryParameters),
-    );
+    _logRequest('DELETE', path);
+    return _client
+        .delete<ApiJson>(
+          path,
+          data: data,
+          queryParameters: _withoutNulls(queryParameters),
+        )
+        .timeout(_jsonRequestTimeout);
   }
 
   static Map<String, dynamic>? _withoutNulls(Map<String, dynamic>? source) {
@@ -83,6 +96,12 @@ class CashlenxApi {
   }
 
   static String _path(String value) => Uri.encodeComponent(value);
+
+  static void _logRequest(String method, String path) {
+    if (kDebugMode) {
+      debugPrint('[CashlenxApi] $method ${AppConfig.apiBaseUrl}$path');
+    }
+  }
 
   // System
   Future<ApiJson> healthCheck() {
@@ -116,10 +135,7 @@ class CashlenxApi {
   }) {
     return _post(
       '/open/auth/register',
-      data: {
-        'username': username,
-        'password': password,
-      },
+      data: {'username': username, 'password': password},
       options: _anonymousOptions,
     );
   }
@@ -149,10 +165,7 @@ class CashlenxApi {
   }) {
     return _post(
       '/open/auth/reset-password/confirm',
-      data: {
-        'token': token,
-        'password': password,
-      },
+      data: {'token': token, 'password': password},
       options: _anonymousOptions,
     );
   }
@@ -183,18 +196,12 @@ class CashlenxApi {
   }) {
     return _put(
       '/user/password',
-      data: {
-        'old_password': oldPassword,
-        'new_password': newPassword,
-      },
+      data: {'old_password': oldPassword, 'new_password': newPassword},
     );
   }
 
   Future<ApiJson> requestEmailChange(String newEmail) {
-    return _post(
-      '/user/email/change',
-      data: {'new_email': newEmail},
-    );
+    return _post('/user/email/change', data: {'new_email': newEmail});
   }
 
   Future<ApiJson> confirmEmailChange({
@@ -203,10 +210,7 @@ class CashlenxApi {
   }) {
     return _post(
       '/user/email/confirm',
-      data: {
-        'token': token,
-        'password': password,
-      },
+      data: {'token': token, 'password': password},
     );
   }
 
@@ -252,16 +256,10 @@ class CashlenxApi {
     );
   }
 
-  Future<ApiJson> listAllUsers({
-    int? limit,
-    int? offset,
-  }) {
+  Future<ApiJson> listAllUsers({int? limit, int? offset}) {
     return _get(
       '/admin/user',
-      queryParameters: {
-        'limit': limit,
-        'offset': offset,
-      },
+      queryParameters: {'limit': limit, 'offset': offset},
     );
   }
 
@@ -371,13 +369,7 @@ class CashlenxApi {
     required String from,
     required String to,
   }) {
-    return _get(
-      '/cash/range',
-      queryParameters: {
-        'from': from,
-        'to': to,
-      },
-    );
+    return _get('/cash/range', queryParameters: {'from': from, 'to': to});
   }
 
   Future<ApiJson> getTransactionsByDate(String date) {
@@ -398,6 +390,10 @@ class CashlenxApi {
 
   Future<ApiJson> getYearlySummary(String year) {
     return _get('/cash/summary/yearly/${_path(year)}');
+  }
+
+  Future<ApiJson> getTotalSummary() {
+    return _get('/cash/summary/total');
   }
 
   Future<ApiJson> getTransactionById(String id) {
@@ -445,6 +441,8 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _post(
@@ -453,6 +451,8 @@ class CashlenxApi {
         name: name,
         type: type,
         parentId: parentId,
+        emoji: emoji,
+        bgColor: bgColor,
         remark: remark,
       ),
     );
@@ -462,6 +462,7 @@ class CashlenxApi {
     int? limit,
     int? offset,
     String? type,
+    String? parentId,
   }) {
     return _get(
       '/category',
@@ -469,6 +470,7 @@ class CashlenxApi {
         'limit': limit,
         'offset': offset,
         'type': type,
+        'parent_id': parentId,
       },
     );
   }
@@ -481,12 +483,10 @@ class CashlenxApi {
     return _get('/category/${_path(parentId)}/children');
   }
 
-  Future<ApiJson> getCategoryTree({
-    String? type,
-  }) {
+  Future<ApiJson> getCategoryTree({String? type, int? maxDepth}) {
     return _get(
       '/category/tree',
-      queryParameters: {'type': type},
+      queryParameters: {'type': type, 'max_depth': maxDepth},
     );
   }
 
@@ -499,6 +499,8 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _put(
@@ -507,6 +509,8 @@ class CashlenxApi {
         name: name,
         type: type,
         parentId: parentId,
+        emoji: emoji,
+        bgColor: bgColor,
         remark: remark,
       ),
     );
@@ -520,12 +524,16 @@ class CashlenxApi {
     required String name,
     required String type,
     String? parentId,
+    String? emoji,
+    String? bgColor,
     String? remark,
   }) {
     return _withoutNulls({
       'name': name,
       'type': type,
       'parent_id': parentId,
+      'emoji': emoji,
+      'bg_color': bgColor,
       'remark': remark,
     })!;
   }
@@ -538,20 +546,13 @@ class CashlenxApi {
   }) {
     return _client.get<List<int>>(
       '/statistic/export',
-      queryParameters: {
-        'format': format,
-        'from': from,
-        'to': to,
-      },
+      queryParameters: {'format': format, 'from': from, 'to': to},
       options: _downloadOptions,
     );
   }
 
   Future<ApiJson> importStatisticData(MultipartFile file) {
-    return _post(
-      '/statistic/import',
-      data: FormData.fromMap({'file': file}),
-    );
+    return _post('/statistic/import', data: FormData.fromMap({'file': file}));
   }
 
   Future<ApiJson> getStatisticDailySummary(String date) {
@@ -590,30 +591,21 @@ class CashlenxApi {
     return _get('/statistic/trends/yearly/${_path(year)}');
   }
 
-  Future<ApiJson> getStatisticDailyTop({
-    required String date,
-    int? limit,
-  }) {
+  Future<ApiJson> getStatisticDailyTop({required String date, int? limit}) {
     return _get(
       '/statistic/top/daily/${_path(date)}',
       queryParameters: {'limit': limit},
     );
   }
 
-  Future<ApiJson> getStatisticMonthlyTop({
-    required String month,
-    int? limit,
-  }) {
+  Future<ApiJson> getStatisticMonthlyTop({required String month, int? limit}) {
     return _get(
       '/statistic/top/monthly/${_path(month)}',
       queryParameters: {'limit': limit},
     );
   }
 
-  Future<ApiJson> getStatisticYearlyTop({
-    required String year,
-    int? limit,
-  }) {
+  Future<ApiJson> getStatisticYearlyTop({required String year, int? limit}) {
     return _get(
       '/statistic/top/yearly/${_path(year)}',
       queryParameters: {'limit': limit},

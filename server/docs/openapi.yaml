@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: CashLenX API
   description: Personal finance management API
-  version: 0.5.0
+  version: 0.6.0
   contact:
     name: CashLenX Team
     email: support@cashlenx.com
@@ -81,7 +81,7 @@ paths:
   /open/auth/logout:
     post:
       summary: User logout
-      description: This route is mounted under `/open` for compatibility, but the current middleware expects an authenticated user. Provide refresh_token to revoke one session, or omit it to revoke all sessions.
+      description: Public idempotent logout endpoint. Without a token it returns OK as a no-op. Provide refresh_token to revoke one session, or provide a bearer access token without refresh_token to revoke all sessions for that user.
       operationId: logout
       tags: [Authentication]
       requestBody:
@@ -92,8 +92,6 @@ paths:
               $ref: '#/components/schemas/LogoutRequest'
       responses:
         '200':
-          $ref: '#/components/responses/WrappedResponse'
-        '401':
           $ref: '#/components/responses/WrappedResponse'
 
   /auth/tokens:
@@ -391,7 +389,14 @@ paths:
       operationId: listAllTransactions
       tags: [Cash Flow]
       parameters:
-        - $ref: '#/components/parameters/Limit'
+        - name: limit
+          in: query
+          description: Number of recent records to return, default 10 and maximum 100
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
         - $ref: '#/components/parameters/Offset'
         - name: type
           in: query
@@ -410,6 +415,8 @@ paths:
             type: string
       responses:
         '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '400':
           $ref: '#/components/responses/WrappedResponse'
 
   /cash/range:
@@ -473,6 +480,15 @@ paths:
       tags: [Cash Flow]
       parameters:
         - $ref: '#/components/parameters/Year'
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+
+  /cash/summary/total:
+    get:
+      summary: Get total cash summary
+      operationId: getTotalSummary
+      tags: [Cash Flow]
       responses:
         '200':
           $ref: '#/components/responses/WrappedResponse'
@@ -1208,6 +1224,14 @@ components:
         type:
           type: string
           enum: [income, expense]
+        emoji:
+          type: string
+          description: Optional UTF-8 display emoji or short icon text.
+          maxLength: 8
+        bg_color:
+          type: string
+          description: Optional background color in #RRGGBB format.
+          pattern: '^#[0-9a-fA-F]{6}$'
         remark:
           type: string
       required: [name, type]
