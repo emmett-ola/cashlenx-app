@@ -21,12 +21,34 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Resolve app environment
+        id: app-env
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            app_env="prod"
+          elif [ "${GITHUB_REF_NAME}" = "test" ]; then
+            app_env="test"
+          else
+            app_env="dev"
+          fi
+
+          if [ "$app_env" = "prod" ]; then
+            api_domain="${{ vars.PROD_API_DOMAIN }}"
+          elif [ "$app_env" = "test" ]; then
+            api_domain="${{ vars.TEST_API_DOMAIN }}"
+          else
+            api_domain="${{ vars.DEV_API_DOMAIN }}"
+          fi
+
+          echo "app_env=$app_env" >> "$GITHUB_OUTPUT"
+          echo "api_domain=$api_domain" >> "$GITHUB_OUTPUT"
+
       - name: Create production env file
         run: |
           {
-            echo "APP_ENV=${{ vars.APP_ENV }}"
+            echo "APP_ENV=${{ steps.app-env.outputs.app_env }}"
             echo "API_SCHEME=${{ vars.API_SCHEME }}"
-            echo "API_DOMAIN=${{ vars.API_DOMAIN }}"
+            echo "API_DOMAIN=${{ steps.app-env.outputs.api_domain }}"
             echo "API_PORT=${{ vars.API_PORT }}"
             echo "API_VERSION=${{ vars.API_VERSION }}"
           } > .env
@@ -49,12 +71,10 @@ jobs:
       - name: Select release branch
         id: release-branch
         run: |
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+          if [ "${{ steps.app-env.outputs.app_env }}" = "prod" ]; then
             echo "branch=main" >> "$GITHUB_OUTPUT"
-          elif [ "${GITHUB_REF_NAME}" = "test" ]; then
+          elif [ "${{ steps.app-env.outputs.app_env }}" = "test" ]; then
             echo "branch=test" >> "$GITHUB_OUTPUT"
-          elif [ "${GITHUB_REF_NAME}" = "develop" ]; then
-            echo "branch=develop" >> "$GITHUB_OUTPUT"
           else
             echo "branch=develop" >> "$GITHUB_OUTPUT"
           fi
