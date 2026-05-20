@@ -2,8 +2,14 @@ services:
   cashlenx-web:
     build: .
     image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
+    container_name: "${CONTAINER_NAME:-cashlenx-website}"
     env_file:
       - .env
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-8080}:8080"
+    networks:
+      - cashlenx-network
+networks:
+  cashlenx-network:
+    driver: bridge
