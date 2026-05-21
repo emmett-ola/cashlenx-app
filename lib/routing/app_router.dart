@@ -10,6 +10,7 @@ import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/onboarding/data/onboarding_service.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
 
 part 'app_router.g.dart';
 
@@ -65,6 +66,11 @@ GoRouter router(Ref ref) {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomePage(),
+      ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        builder: (context, state) => const ProfilePage(),
       ),
     ],
     redirect: (context, state) {

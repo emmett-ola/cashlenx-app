@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
@@ -52,6 +53,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               username: username,
               isDemo: isDemo,
               onAction: _showComingSoon,
+              onProfileTap: _openProfile,
               onSeeAllTransactions: () => _showComingSoon('Transactions'),
             ),
             _CategoryTab(onAction: _showComingSoon),
@@ -61,6 +63,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               username: username,
               email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
               onAction: _showComingSoon,
+              onProfileTap: _openProfile,
             ),
           ],
         ),
@@ -81,6 +84,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _showComingSoon(String feature) {
     ToastUtils.showInfo(context, '$feature coming soon!');
   }
+
+  void _openProfile() {
+    context.push('/profile');
+  }
 }
 
 class _DashboardTab extends ConsumerWidget {
@@ -88,12 +95,14 @@ class _DashboardTab extends ConsumerWidget {
     required this.username,
     required this.isDemo,
     required this.onAction,
+    required this.onProfileTap,
     required this.onSeeAllTransactions,
   });
 
   final String username;
   final bool isDemo;
   final ValueChanged<String> onAction;
+  final VoidCallback onProfileTap;
   final VoidCallback onSeeAllTransactions;
 
   @override
@@ -111,7 +120,7 @@ class _DashboardTab extends ConsumerWidget {
         header: _DashboardHeader(
           username: username,
           isDemo: isDemo,
-          onProfileTap: () => onAction('Profile'),
+          onProfileTap: onProfileTap,
         ),
         children: [
           _SummaryCard(summary: data.summary),
@@ -1440,11 +1449,13 @@ class _SettingsTab extends ConsumerStatefulWidget {
     required this.username,
     required this.email,
     required this.onAction,
+    required this.onProfileTap,
   });
 
   final String username;
   final String email;
   final ValueChanged<String> onAction;
+  final VoidCallback onProfileTap;
 
   @override
   ConsumerState<_SettingsTab> createState() => _SettingsTabState();
@@ -1462,7 +1473,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         _ProfileCard(
           username: widget.username,
           email: widget.email,
-          onTap: () => widget.onAction('Profile'),
+          onTap: widget.onProfileTap,
         ),
         _SettingsSection(
           title: 'Preferences',
