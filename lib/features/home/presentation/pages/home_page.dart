@@ -888,6 +888,8 @@ class _CategoryTypeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -915,20 +917,15 @@ class _CategoryTypeSwitcher extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(
                   gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [
-                            AppTheme.primaryColor,
-                            AppTheme.secondaryColor,
-                          ],
+                      ? LinearGradient(
+                          colors: [themeColor, AppTheme.secondaryColor],
                         )
                       : null,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: AppTheme.primaryColor.withValues(
-                              alpha: 0.22,
-                            ),
+                            color: themeColor.withValues(alpha: 0.22),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -1580,7 +1577,7 @@ class _AddPlaceholderTab extends StatelessWidget {
   }
 }
 
-class _SettingsTab extends StatefulWidget {
+class _SettingsTab extends ConsumerStatefulWidget {
   const _SettingsTab({
     required this.username,
     required this.email,
@@ -1592,14 +1589,14 @@ class _SettingsTab extends StatefulWidget {
   final ValueChanged<String> onAction;
 
   @override
-  State<_SettingsTab> createState() => _SettingsTabState();
+  ConsumerState<_SettingsTab> createState() => _SettingsTabState();
 }
 
-class _SettingsTabState extends State<_SettingsTab> {
-  var _themeColor = AppTheme.primaryColor;
-
+class _SettingsTabState extends ConsumerState<_SettingsTab> {
   @override
   Widget build(BuildContext context) {
+    final themeColor = ref.watch(themeColorProvider);
+
     return _PageScaffold(
       title: 'Settings',
       subtitle: 'Personalize your experience',
@@ -1614,9 +1611,9 @@ class _SettingsTabState extends State<_SettingsTab> {
           children: [
             _SettingsTile(
               icon: Icons.palette_outlined,
-              color: _themeColor,
+              color: themeColor,
               label: 'Theme Color',
-              trailing: _ColorDot(color: _themeColor),
+              trailing: _ColorDot(color: themeColor),
               onTap: _showThemeColorDialog,
             ),
           ],
@@ -1666,7 +1663,7 @@ class _SettingsTabState extends State<_SettingsTab> {
   }
 
   void _showThemeColorDialog() {
-    var draftColor = _themeColor;
+    var draftColor = ref.read(themeColorProvider);
 
     showDialog<void>(
       context: context,
@@ -1715,7 +1712,7 @@ class _SettingsTabState extends State<_SettingsTab> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Selected: ${_hexColor(draftColor).toUpperCase()}',
+                      'Selected: ${AppTheme.hexColor(draftColor)}',
                       style: const TextStyle(
                         color: _AppShellColors.mutedText,
                         fontSize: 13,
@@ -1775,7 +1772,9 @@ class _SettingsTabState extends State<_SettingsTab> {
                         Expanded(
                           child: FilledButton(
                             onPressed: () {
-                              setState(() => _themeColor = draftColor);
+                              ref
+                                  .read(themeColorProvider.notifier)
+                                  .setColor(draftColor);
                               Navigator.pop(context);
                             },
                             style: FilledButton.styleFrom(
@@ -1856,6 +1855,8 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: const BoxDecoration(
@@ -1898,13 +1899,13 @@ class _DashboardHeader extends StatelessWidget {
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                color: themeColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
+              child: Text(
                 'Demo',
                 style: TextStyle(
-                  color: AppTheme.primaryColor,
+                  color: themeColor,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -1975,19 +1976,20 @@ class _SummaryCardState extends State<_SummaryCard> {
   @override
   Widget build(BuildContext context) {
     final summary = widget.summary.range(_selectedRange);
+    final themeColor = _themeColor(context);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+          colors: [themeColor, AppTheme.secondaryColor],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.22),
+            color: themeColor.withValues(alpha: 0.22),
             blurRadius: 22,
             offset: const Offset(0, 12),
           ),
@@ -2436,18 +2438,20 @@ class _TotalBudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+          colors: [themeColor, AppTheme.secondaryColor],
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.18),
+            color: themeColor.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -2751,6 +2755,8 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -2782,14 +2788,14 @@ class _BottomNav extends StatelessWidget {
                       Container(
                         width: 56,
                         height: 56,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryColor,
+                        decoration: BoxDecoration(
+                          color: themeColor,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Color(0x33008080),
+                              color: themeColor.withValues(alpha: 0.2),
                               blurRadius: 14,
-                              offset: Offset(0, 6),
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
@@ -2798,8 +2804,8 @@ class _BottomNav extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         tab.label,
-                        style: const TextStyle(
-                          color: AppTheme.primaryColor,
+                        style: TextStyle(
+                          color: themeColor,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2822,9 +2828,7 @@ class _BottomNav extends StatelessWidget {
                   children: [
                     Icon(
                       tab.icon,
-                      color: isSelected
-                          ? AppTheme.primaryColor
-                          : _AppShellColors.navMuted,
+                      color: isSelected ? themeColor : _AppShellColors.navMuted,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -2832,7 +2836,7 @@ class _BottomNav extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: isSelected
-                            ? AppTheme.primaryColor
+                            ? themeColor
                             : _AppShellColors.navMuted,
                         fontSize: 11,
                         fontWeight: isSelected
@@ -2899,15 +2903,16 @@ class _AvatarBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial = username.trim().isEmpty ? 'U' : username.trim()[0];
+    final themeColor = _themeColor(context);
 
     return Container(
       width: 56,
       height: 56,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+          colors: [themeColor, AppTheme.secondaryColor],
         ),
         shape: BoxShape.circle,
       ),
@@ -2937,7 +2942,7 @@ class _RoundIconButton extends StatelessWidget {
       onPressed: onPressed,
       icon: Icon(icon),
       style: IconButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: _themeColor(context),
         foregroundColor: Colors.white,
       ),
     );
@@ -3784,6 +3789,10 @@ String _money(double value, {int decimals = 2}) {
 String _hexColor(Color color) {
   final value = color.toARGB32() & 0xFFFFFF;
   return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
+Color _themeColor(BuildContext context) {
+  return Theme.of(context).colorScheme.primary;
 }
 
 double _jsonDouble(Object? value) {

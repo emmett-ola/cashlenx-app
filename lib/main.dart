@@ -10,11 +10,7 @@ void main() async {
   // Initialize Config (Env, Logging, etc.)
   await AppConfig.init();
 
-  runApp(
-    const ProviderScope(
-      child: CashLenXApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: CashLenXApp()));
 }
 
 class CashLenXApp extends ConsumerWidget {
@@ -24,14 +20,15 @@ class CashLenXApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final themeColor = ref.watch(themeColorProvider);
 
     return MaterialApp.router(
       title: 'CashLenX',
       debugShowCheckedModeBanner: false,
 
       // Theme
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme(themeColor),
+      darkTheme: AppTheme.darkTheme(themeColor),
       themeMode: themeMode,
 
       // Routing

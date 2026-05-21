@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -27,14 +26,13 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultColor = Theme.of(context).colorScheme.primary;
+
     if (isOutlined) {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: backgroundColor ?? AppTheme.primaryColor,
-            width: 2,
-          ),
+          side: BorderSide(color: backgroundColor ?? defaultColor, width: 2),
           fixedSize: Size.fromHeight(height),
           minimumSize: Size(0, height),
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -42,7 +40,7 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
-          foregroundColor: backgroundColor ?? AppTheme.primaryColor,
+          foregroundColor: backgroundColor ?? defaultColor,
         ),
         child: isLoading
             ? const SizedBox(
@@ -63,21 +61,20 @@ class CustomButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor ?? AppTheme.primaryColor,
+        backgroundColor: backgroundColor ?? defaultColor,
         foregroundColor: textColor ?? Colors.white,
         fixedSize: Size.fromHeight(height),
         minimumSize: Size(0, height),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         elevation: 4,
-        shadowColor: (backgroundColor ?? AppTheme.primaryColor).withValues(
-          alpha: 0.25,
-        ),
+        shadowColor: (backgroundColor ?? defaultColor).withValues(alpha: 0.25),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
-        disabledBackgroundColor: (backgroundColor ?? AppTheme.primaryColor)
-            .withValues(alpha: 0.5),
+        disabledBackgroundColor: (backgroundColor ?? defaultColor).withValues(
+          alpha: 0.5,
+        ),
       ),
       child: isLoading
           ? const SizedBox(
