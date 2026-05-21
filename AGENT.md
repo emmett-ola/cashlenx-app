@@ -5,7 +5,7 @@ This file is the handoff point for future AI coding sessions in this repo. Read 
 ## Project Snapshot
 
 - App: CashLenX, a cross-platform Flutter finance app for personal finance, expense tracking, budgets, and reports.
-- Current state: early development. Splash, login, registration, forgot-password, real auth request handling, auth persistence, silent refresh, a first authenticated home shell with fixed mock dashboard data, Docker web deployment, and GitHub Actions web release publishing exist.
+- Current state: early development. Splash/pre-splash, login, registration, forgot-password, demo mode with app-side mock data, real auth request handling, auth persistence, silent refresh, authenticated home shell, settings theme color, profile page, Docker web deployment, and GitHub Actions web release publishing exist.
 - Language/runtime: Dart SDK `>=3.2.0 <4.0.0`, Flutter.
 - Architecture: feature-first Clean Architecture.
 - State management: Riverpod with code generation (`riverpod_annotation`, generated `*.g.dart`).
@@ -26,7 +26,7 @@ The app also includes a local API contract copy at `server/docs/openapi.yaml`. C
 
 ## Current Branch
 
-- Active development branch: `dev/v0.2.0`.
+- Active development branch: `dev/v0.3.0`.
 - Keep preparation and initial project setup work on this branch unless the user asks for another branch.
 - After completing each user request, commit and push the completed work before ending the turn unless the user explicitly asks not to.
 
@@ -70,6 +70,8 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
 
 - Splash screen: `lib/features/splash/presentation/pages/splash_screen.dart`
   - Teal gradient, white logo, app name, slogan, pulse/entrance animation.
+  - Web has a matching pre-splash in `web/index.html` that appears before Flutter/WASM is ready. This is static HTML/CSS/inline SVG, uses fixed brand colors, and intentionally does not follow user-picked theme color.
+  - On web, the Flutter splash starts already visible to avoid a second entrance animation after WASM is ready. Native platforms keep the entrance animation.
   - Auth provider intentionally waits 2 seconds so the splash is visible.
 
 - Login screen: `lib/features/auth/presentation/pages/login_page.dart`
@@ -92,6 +94,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - If remember-me is false, it clears stored auth data and treats the user as logged out.
   - If remember-me is true and a refresh token exists, it calls refresh-token login.
   - Failed refresh clears storage and returns logged out.
+  - `continueAsDemo()` resets `DemoDataStore` every time the user enters demo mode from the login page. Demo mode must not call authenticated backend APIs.
 
 - Auth persistence: `lib/core/services/secure_storage_service.dart`
   - Stores `auth_token`, `auth_refresh_token`, and `auth_remember_me` with `flutter_secure_storage`.
@@ -99,7 +102,7 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - `clearAll()` removes tokens and remember-me state.
 
 - Routing: `lib/routing/app_router.dart`
-  - Routes: `/` splash, `/login`, `/register`, `/forgot-password`, `/home`.
+  - Routes: `/` splash, `/login`, `/register`, `/forgot-password`, `/home`, `/profile`.
   - Logged-in users on splash/login/register/forgot-password redirect to `/home`.
   - Logged-out users redirect to `/login` after splash/loading.
   - `/home` hosts the first authenticated app shell.
@@ -108,9 +111,22 @@ Prefer adding new functionality inside the relevant feature folder instead of gr
   - Replaces the old temporary welcome page.
   - Uses a bottom navigation shell based on `../cashlenx-design/src/components/organisms/BottomNav.tsx`.
   - Includes Home, Stats, Add, Budget, and Settings tabs.
-  - Home uses a mock dashboard request provider returning fixed summary, budget, recent transaction, category, and merchant data.
+  - Demo mode uses `lib/features/demo/data/demo_data_store.dart` for app-side dashboard/category data and resets that data on each demo entry.
   - Non-wired interactions show a "coming soon" toast.
+  - Dashboard avatar and Settings profile card navigate to `/profile`.
   - Settings logout calls `AuthNotifier.logout()`.
+  - Settings Theme Color persists through `themeColorProvider` in `lib/theme/app_theme.dart`; it changes in-app primary/accent usage but not the splash/pre-splash.
+
+- Profile page: `lib/features/profile/presentation/pages/profile_page.dart`
+  - Uses `GET /user/profile` and `PUT /user/profile` through `CashlenxApi`.
+  - Persists the API-supported fields only: `nickname`, `avatar_url`, and `gender`; username/email/status/role/date fields are read-only.
+  - Demo profile uses local static data and does not request the API.
+
+- Shared UI:
+  - Toasts are centralized in `ToastUtils`; use `showSuccess`, `showError`, `showInfo`, or `showServerErrors` instead of custom SnackBars.
+  - Reusable surface/list/panel widgets live in `lib/shared/widgets/app_surface.dart`.
+  - Reusable color picker widgets live in `lib/shared/widgets/app_color_picker.dart`.
+  - Keep app icon sources in `assets/images/app_icon.png` and `assets/images/app_icon_foreground.png`; platform icons were unified from those assets. Future holiday icon replacement should start from these source assets/config, not manual platform edits.
 
 ## Backend/API Integration
 
@@ -159,6 +175,17 @@ Auth endpoints currently used:
   - Forgot-password confirm flow.
 - `GET /user/profile`
   - Used by `getCurrentUser()` when a token exists, but startup usually prefers refresh-token login if remember-me is enabled.
+- `PUT /user/profile`
+  - Used by the Profile page to update `nickname`, `avatar_url`, and `gender`.
+
+Profile API gaps versus `../cashlenx-design/src/app/components/screens/Profile.tsx`:
+
+- No persisted phone number.
+- No persisted location.
+- No persisted birth date.
+- No persisted preferred currency.
+- No avatar upload or avatar preset endpoint; only `avatar_url` can be saved.
+- No profile/account statistics endpoint for transaction count, active budgets, months active, or saved amount.
 
 ## Design Reference
 
@@ -173,6 +200,7 @@ Use `../cashlenx-design` as the source of truth before changing UI. Match the de
 - `src/components/screens/Budget.tsx`
 - `src/components/screens/Stats.tsx`
 - `src/components/screens/Settings.tsx`
+- `src/components/screens/Profile.tsx`
 - `src/components/atoms/*`
 - `src/components/molecules/*`
 - `src/constants/colors.ts`
@@ -186,11 +214,14 @@ Current visual tokens from design:
 
 Flutter auth screens should stay aligned with the `AuthLayout`, `Login`, and `SignUp` design reference. The selected splash/auth subtitle is `Your Financial Companion`.
 
+The splash/pre-splash should remain brand-stable using `#008080` and `#4DB6AC`; do not bind it to the user-picked theme color unless the user explicitly changes that preference.
+
 ## Known Gaps / Next Likely Work
 
-- Dashboard/home uses fixed mock data and has no real API integration yet.
+- Dashboard/home still needs full real API integration for non-demo users beyond the currently wired summary/category surfaces.
 - Transactions and add-transaction flows are still placeholders/coming-soon interactions.
 - Auth tests are still light. Add provider tests with Riverpod overrides for login, register, reset, refresh, and logout behavior.
+- Profile is implemented, but backend support is narrower than the design reference. Add the missing profile fields/endpoints above before expanding the UI.
 - Some README/architecture text is aspirational and may not match current code exactly.
 
 ## Generated Files
@@ -261,7 +292,8 @@ npm run dev
 - Use Dio through the existing networking layer instead of creating ad hoc HTTP clients.
 - Keep API parsing aligned with `ResponseWrapper<T>` and the OpenAPI/server contract.
 - Keep UI consistent with `../cashlenx-design`, `AppTheme`, and existing shared widgets before adding new styling patterns.
-- Prefer small, focused changes and verify with `flutter analyze` and relevant tests.
+- Prefer small, focused changes and verify with `dart analyze`/`flutter analyze` on touched files plus relevant tests. Avoid `flutter build` on this machine unless the user explicitly asks; it is too heavy.
+- Running `flutter test` may rewrite `pubspec.lock` package hosts. Restore unrelated lockfile churn before committing.
 - Do not commit `.env` or local secrets. Use `sample.env` for documented variables.
 - Avoid unrelated platform-folder edits unless the task explicitly needs Android/iOS/web/desktop changes.
 - If a generated file changes, mention the source file that caused it.
