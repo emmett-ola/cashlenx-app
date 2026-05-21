@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
+import '../../../../shared/widgets/app_color_picker.dart';
+import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../demo/data/demo_data_store.dart';
@@ -304,34 +306,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              mode == _CategoryEditorMode.edit
-                                  ? 'Edit Category'
-                                  : 'Create Category',
-                              style: _sectionTitle(context),
-                            ),
-                          ),
-                          Material(
-                            color: const Color(0xFFF3F4F6),
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => Navigator.pop(context),
-                              child: const SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: Icon(
-                                  Icons.close,
-                                  color: _AppShellColors.mutedText,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: AppPanelHeader(
+                        title: mode == _CategoryEditorMode.edit
+                            ? 'Edit Category'
+                            : 'Create Category',
                       ),
                     ),
                     const Divider(height: 1),
@@ -499,59 +477,27 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             top: BorderSide(color: _AppShellColors.border),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(50),
-                                  side: const BorderSide(
-                                    color: _AppShellColors.border,
-                                    width: 2,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text('Cancel'),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: nameController.text.trim().isEmpty
-                                    ? null
-                                    : () {
-                                        final request = _CategoryEditorRequest(
-                                          name: nameController.text.trim(),
-                                          type: _activeType,
-                                          parentId: selectedParentId,
-                                          emoji: selectedIcon,
-                                          bgColor: selectedColor,
-                                        );
-                                        Navigator.pop(context);
-                                        _saveCategory(
-                                          mode: mode,
-                                          category: category,
-                                          request: request,
-                                        );
-                                      },
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(50),
-                                  backgroundColor: AppTheme.primaryColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(
-                                  mode == _CategoryEditorMode.edit
-                                      ? 'Save Changes'
-                                      : 'Create',
-                                ),
-                              ),
-                            ),
-                          ],
+                        child: AppPanelActions(
+                          primaryLabel: mode == _CategoryEditorMode.edit
+                              ? 'Save Changes'
+                              : 'Create',
+                          onPrimaryPressed: nameController.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  final request = _CategoryEditorRequest(
+                                    name: nameController.text.trim(),
+                                    type: _activeType,
+                                    parentId: selectedParentId,
+                                    emoji: selectedIcon,
+                                    bgColor: selectedColor,
+                                  );
+                                  Navigator.pop(context);
+                                  _saveCategory(
+                                    mode: mode,
+                                    category: category,
+                                    request: request,
+                                  );
+                                },
                         ),
                       ),
                     ),
@@ -1234,45 +1180,6 @@ class _CreateCategoryButton extends StatelessWidget {
   }
 }
 
-class _ColorChoice extends StatelessWidget {
-  const _ColorChoice({
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.white,
-            width: isSelected ? 4 : 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _EmojiPickerButton extends StatelessWidget {
   const _EmojiPickerButton({required this.emoji, required this.onTap});
 
@@ -1367,59 +1274,10 @@ class _CategoryColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      clipBehavior: Clip.none,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisExtent: 60,
-        mainAxisSpacing: 0,
-        crossAxisSpacing: 12,
-      ),
-      itemCount: _categoryColorChoices.length,
-      itemBuilder: (context, index) {
-        final color = _categoryColorChoices[index];
-        final isSelected = selectedColor == color;
-
-        return Center(
-          child: Semantics(
-            button: true,
-            selected: isSelected,
-            label: 'Select color ${_hexColor(color)}',
-            child: GestureDetector(
-              onTap: () => onColorSelected(color),
-              child: AnimatedScale(
-                scale: isSelected ? 1.1 : 1,
-                duration: const Duration(milliseconds: 140),
-                curve: Curves.easeOut,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    boxShadow: isSelected
-                        ? const [
-                            BoxShadow(
-                              color: Colors.white,
-                              spreadRadius: 2,
-                              blurRadius: 0,
-                            ),
-                            BoxShadow(
-                              color: AppTheme.primaryColor,
-                              spreadRadius: 6,
-                              blurRadius: 0,
-                            ),
-                          ]
-                        : null,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return AppColorPicker(
+      colors: _categoryColorChoices,
+      selectedColor: selectedColor,
+      onColorSelected: onColorSelected,
     );
   }
 }
@@ -1679,20 +1537,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Choose Theme Color',
-                            style: _sectionTitle(context),
-                          ),
-                        ),
-                        IconButton.filledTonal(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
+                    const AppPanelHeader(title: 'Choose Theme Color'),
                     const SizedBox(height: 18),
                     Container(
                       width: 80,
@@ -1719,20 +1564,13 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                       ),
                     ),
                     const SizedBox(height: 22),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: _categoryColorChoices.map((color) {
-                        final isSelected = color == draftColor;
-                        return _ColorChoice(
-                          color: color,
-                          isSelected: isSelected,
-                          onTap: () {
-                            setDialogState(() => draftColor = color);
-                          },
-                        );
-                      }).toList(),
+                    AppColorPicker(
+                      colors: _categoryColorChoices,
+                      selectedColor: draftColor,
+                      layout: AppColorPickerLayout.wrap,
+                      onColorSelected: (color) {
+                        setDialogState(() => draftColor = color);
+                      },
                     ),
                     const SizedBox(height: 22),
                     Container(
@@ -1750,45 +1588,14 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                              side: const BorderSide(
-                                color: _AppShellColors.border,
-                                width: 2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () {
-                              ref
-                                  .read(themeColorProvider.notifier)
-                                  .setColor(draftColor);
-                              Navigator.pop(context);
-                            },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: draftColor,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Apply'),
-                          ),
-                        ),
-                      ],
+                    AppPanelActions(
+                      primaryLabel: 'Apply',
+                      onPrimaryPressed: () {
+                        ref
+                            .read(themeColorProvider.notifier)
+                            .setColor(draftColor);
+                        Navigator.pop(context);
+                      },
                     ),
                   ],
                 ),
@@ -2614,38 +2421,7 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: _AppShellColors.mutedText,
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        _Card(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: children.indexed.map((entry) {
-              final index = entry.$1;
-              final child = entry.$2;
-              return Column(
-                children: [
-                  child,
-                  if (index != children.length - 1)
-                    const Divider(height: 1, indent: 64),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
+    return AppListSection(title: title, children: children);
   }
 }
 
@@ -2666,35 +2442,12 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppListTile(
+      icon: icon,
+      color: color,
+      label: label,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 21),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: _AppShellColors.text,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            trailing ?? const Icon(Icons.chevron_right, color: Colors.black38),
-          ],
-        ),
-      ),
+      trailing: trailing,
     );
   }
 }
@@ -2864,18 +2617,7 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(16),
-          child: child,
-        ),
-      ),
-    );
+    return AppCard(onTap: onTap, padding: padding, child: child);
   }
 }
 
