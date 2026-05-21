@@ -4,8 +4,8 @@
   "description": "A comprehensive mobile financial management app for young professionals",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#008080",
-  "theme_color": "#008080",
+  "background_color": "#FFFFFF",
+  "theme_color": "#79BCB8",
   "orientation": "portrait",
   "icons": [
     {
