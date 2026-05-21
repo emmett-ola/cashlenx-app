@@ -9,8 +9,17 @@ import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../demo/data/demo_data_store.dart';
 
 final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
+  final user = ref.watch(authNotifierProvider).value;
+  if (user?.role == 'demo') {
+    ref.watch(demoDataRevisionProvider);
+    return _DashboardApi.demo(
+      ref.watch(demoDataStoreProvider),
+    ).fetchDashboard();
+  }
+
   return _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
 });
 
@@ -135,6 +144,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   Object? _error;
   List<_CategoryItem> _categories = const [];
 
+  bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
+
   List<_CategoryItem> get _visibleParents => _categories
       .where(
         (category) => category.type == _activeType && category.parentId == null,
@@ -202,7 +213,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
     });
 
     try {
-      final response = await ref.read(cashlenxApiProvider).listAllCategories();
+      final response = await _listAllCategories();
       final categories = _CategoryItem.listFromResponse(response);
 
       if (!mounted) return;
@@ -561,30 +572,26 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   }) async {
     try {
       if (mode == _CategoryEditorMode.edit && category != null) {
-        await ref
-            .read(cashlenxApiProvider)
-            .updateCategoryById(
-              category.id,
-              name: request.name,
-              type: request.type.apiValue,
-              parentId: request.parentId,
-              emoji: request.resolvedEmoji,
-              bgColor: request.resolvedBgColorHex,
-              remark: category.remark,
-            );
+        await _updateCategoryById(
+          category.id,
+          name: request.name,
+          type: request.type.apiValue,
+          parentId: request.parentId,
+          emoji: request.resolvedEmoji,
+          bgColor: request.resolvedBgColorHex,
+          remark: category.remark,
+        );
         if (mounted) {
           ToastUtils.showSuccess(context, 'Category updated.');
         }
       } else {
-        await ref
-            .read(cashlenxApiProvider)
-            .createCategory(
-              name: request.name,
-              type: request.type.apiValue,
-              parentId: request.parentId,
-              emoji: request.resolvedEmoji,
-              bgColor: request.resolvedBgColorHex,
-            );
+        await _createCategory(
+          name: request.name,
+          type: request.type.apiValue,
+          parentId: request.parentId,
+          emoji: request.resolvedEmoji,
+          bgColor: request.resolvedBgColorHex,
+        );
         if (mounted) {
           ToastUtils.showSuccess(context, 'Category created.');
         }
@@ -698,17 +705,15 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
 
   Future<void> _moveCategory(_CategoryItem category, String? parentId) async {
     try {
-      await ref
-          .read(cashlenxApiProvider)
-          .updateCategoryById(
-            category.id,
-            name: category.name,
-            type: category.type.apiValue,
-            parentId: parentId,
-            emoji: category.icon,
-            bgColor: _hexColor(category.color),
-            remark: category.remark,
-          );
+      await _updateCategoryById(
+        category.id,
+        name: category.name,
+        type: category.type.apiValue,
+        parentId: parentId,
+        emoji: category.icon,
+        bgColor: _hexColor(category.color),
+        remark: category.remark,
+      );
       if (mounted) {
         ToastUtils.showSuccess(context, 'Category moved.');
       }
@@ -772,7 +777,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
 
   Future<void> _deleteCategory(_CategoryItem category) async {
     try {
-      await ref.read(cashlenxApiProvider).deleteCategoryById(category.id);
+      await _deleteCategoryById(category.id);
       if (mounted) {
         ToastUtils.showSuccess(context, 'Category deleted.');
       }
@@ -781,6 +786,94 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
       if (!mounted) return;
       ToastUtils.showServerErrors(context, error);
     }
+  }
+
+  Future<ApiJson> _listAllCategories() {
+    if (_isDemo) {
+      return ref.read(demoDataStoreProvider).listAllCategories();
+    }
+
+    return ref.read(cashlenxApiProvider).listAllCategories();
+  }
+
+  Future<void> _createCategory({
+    required String name,
+    required String type,
+    String? parentId,
+    String? emoji,
+    String? bgColor,
+  }) async {
+    if (_isDemo) {
+      await ref
+          .read(demoDataStoreProvider)
+          .createCategory(
+            name: name,
+            type: type,
+            parentId: parentId,
+            emoji: emoji,
+            bgColor: bgColor,
+          );
+      ref.read(demoDataRevisionProvider.notifier).bump();
+      return;
+    }
+
+    await ref
+        .read(cashlenxApiProvider)
+        .createCategory(
+          name: name,
+          type: type,
+          parentId: parentId,
+          emoji: emoji,
+          bgColor: bgColor,
+        );
+  }
+
+  Future<void> _updateCategoryById(
+    String id, {
+    required String name,
+    required String type,
+    String? parentId,
+    String? emoji,
+    String? bgColor,
+    String? remark,
+  }) async {
+    if (_isDemo) {
+      await ref
+          .read(demoDataStoreProvider)
+          .updateCategoryById(
+            id,
+            name: name,
+            type: type,
+            parentId: parentId,
+            emoji: emoji,
+            bgColor: bgColor,
+            remark: remark,
+          );
+      ref.read(demoDataRevisionProvider.notifier).bump();
+      return;
+    }
+
+    await ref
+        .read(cashlenxApiProvider)
+        .updateCategoryById(
+          id,
+          name: name,
+          type: type,
+          parentId: parentId,
+          emoji: emoji,
+          bgColor: bgColor,
+          remark: remark,
+        );
+  }
+
+  Future<void> _deleteCategoryById(String id) async {
+    if (_isDemo) {
+      await ref.read(demoDataStoreProvider).deleteCategoryById(id);
+      ref.read(demoDataRevisionProvider.notifier).bump();
+      return;
+    }
+
+    await ref.read(cashlenxApiProvider).deleteCategoryById(id);
   }
 }
 
@@ -3068,23 +3161,36 @@ class _CategoryItem {
 }
 
 class _DashboardApi {
-  const _DashboardApi(this._api);
+  const _DashboardApi(this._api) : _demoDataStore = null;
 
-  final CashlenxApi _api;
+  const _DashboardApi.demo(this._demoDataStore) : _api = null;
+
+  final CashlenxApi? _api;
+  final DemoDataStore? _demoDataStore;
 
   Future<_DashboardResponse> fetchDashboard() async {
     final now = DateTime.now();
     final date = _dateToken(now);
     final month = _monthToken(now);
     final year = _yearToken(now);
+    final api = _api;
+    final demoDataStore = _demoDataStore;
 
-    final responses = await Future.wait([
-      _api.getDailySummary(date),
-      _api.getMonthlySummary(month),
-      _api.getYearlySummary(year),
-      _api.getTotalSummary(),
-      _api.listAllTransactions(limit: 5),
-    ]);
+    final responses = demoDataStore != null
+        ? await Future.wait([
+            demoDataStore.getDailySummary(date),
+            demoDataStore.getMonthlySummary(month),
+            demoDataStore.getYearlySummary(year),
+            demoDataStore.getTotalSummary(),
+            demoDataStore.listAllTransactions(limit: 5),
+          ])
+        : await Future.wait([
+            api!.getDailySummary(date),
+            api.getMonthlySummary(month),
+            api.getYearlySummary(year),
+            api.getTotalSummary(),
+            api.listAllTransactions(limit: 5),
+          ]);
 
     final daySummary = _CashSummary.fromResponse(responses[0]);
     final monthSummary = _CashSummary.fromResponse(responses[1]);

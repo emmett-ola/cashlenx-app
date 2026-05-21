@@ -2,6 +2,7 @@ import 'package:cashlenx/features/auth/data/repositories/auth_repository_impl.da
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/domain/repositories/auth_repository.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
+import 'package:cashlenx/features/demo/data/demo_data_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +25,35 @@ void main() {
       expect(repository.logoutCalls, 0);
     },
   );
+
+  test('entering demo mode resets local demo data', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(authNotifierProvider.notifier);
+    final demoStore = container.read(demoDataStoreProvider);
+
+    notifier.continueAsDemo();
+    await demoStore.createCategory(name: 'Custom', type: 'expense');
+
+    final changedCategories = await demoStore.listAllCategories();
+    expect(
+      (changedCategories['data'] as List).any(
+        (category) => category['name'] == 'Custom',
+      ),
+      isTrue,
+    );
+
+    notifier.continueAsDemo();
+
+    final resetCategories = await demoStore.listAllCategories();
+    expect(
+      (resetCategories['data'] as List).any(
+        (category) => category['name'] == 'Custom',
+      ),
+      isFalse,
+    );
+  });
 }
 
 class _FakeAuthRepository implements AuthRepository {

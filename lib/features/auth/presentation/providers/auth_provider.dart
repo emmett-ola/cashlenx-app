@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/services/secure_storage_service.dart';
+import '../../../demo/data/demo_data_store.dart';
 import '../../domain/models/user.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 
@@ -61,6 +62,9 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   void continueAsDemo() {
+    ref.read(demoDataStoreProvider).reset();
+    ref.read(demoDataRevisionProvider.notifier).bump();
+
     final now = DateTime.now();
     state = AsyncValue.data(
       User(
