@@ -77,7 +77,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showComingSoon(String feature) {
-    ToastUtils.showSuccess(context, '$feature coming soon!');
+    ToastUtils.showInfo(context, '$feature coming soon!');
   }
 }
 
