@@ -44,6 +44,16 @@ void main() {
     expect(expenseAmount.style?.color, AppTheme.successColor);
     expect(incomeAmount.style?.color, AppTheme.errorColor);
 
+    await tester.tap(find.text('See All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transactions'), findsOneWidget);
+    expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    expect(find.text('Coffee beans'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
 
@@ -91,12 +101,39 @@ void main() {
     await tester.tap(find.text('Settings').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Privacy & Security'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('Currency'), findsOneWidget);
+    expect(find.text('Support'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
 
-    await tester.tap(find.text('Security'));
+    await tester.tap(find.text('More Setting'));
     await tester.pump();
 
-    expect(find.text('Security coming soon!'), findsOneWidget);
+    expect(find.text('More Setting coming soon!'), findsOneWidget);
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('More Statistics Charts'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('More Statistics Charts'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('More Statistics'), findsOneWidget);
+    expect(find.text('Weekly Comparison'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
+    expect(find.text('Amount'), findsOneWidget);
+    expect(find.text('Category'), findsAtLeastNWidgets(1));
   });
 }
 

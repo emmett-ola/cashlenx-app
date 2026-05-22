@@ -26,11 +26,15 @@ class DemoDataStore {
   }
 
   var _nextCategoryId = 100;
+  var _nextTransactionId = 100;
   late List<ApiJson> _categories;
+  late List<ApiJson> _transactions;
 
   void reset() {
     _nextCategoryId = 100;
+    _nextTransactionId = 100;
     _categories = _initialCategories();
+    _transactions = _initialTransactions();
   }
 
   Future<ApiJson> getDailySummary(String date) async {
@@ -92,7 +96,7 @@ class DemoDataStore {
     String? categoryId,
     String? description,
   }) async {
-    final transactions = _initialTransactions()
+    final transactions = _transactions
         .where((transaction) {
           if (type != null && transaction['flow_type'] != type) return false;
           if (categoryId != null && transaction['category_id'] != categoryId) {
@@ -106,11 +110,39 @@ class DemoDataStore {
           }
           return true;
         })
+        .map(Map<String, dynamic>.from)
         .skip(offset ?? 0)
-        .take(limit ?? _initialTransactions().length)
+        .take(limit ?? _transactions.length)
         .toList(growable: false);
 
     return _wrappedList(transactions, limit: limit, offset: offset);
+  }
+
+  Future<ApiJson> createTransaction({
+    required String type,
+    required String belongsDate,
+    required String categoryName,
+    required num amount,
+    String? description,
+  }) async {
+    final category = _categories.firstWhere(
+      (category) =>
+          category['name'] == categoryName && category['type'] == type,
+      orElse: () => <String, dynamic>{},
+    );
+    final transaction = {
+      'id': 'demo-transaction-${_nextTransactionId++}',
+      'belongs_date': belongsDate,
+      'category_id': category['Id'],
+      'category_name': categoryName,
+      'flow_type': type,
+      'amount': amount,
+      'description': description,
+      'category_emoji': category['emoji'],
+      'category_bg_color': category['bg_color'],
+    };
+    _transactions.insert(0, transaction);
+    return _wrappedData(Map<String, dynamic>.from(transaction));
   }
 
   Future<ApiJson> listAllCategories({

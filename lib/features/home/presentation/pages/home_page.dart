@@ -13,6 +13,7 @@ import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../demo/data/demo_data_store.dart';
+import '../providers/currency_provider.dart';
 
 final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
   final user = ref.watch(authNotifierProvider).value;
@@ -35,6 +36,8 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   var _selectedTab = _HomeTab.home;
+  var _showTransactions = false;
+  var _showMoreStats = false;
 
   @override
   Widget build(BuildContext context) {
@@ -46,38 +49,48 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: _AppShellColors.background,
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(
-          index: _selectedTab.index,
-          children: [
-            _DashboardTab(
-              username: username,
-              isDemo: isDemo,
-              onAction: _showComingSoon,
-              onProfileTap: _openProfile,
-              onSeeAllTransactions: () => _showComingSoon('Transactions'),
-            ),
-            _CategoryTab(onAction: _showComingSoon),
-            _AddPlaceholderTab(onAction: _showComingSoon),
-            _BudgetTab(onAction: _showComingSoon),
-            _SettingsTab(
-              username: username,
-              email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
-              onAction: _showComingSoon,
-              onProfileTap: _openProfile,
-            ),
-          ],
-        ),
+        child: _showTransactions
+            ? _TransactionsScreen(onBack: _closeTransactions)
+            : _showMoreStats
+            ? _MoreStatisticsScreen(onBack: _closeMoreStats)
+            : IndexedStack(
+                index: _selectedTab.index,
+                children: [
+                  _DashboardTab(
+                    username: username,
+                    isDemo: isDemo,
+                    onAction: _showComingSoon,
+                    onProfileTap: _openProfile,
+                    onSeeAllTransactions: _openTransactions,
+                    onMoreStats: _openMoreStats,
+                  ),
+                  _CategoryTab(onAction: _showComingSoon),
+                  const SizedBox.shrink(),
+                  _BudgetTab(onAction: _showComingSoon),
+                  _SettingsTab(
+                    username: username,
+                    email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
+                    onAction: _showComingSoon,
+                    onProfileTap: _openProfile,
+                  ),
+                ],
+              ),
       ),
-      bottomNavigationBar: _BottomNav(
-        selectedTab: _selectedTab,
-        onSelect: (tab) {
-          if (tab == _HomeTab.add) {
-            _showComingSoon('Add transaction');
-            return;
-          }
-          setState(() => _selectedTab = tab);
-        },
-      ),
+      bottomNavigationBar: _showTransactions || _showMoreStats
+          ? null
+          : _BottomNav(
+              selectedTab: _selectedTab,
+              onSelect: (tab) {
+                if (tab == _HomeTab.add) {
+                  _showAddTransactionSheet();
+                  return;
+                }
+                setState(() => _selectedTab = tab);
+                if (tab == _HomeTab.home || tab == _HomeTab.budget) {
+                  ref.invalidate(_dashboardProvider);
+                }
+              },
+            ),
     );
   }
 
@@ -88,6 +101,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _openProfile() {
     context.push('/profile');
   }
+
+  void _openTransactions() {
+    setState(() => _showTransactions = true);
+  }
+
+  void _closeTransactions() {
+    setState(() => _showTransactions = false);
+    ref.invalidate(_dashboardProvider);
+  }
+
+  void _openMoreStats() {
+    setState(() => _showMoreStats = true);
+  }
+
+  void _closeMoreStats() {
+    setState(() => _showMoreStats = false);
+  }
+
+  void _showAddTransactionSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _AddTransactionSheet(),
+    ).whenComplete(() {
+      ref.invalidate(_dashboardProvider);
+    });
+  }
 }
 
 class _DashboardTab extends ConsumerWidget {
@@ -97,6 +138,7 @@ class _DashboardTab extends ConsumerWidget {
     required this.onAction,
     required this.onProfileTap,
     required this.onSeeAllTransactions,
+    required this.onMoreStats,
   });
 
   final String username;
@@ -104,6 +146,7 @@ class _DashboardTab extends ConsumerWidget {
   final ValueChanged<String> onAction;
   final VoidCallback onProfileTap;
   final VoidCallback onSeeAllTransactions;
+  final VoidCallback onMoreStats;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,7 +173,7 @@ class _DashboardTab extends ConsumerWidget {
           ),
           _SpendingByCategoryCard(
             categories: data.categoryBreakdown,
-            onMoreStats: () => onAction('More Statistics'),
+            onMoreStats: onMoreStats,
           ),
         ],
       ),
@@ -1421,26 +1464,522 @@ class _BudgetTab extends ConsumerWidget {
   }
 }
 
-class _AddPlaceholderTab extends StatelessWidget {
-  const _AddPlaceholderTab({required this.onAction});
+class _TransactionsScreen extends ConsumerStatefulWidget {
+  const _TransactionsScreen({required this.onBack});
 
-  final ValueChanged<String> onAction;
+  final VoidCallback onBack;
+
+  @override
+  ConsumerState<_TransactionsScreen> createState() =>
+      _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
+  var _selectedType = _TransactionFilterType.all;
+  String? _selectedCategoryId;
+  final _searchController = TextEditingController();
+  var _showFilters = false;
+  var _isLoading = true;
+  Object? _error;
+  List<_Transaction> _transactions = const [];
+  List<_CategoryItem> _categories = const [];
+
+  bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
+
+  List<_Transaction> get _filteredTransactions {
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = _transactions
+        .where((transaction) {
+          if (_selectedType != _TransactionFilterType.all &&
+              transaction.flowType != _selectedType.flowType) {
+            return false;
+          }
+          if (_selectedCategoryId != null &&
+              transaction.categoryId != _selectedCategoryId) {
+            return false;
+          }
+          if (query.isNotEmpty &&
+              !transaction.title.toLowerCase().contains(query) &&
+              !transaction.category.toLowerCase().contains(query)) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
+
+    return filtered..sort(_compareTransactionsNewestFirst);
+  }
+
+  List<_CategoryItem> get _categoryOptions {
+    return _categories
+        .where(
+          (category) =>
+              _selectedType == _TransactionFilterType.all ||
+              category.type == _selectedType.categoryType,
+        )
+        .toList(growable: false);
+  }
+
+  int get _activeFilterCount {
+    var count = 0;
+    if (_selectedType != _TransactionFilterType.all) count++;
+    if (_selectedCategoryId != null) count++;
+    if (_searchController.text.trim().isNotEmpty) count++;
+    return count;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredTransactions = _filteredTransactions;
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _NavigationHeader(
+            title: 'Transactions',
+            onBack: widget.onBack,
+            trailing: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _RoundIconButton(
+                  icon: Icons.filter_list,
+                  onPressed: () {
+                    setState(() => _showFilters = !_showFilters);
+                  },
+                ),
+                if (_activeFilterCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: _FilterBadge(count: _activeFilterCount),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (_showFilters)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: _TransactionFiltersCard(
+                selectedType: _selectedType,
+                selectedCategoryId: _selectedCategoryId,
+                categories: _categoryOptions,
+                searchController: _searchController,
+                onTypeChanged: (type) {
+                  setState(() {
+                    _selectedType = type;
+                    _selectedCategoryId = null;
+                  });
+                },
+                onCategoryChanged: (categoryId) {
+                  setState(() => _selectedCategoryId = categoryId);
+                },
+                onClear: _clearFilters,
+              ),
+            ),
+          ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          sliver: _isLoading
+              ? const SliverToBoxAdapter(child: _TransactionLoadingCard())
+              : _error != null
+              ? SliverToBoxAdapter(
+                  child: _TransactionErrorCard(onRetry: _loadData),
+                )
+              : filteredTransactions.isEmpty
+              ? const SliverToBoxAdapter(
+                  child: _EmptyStateCard(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'No transactions found',
+                    message: 'Adjust your filters or add a new transaction.',
+                    actionLabel: 'Clear Filters',
+                    onAction: null,
+                  ),
+                )
+              : SliverList.separated(
+                  itemBuilder: (context, index) {
+                    final transaction = filteredTransactions[index];
+                    final previous = index == 0
+                        ? null
+                        : filteredTransactions[index - 1];
+                    final showHeader =
+                        previous == null ||
+                        previous.dateGroupLabel != transaction.dateGroupLabel;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showHeader) ...[
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: index == 0 ? 0 : 12,
+                              bottom: 8,
+                            ),
+                            child: Text(
+                              transaction.dateGroupLabel,
+                              style: const TextStyle(
+                                color: _AppShellColors.mutedText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                        _TransactionTile(transaction: transaction),
+                      ],
+                    );
+                  },
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemCount: filteredTransactions.length,
+                ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final responses = _isDemo
+          ? await Future.wait([
+              ref.read(demoDataStoreProvider).listAllTransactions(),
+              ref.read(demoDataStoreProvider).listAllCategories(),
+            ])
+          : await Future.wait([
+              ref.read(cashlenxApiProvider).listAllTransactions(),
+              ref.read(cashlenxApiProvider).listAllCategories(),
+            ]);
+      if (!mounted) return;
+      setState(() {
+        _transactions = _Transaction.listFromResponse(responses[0])
+          ..sort(_compareTransactionsNewestFirst);
+        _categories = _CategoryItem.listFromResponse(responses[1]);
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _isLoading = false;
+      });
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedType = _TransactionFilterType.all;
+      _selectedCategoryId = null;
+      _searchController.clear();
+    });
+  }
+}
+
+class _MoreStatisticsScreen extends StatelessWidget {
+  const _MoreStatisticsScreen({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
-      title: 'Add Transaction',
-      subtitle: 'Capture income and expenses',
-      children: [
-        _EmptyStateCard(
-          icon: Icons.receipt_long,
-          title: 'Transaction entry is coming soon',
-          message: 'The screen is reserved for the real add transaction flow.',
-          actionLabel: 'Notify Me',
-          onAction: () => onAction('Add transaction'),
+      header: _NavigationHeader(title: 'More Statistics', onBack: onBack),
+      children: const [
+        _InfoCard(
+          icon: Icons.info_outline,
+          title: 'Test Data',
+          message:
+              'These comparison charts use sample data until analytics endpoints are available.',
         ),
+        _WeeklyComparisonCard(),
       ],
     );
+  }
+}
+
+class _AddTransactionSheet extends ConsumerStatefulWidget {
+  const _AddTransactionSheet();
+
+  @override
+  ConsumerState<_AddTransactionSheet> createState() =>
+      _AddTransactionSheetState();
+}
+
+class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+  var _type = _CategoryType.expense;
+  var _date = DateTime.now();
+  String? _selectedCategoryId;
+  var _isLoading = true;
+  var _isSaving = false;
+  Object? _error;
+  List<_CategoryItem> _categories = const [];
+
+  bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
+
+  List<_CategoryItem> get _visibleCategories {
+    return _categories
+        .where((category) => category.type == _type)
+        .toList(growable: false);
+  }
+
+  _CategoryItem? get _selectedCategory {
+    for (final category in _categories) {
+      if (category.id == _selectedCategoryId) return category;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: AppPanelHeader(title: 'Add Transaction'),
+                  ),
+                  IconButton.filledTonal(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _CategoryTypeSwitcher(
+                      activeType: _type,
+                      onChanged: (type) {
+                        setState(() {
+                          _type = type;
+                          _selectedCategoryId = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Amount', style: _fieldLabelStyle),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        prefixText: r'$ ',
+                        hintText: '0.00',
+                        filled: true,
+                        fillColor: const Color(0xFFF3F4F6),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Category', style: _fieldLabelStyle),
+                    const SizedBox(height: 10),
+                    if (_isLoading)
+                      const _TransactionLoadingCard()
+                    else if (_error != null)
+                      _TransactionErrorCard(onRetry: _loadCategories)
+                    else
+                      _CategoryChoiceGrid(
+                        categories: _visibleCategories,
+                        selectedCategoryId: _selectedCategoryId,
+                        onSelected: (category) {
+                          setState(() => _selectedCategoryId = category.id);
+                        },
+                      ),
+                    const SizedBox(height: 20),
+                    const Text('Date', style: _fieldLabelStyle),
+                    const SizedBox(height: 8),
+                    _DateSelector(
+                      date: _date,
+                      onDateChanged: (date) => setState(() => _date = date),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Note', style: _fieldLabelStyle),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _noteController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'Add a note',
+                        filled: true,
+                        fillColor: const Color(0xFFF3F4F6),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    top: BorderSide(color: _AppShellColors.border),
+                  ),
+                ),
+                child: FilledButton(
+                  onPressed: _isSaving ? null : _saveTransaction,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    backgroundColor: AppTheme.primaryColor,
+                  ),
+                  child: _isSaving
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Add Transaction'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final response = _isDemo
+          ? await ref.read(demoDataStoreProvider).listAllCategories()
+          : await ref.read(cashlenxApiProvider).listAllCategories();
+      if (!mounted) return;
+      setState(() {
+        _categories = _CategoryItem.listFromResponse(response);
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveTransaction() async {
+    final amount = double.tryParse(_amountController.text.trim());
+    final category = _selectedCategory;
+    if (amount == null || amount <= 0) {
+      ToastUtils.showInfo(context, 'Enter an amount greater than zero.');
+      return;
+    }
+    if (category == null) {
+      ToastUtils.showInfo(context, 'Choose a category.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final belongsDate = _dateToken(_date);
+      final description = _noteController.text.trim();
+      if (_isDemo) {
+        await ref
+            .read(demoDataStoreProvider)
+            .createTransaction(
+              type: _type.apiValue,
+              belongsDate: belongsDate,
+              categoryName: category.name,
+              amount: amount,
+              description: description.isEmpty ? null : description,
+            );
+        ref.read(demoDataRevisionProvider.notifier).bump();
+      } else if (_type == _CategoryType.income) {
+        await ref
+            .read(cashlenxApiProvider)
+            .createIncome(
+              belongsDate: belongsDate,
+              categoryName: category.name,
+              amount: amount,
+              description: description.isEmpty ? null : description,
+            );
+      } else {
+        await ref
+            .read(cashlenxApiProvider)
+            .createExpense(
+              belongsDate: belongsDate,
+              categoryName: category.name,
+              amount: amount,
+              description: description.isEmpty ? null : description,
+            );
+      }
+      ref.invalidate(_dashboardProvider);
+      if (!mounted) return;
+      Navigator.pop(context);
+      ToastUtils.showSuccess(context, 'Transaction added.');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ToastUtils.showServerErrors(context, error);
+    }
   }
 }
 
@@ -1465,6 +2004,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
   @override
   Widget build(BuildContext context) {
     final themeColor = ref.watch(themeColorProvider);
+    final currency = ref.watch(currencyProvider);
 
     return _PageScaffold(
       title: 'Settings',
@@ -1481,32 +2021,28 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
             _SettingsTile(
               icon: Icons.palette_outlined,
               color: themeColor,
-              label: 'Theme Color',
+              label: 'Theme',
               trailing: _ColorDot(color: themeColor),
               onTap: _showThemeColorDialog,
             ),
-          ],
-        ),
-        _SettingsSection(
-          title: 'Privacy & Security',
-          children: [
             _SettingsTile(
-              icon: Icons.visibility_outlined,
-              color: const Color(0xFF2563EB),
-              label: 'Privacy Settings',
-              onTap: () => widget.onAction('Privacy Settings'),
+              icon: Icons.attach_money,
+              color: AppTheme.successColor,
+              label: 'Currency',
+              trailing: Text(
+                '${currency.code} (${currency.symbol})',
+                style: const TextStyle(
+                  color: _AppShellColors.mutedText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onTap: _showCurrencyDialog,
             ),
             _SettingsTile(
-              icon: Icons.lock_outline,
-              color: const Color(0xFF7C3AED),
-              label: 'Security',
-              onTap: () => widget.onAction('Security'),
-            ),
-            _SettingsTile(
-              icon: Icons.notifications_none,
-              color: const Color(0xFFF97316),
-              label: 'Notifications',
-              onTap: () => widget.onAction('Notifications'),
+              icon: Icons.settings_outlined,
+              color: _AppShellColors.mutedText,
+              label: 'More Setting',
+              onTap: () => widget.onAction('More Setting'),
             ),
           ],
         ),
@@ -1516,16 +2052,10 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
             _SettingsTile(
               icon: Icons.help_outline,
               color: AppTheme.successColor,
-              label: 'Help & Support',
-              onTap: () => widget.onAction('Help & Support'),
+              label: 'About',
+              onTap: _showAboutDialog,
             ),
           ],
-        ),
-        const Center(
-          child: Text(
-            'CashLenX v1.0.0',
-            style: TextStyle(color: _AppShellColors.mutedText),
-          ),
         ),
       ],
     );
@@ -1613,6 +2143,167 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showCurrencyDialog() {
+    var draftCurrency = ref.read(currencyProvider);
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AppPanelHeader(title: 'Select Currency'),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Choose the currency used for balances and transaction amounts.',
+                      style: TextStyle(color: _AppShellColors.mutedText),
+                    ),
+                    const SizedBox(height: 18),
+                    ...CurrencyOption.values.map(
+                      (currency) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _CurrencyOptionTile(
+                          currency: currency,
+                          selected: draftCurrency == currency,
+                          onTap: () {
+                            setDialogState(() => draftCurrency = currency);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    AppPanelActions(
+                      primaryLabel: 'Apply',
+                      onPrimaryPressed: () {
+                        ref
+                            .read(currencyProvider.notifier)
+                            .setCurrency(draftCurrency);
+                        Navigator.pop(context);
+                        ToastUtils.showSuccess(
+                          context,
+                          'Currency updated to ${draftCurrency.code}.',
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAboutDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('About', style: _sectionTitle(context)),
+                    ),
+                    IconButton.filledTonal(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: 80,
+                  height: 80,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Image.asset('assets/images/app_icon.png'),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'CashLenX',
+                  style: TextStyle(
+                    color: _AppShellColors.text,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Your Financial Companion',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: _AppShellColors.mutedText),
+                ),
+                const SizedBox(height: 20),
+                const _AboutVersionCard(),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          ToastUtils.showInfo(
+                            context,
+                            'You are on the latest version.',
+                          );
+                        },
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Check Update'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  '© 2026 CashLenX. All rights reserved.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _AppShellColors.navMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -2424,6 +3115,630 @@ class _CategoryBudgetTile extends StatelessWidget {
   }
 }
 
+class _NavigationHeader extends StatelessWidget {
+  const _NavigationHeader({
+    required this.title,
+    required this.onBack,
+    this.trailing,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: _AppShellColors.border)),
+      ),
+      child: Row(
+        children: [
+          IconButton.filledTonal(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(title, style: _pageTitle(context))),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterBadge extends StatelessWidget {
+  const _FilterBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(
+        color: Color(0xFFFF8A65),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          count.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionFiltersCard extends StatelessWidget {
+  const _TransactionFiltersCard({
+    required this.selectedType,
+    required this.selectedCategoryId,
+    required this.categories,
+    required this.searchController,
+    required this.onTypeChanged,
+    required this.onCategoryChanged,
+    required this.onClear,
+  });
+
+  final _TransactionFilterType selectedType;
+  final String? selectedCategoryId;
+  final List<_CategoryItem> categories;
+  final TextEditingController searchController;
+  final ValueChanged<_TransactionFilterType> onTypeChanged;
+  final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Type', style: _fieldLabelStyle),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: _TransactionFilterType.values.map((type) {
+              final selected = selectedType == type;
+              return ChoiceChip(
+                selected: selected,
+                label: Text(type.label),
+                onSelected: (_) => onTypeChanged(type),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          const Text('Category', style: _fieldLabelStyle),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String?>(
+            initialValue: selectedCategoryId,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('All Categories'),
+              ),
+              ...categories.map(
+                (category) => DropdownMenuItem<String?>(
+                  value: category.id,
+                  child: Text('${category.icon} ${category.name}'),
+                ),
+              ),
+            ],
+            onChanged: onCategoryChanged,
+          ),
+          const SizedBox(height: 16),
+          const Text('Search', style: _fieldLabelStyle),
+          const SizedBox(height: 8),
+          TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Search transactions',
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onClear,
+              child: const Text('Clear Filters'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionLoadingCard extends StatelessWidget {
+  const _TransactionLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _Card(
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionErrorCard extends StatelessWidget {
+  const _TransactionErrorCard({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _EmptyStateCard(
+      icon: Icons.error_outline,
+      title: 'Transactions failed to load',
+      message: 'The transaction request did not complete.',
+      actionLabel: 'Retry',
+      onAction: onRetry,
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF1E40AF),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(message, style: const TextStyle(color: Color(0xFF2563EB))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyComparisonCard extends StatelessWidget {
+  const _WeeklyComparisonCard();
+
+  static const _data = [
+    ('Mon', 45.0, 32.0),
+    ('Tue', 52.0, 48.0),
+    ('Wed', 38.0, 55.0),
+    ('Thu', 65.0, 42.0),
+    ('Fri', 58.0, 68.0),
+    ('Sat', 72.0, 85.0),
+    ('Sun', 48.0, 52.0),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Weekly Comparison', style: _sectionTitle(context)),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 200,
+            child: CustomPaint(
+              painter: _WeeklyComparisonPainter(
+                data: _data,
+                themeColor: _themeColor(context),
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 20,
+            runSpacing: 8,
+            children: [
+              const _LegendDot(color: Color(0xFFD1D5DB), label: 'Last Week'),
+              _LegendDot(color: _themeColor(context), label: 'This Week'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeeklyComparisonPainter extends CustomPainter {
+  const _WeeklyComparisonPainter({
+    required this.data,
+    required this.themeColor,
+  });
+
+  final List<(String, double, double)> data;
+  final Color themeColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final maxValue = data
+        .expand((entry) => [entry.$2, entry.$3])
+        .fold<double>(0, (maxValue, value) => math.max(maxValue, value));
+    final chartHeight = size.height - 28;
+    final groupWidth = size.width / data.length;
+    final barWidth = math.min(14.0, groupWidth / 4);
+    final lastWeekPaint = Paint()..color = const Color(0xFFD1D5DB);
+    final thisWeekPaint = Paint()..color = themeColor;
+    final textPainter = TextPainter(
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+
+    for (final entry in data.indexed) {
+      final index = entry.$1;
+      final item = entry.$2;
+      final x = groupWidth * index + groupWidth / 2;
+      final lastHeight = maxValue == 0
+          ? 0.0
+          : (item.$2 / maxValue) * chartHeight;
+      final thisHeight = maxValue == 0
+          ? 0.0
+          : (item.$3 / maxValue) * chartHeight;
+      final baseY = chartHeight;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            x - barWidth - 2,
+            baseY - lastHeight,
+            barWidth,
+            lastHeight,
+          ),
+          const Radius.circular(6),
+        ),
+        lastWeekPaint,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x + 2, baseY - thisHeight, barWidth, thisHeight),
+          const Radius.circular(6),
+        ),
+        thisWeekPaint,
+      );
+      textPainter.text = TextSpan(
+        text: item.$1,
+        style: const TextStyle(color: _AppShellColors.mutedText, fontSize: 11),
+      );
+      textPainter.layout(minWidth: groupWidth, maxWidth: groupWidth);
+      textPainter.paint(canvas, Offset(groupWidth * index, chartHeight + 8));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeeklyComparisonPainter oldDelegate) {
+    return oldDelegate.themeColor != themeColor || oldDelegate.data != data;
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(color: _AppShellColors.mutedText)),
+      ],
+    );
+  }
+}
+
+class _CategoryChoiceGrid extends StatelessWidget {
+  const _CategoryChoiceGrid({
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onSelected,
+  });
+
+  final List<_CategoryItem> categories;
+  final String? selectedCategoryId;
+  final ValueChanged<_CategoryItem> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (categories.isEmpty) {
+      return const _Card(
+        child: Center(
+          child: Text(
+            'No categories available.',
+            style: TextStyle(color: _AppShellColors.mutedText),
+          ),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.86,
+      ),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final category = categories[index];
+        final selected = category.id == selectedCategoryId;
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => onSelected(category),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: selected ? _themeColor(context) : const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(category.icon, style: const TextStyle(fontSize: 24)),
+                const SizedBox(height: 6),
+                Text(
+                  category.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selected ? Colors.white : _AppShellColors.text,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DateSelector extends StatelessWidget {
+  const _DateSelector({required this.date, required this.onDateChanged});
+
+  final DateTime date;
+  final ValueChanged<DateTime> onDateChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+        if (picked != null) onDateChanged(picked);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today_outlined, size: 18),
+            const SizedBox(width: 10),
+            Text(_dateLabel(date)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrencyOptionTile extends StatelessWidget {
+  const _CurrencyOptionTile({
+    required this.currency,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CurrencyOption currency;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? _themeColor(context).withValues(alpha: 0.08)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? _themeColor(context) : _AppShellColors.border,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _themeColor(context),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    currency.symbol,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currency.code,
+                      style: const TextStyle(
+                        color: _AppShellColors.text,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currency.name,
+                      style: const TextStyle(
+                        color: _AppShellColors.mutedText,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle, color: _themeColor(context)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AboutVersionCard extends StatelessWidget {
+  const _AboutVersionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Column(
+        children: [
+          _AboutVersionRow(label: 'Version', value: '1.0.0'),
+          SizedBox(height: 10),
+          _AboutVersionRow(label: 'Build Date', value: '2026-05-21'),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutVersionRow extends StatelessWidget {
+  const _AboutVersionRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: _AppShellColors.mutedText,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: _AppShellColors.text,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({required this.title, required this.children});
 
@@ -2734,7 +4049,7 @@ class _EmptyStateCard extends StatelessWidget {
   final String title;
   final String message;
   final String actionLabel;
-  final VoidCallback onAction;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -2763,7 +4078,8 @@ class _EmptyStateCard extends StatelessWidget {
             style: const TextStyle(color: _AppShellColors.mutedText),
           ),
           const SizedBox(height: 18),
-          FilledButton(onPressed: onAction, child: Text(actionLabel)),
+          if (onAction != null)
+            FilledButton(onPressed: onAction, child: Text(actionLabel)),
         ],
       ),
     );
@@ -3240,6 +4556,18 @@ enum _CashFlowType {
   }
 }
 
+enum _TransactionFilterType {
+  all('All', null, null),
+  income('Income', _CashFlowType.income, _CategoryType.income),
+  expense('Expense', _CashFlowType.expense, _CategoryType.expense);
+
+  const _TransactionFilterType(this.label, this.flowType, this.categoryType);
+
+  final String label;
+  final _CashFlowType? flowType;
+  final _CategoryType? categoryType;
+}
+
 class _CashSummary {
   const _CashSummary({
     required this.totalIncome,
@@ -3289,19 +4617,27 @@ class _BudgetSummary {
 
 class _Transaction {
   const _Transaction({
+    required this.id,
     required this.title,
     required this.dateLabel,
+    required this.dateGroupLabel,
+    required this.dateSort,
     required this.amount,
     required this.category,
+    required this.categoryId,
     required this.flowType,
     required this.icon,
     required this.color,
   });
 
+  final String id;
   final String title;
   final String dateLabel;
+  final String dateGroupLabel;
+  final DateTime dateSort;
   final double amount;
   final String category;
+  final String? categoryId;
   final _CashFlowType flowType;
   final String icon;
   final Color color;
@@ -3323,16 +4659,21 @@ class _Transaction {
     final description = _nullableString(
       json['description'] ?? json['Description'],
     );
+    final rawDate = json['belongs_date'] ?? json['date'];
     final rawAmount = _jsonDouble(json['amount'] ?? json['Amount']);
     final amount = flowType == _CashFlowType.expense
         ? -rawAmount.abs()
         : rawAmount.abs();
 
     return _Transaction(
+      id: (json['id'] ?? json['Id'] ?? json['_id'] ?? '').toString(),
       title: description ?? categoryName,
-      dateLabel: _transactionDateLabel(json['belongs_date'] ?? json['date']),
+      dateLabel: _transactionDateLabel(rawDate),
+      dateGroupLabel: _transactionDateGroupLabel(rawDate),
+      dateSort: _transactionDateSort(rawDate),
       amount: amount,
       category: categoryName,
+      categoryId: _nullableString(json['category_id'] ?? json['categoryId']),
       flowType: flowType,
       icon: _categoryEmojiOrDefault(
         json['category_emoji'] ??
@@ -3493,15 +4834,11 @@ Color _categoryColorOrDefault(Object? value) {
 }
 
 String _transactionDateLabel(Object? value) {
-  final text = value?.toString().trim();
-  if (text == null || text.isEmpty) return 'Recent';
-
-  final compact = RegExp(r'^(\d{4})(\d{2})(\d{2})$').firstMatch(text);
-  final dateText = compact == null
-      ? text.replaceAll('/', '-')
-      : '${compact.group(1)}-${compact.group(2)}-${compact.group(3)}';
-  final date = DateTime.tryParse(dateText);
-  if (date == null) return text;
+  final date = _parseTransactionDate(value);
+  if (date == null) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? 'Recent' : text;
+  }
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -3510,7 +4847,52 @@ String _transactionDateLabel(Object? value) {
   if (dayDelta == 0) return 'Today';
   if (dayDelta == 1) return 'Yesterday';
 
+  return _dateLabel(date);
+}
+
+String _transactionDateGroupLabel(Object? value) {
+  final date = _parseTransactionDate(value);
+  if (date == null) return _transactionDateLabel(value);
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final transactionDay = DateTime(date.year, date.month, date.day);
+  final dayDelta = today.difference(transactionDay).inDays;
+  if (dayDelta == 0) return 'Today';
+  if (dayDelta == 1) return 'Yesterday';
+
+  return _dateLabel(date);
+}
+
+DateTime _transactionDateSort(Object? value) {
+  return _parseTransactionDate(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _parseTransactionDate(Object? value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty) return null;
+
+  final compact = RegExp(r'^(\d{4})(\d{2})(\d{2})$').firstMatch(text);
+  final dateText = compact == null
+      ? text.replaceAll('/', '-')
+      : '${compact.group(1)}-${compact.group(2)}-${compact.group(3)}';
+  return DateTime.tryParse(dateText);
+}
+
+int _compareTransactionsNewestFirst(_Transaction a, _Transaction b) {
+  final dateCompare = b.dateSort.compareTo(a.dateSort);
+  if (dateCompare != 0) return dateCompare;
+  return b.id.compareTo(a.id);
+}
+
+String _dateLabel(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
+String _dateToken(DateTime date) {
+  return '${date.year}'
+      '${date.month.toString().padLeft(2, '0')}'
       '${date.day.toString().padLeft(2, '0')}';
 }
 
