@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -43,12 +42,6 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-
-    if (kIsWeb) {
-      _entranceController.value = 1;
-      _pulseController.repeat(reverse: true);
-      return;
-    }
 
     _entranceController.forward().then((_) {
       _pulseController.repeat(reverse: true);

@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="CashLenX personal finance app.">
+  <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -37,7 +37,7 @@
     body {
       min-height: 100%;
       margin: 0;
-      background: #008080;
+      background: #f8fafc;
     }
 
     #cashlenx-boot-loader {
@@ -46,12 +46,18 @@
       z-index: 9999;
       display: grid;
       place-items: center;
-      background: linear-gradient(135deg, #008080 0%, #4db6ac 100%);
-      color: #ffffff;
+      background:
+        radial-gradient(circle at 50% 32%, rgba(77, 182, 172, 0.14), transparent 32%),
+        linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      color: #0f172a;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      opacity: 1;
+      opacity: 0;
       transition: opacity 180ms ease;
       pointer-events: none;
+    }
+
+    #cashlenx-boot-loader.cashlenx-boot-loader-visible {
+      opacity: 1;
     }
 
     #cashlenx-boot-loader.cashlenx-boot-loader-done {
@@ -61,68 +67,82 @@
     .cashlenx-boot-card {
       display: grid;
       justify-items: center;
-      gap: 0;
-      padding: 32px;
-      animation: cashlenx-boot-enter 700ms ease-out both;
+      gap: 18px;
+      padding: 28px;
     }
 
-    .cashlenx-boot-logo {
-      width: 112px;
-      height: 112px;
-      margin-bottom: 24px;
-      animation: cashlenx-boot-pulse 1500ms ease-in-out infinite alternate;
+    .cashlenx-boot-mark {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #008080, #4db6ac);
+      box-shadow: 0 18px 42px rgba(0, 128, 128, 0.24);
     }
 
-    .cashlenx-boot-logo svg {
-      display: block;
-      width: 100%;
-      height: 100%;
+    .cashlenx-boot-mark::before,
+    .cashlenx-boot-mark::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border: 4px solid rgba(255, 255, 255, 0.92);
+      border-radius: 999px;
+    }
+
+    .cashlenx-boot-mark::after {
+      inset: 26px;
+      border-color: rgba(255, 255, 255, 0.54);
+      animation: cashlenx-boot-pulse 1200ms ease-in-out infinite;
+    }
+
+    .cashlenx-boot-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(0, 128, 128, 0.18);
+      border-top-color: #008080;
+      border-radius: 50%;
+      animation: cashlenx-boot-spin 780ms linear infinite;
     }
 
     .cashlenx-boot-title {
       margin: 0;
-      color: #ffffff;
-      font-size: 36px;
-      font-weight: 700;
+      color: #0f172a;
+      font-size: 24px;
+      font-weight: 800;
       letter-spacing: 0;
-      line-height: 1.2;
     }
 
     .cashlenx-boot-subtitle {
-      margin: 8px 0 0;
-      color: rgba(255, 255, 255, 0.72);
-      font-size: 18px;
-      font-weight: 400;
+      margin: -8px 0 0;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 500;
       letter-spacing: 0;
-      line-height: 1.35;
     }
 
-    @keyframes cashlenx-boot-enter {
-      from {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-
+    @keyframes cashlenx-boot-spin {
       to {
-        opacity: 1;
-        transform: scale(1);
+        transform: rotate(360deg);
       }
     }
 
     @keyframes cashlenx-boot-pulse {
-      from {
-        transform: scale(1);
+      0%,
+      100% {
+        transform: scale(0.92);
+        opacity: 0.72;
       }
 
-      to {
-        transform: scale(1.08);
+      50% {
+        transform: scale(1.18);
+        opacity: 0.18;
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
       #cashlenx-boot-loader,
-      .cashlenx-boot-card,
-      .cashlenx-boot-logo {
+      .cashlenx-boot-mark::after,
+      .cashlenx-boot-spinner {
         animation: none;
         transition: none;
       }
@@ -132,26 +152,26 @@
 <body>
   <div id="cashlenx-boot-loader" aria-live="polite" aria-label="Loading CashLenX">
     <div class="cashlenx-boot-card">
-      <div class="cashlenx-boot-logo" aria-hidden="true">
-        <svg width="512" height="512" viewBox="0 0 1020 880" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path clip-rule="evenodd" d="M120 180H780C860 180 900 220 900 300V380H760C680 380 620 440 620 520C620 600 680 660 760 660H900V760C900 840 860 880 780 880H120C40 880 0 840 0 760V300C0 220 40 180 120 180Z" fill="#F7FAFA" fill-rule="evenodd"></path>
-          <path d="M760 610C809.706 610 850 569.706 850 520C850 470.294 809.706 430 760 430C710.294 430 670 470.294 670 520C670 569.706 710.294 610 760 610Z" fill="#8FAFB0"></path>
-          <path d="M760 560C782.091 560 800 542.091 800 520C800 497.909 782.091 480 760 480C737.909 480 720 497.909 720 520C720 542.091 737.909 560 760 560Z" fill="#F7FAFA"></path>
-          <path d="M910 0C910 70 950 110 1020 110C950 110 910 150 910 220C910 150 870 110 800 110C870 110 910 70 910 0Z" fill="#F7FAFA"></path>
-          <path d="M830 20L838 42L860 50L838 58L830 80L822 58L800 50L822 42L830 20Z" fill="#F7FAFA"></path>
-          <path d="M950 250L956 266L972 272L956 278L950 294L944 278L928 272L944 266L950 250Z" fill="#F7FAFA"></path>
-          <path d="M70.5 780C74 780 77.5 783.5 81 790.5L91.5 804.5L102 790.5C105.5 783.5 109 780 112.5 780H123L98.5 811.5L123 843H112.5C109 843 105.5 839.5 102 832.5L91.5 818.5L81 832.5C77.5 839.5 74 843 70.5 843H60L84.5 811.5L60 780H70.5Z" fill="#F7FAFA"></path>
-        </svg>
-      </div>
+      <div class="cashlenx-boot-mark" aria-hidden="true"></div>
       <h1 class="cashlenx-boot-title">CashLenX</h1>
-      <p class="cashlenx-boot-subtitle">Your Financial Companion</p>
+      <p class="cashlenx-boot-subtitle">Preparing your finance workspace</p>
+      <div class="cashlenx-boot-spinner" aria-hidden="true"></div>
     </div>
   </div>
   <script>
     (function () {
       var loader = document.getElementById('cashlenx-boot-loader');
+      var didFinish = false;
+      var showDelay = window.setTimeout(function () {
+        if (!didFinish && loader) {
+          loader.classList.add('cashlenx-boot-loader-visible');
+        }
+      }, 450);
 
       function removeLoader() {
+        didFinish = true;
+        window.clearTimeout(showDelay);
+
         if (!loader) {
           return;
         }
@@ -173,6 +193,10 @@
     <style>
       #cashlenx-boot-loader {
         opacity: 1;
+      }
+
+      .cashlenx-boot-spinner {
+        display: none;
       }
     </style>
   </noscript>
