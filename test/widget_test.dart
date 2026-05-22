@@ -30,7 +30,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Create your account'), findsOneWidget);
-    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Send Verification Code'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Sign In'));
     await tester.tap(find.text('Sign In'));

@@ -10,6 +10,7 @@ class CustomInput extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final void Function(String)? onChanged;
+  final bool enabled;
 
   const CustomInput({
     super.key,
@@ -22,6 +23,7 @@ class CustomInput extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.onChanged,
+    this.enabled = true,
   });
 
   @override
@@ -44,6 +46,7 @@ class CustomInput extends StatelessWidget {
           validator: validator,
           keyboardType: keyboardType,
           onChanged: onChanged,
+          enabled: enabled,
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -69,7 +72,7 @@ class CustomInput extends StatelessWidget {
               ),
             ),
             filled: true,
-            fillColor: const Color(0xFFF3F4F6),
+            fillColor: enabled ? const Color(0xFFF3F4F6) : Colors.grey[100],
           ),
         ),
       ],

@@ -7,6 +7,7 @@ import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
 import '../../../../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/auth_language_button.dart';
 import '../widgets/auth_layout.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -203,31 +204,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 height: 48,
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(child: Divider(color: Colors.grey[300])),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'or',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                  ),
-                ),
-                Expanded(child: Divider(color: Colors.grey[300])),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                text: 'Continue with Demo Mode',
-                isOutlined: true,
-                onPressed: _handleDemoMode,
-                height: 48,
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -248,6 +225,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            const AuthDivider(),
+            const SizedBox(height: 24),
+            AuthOutlinedActionButton(
+              text: 'Continue with Demo Mode',
+              onPressed: _handleDemoMode,
+            ),
+            const SizedBox(height: 12),
+            const AuthLanguageButton(),
           ],
         ),
       ),

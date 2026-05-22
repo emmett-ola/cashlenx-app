@@ -1780,19 +1780,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: AppPanelHeader(title: 'Add Transaction'),
-                  ),
-                  IconButton.filledTonal(
-                    onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: AppPanelHeader(title: 'Add Transaction'),
             ),
             const Divider(height: 1),
             Flexible(
