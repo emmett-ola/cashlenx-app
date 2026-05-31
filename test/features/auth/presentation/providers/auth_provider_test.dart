@@ -1,3 +1,5 @@
+import 'package:cashlenx/core/infrastructure/persistence/memory_key_value_store.dart';
+import 'package:cashlenx/core/services/secure_storage_service.dart';
 import 'package:cashlenx/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/domain/repositories/auth_repository.dart';
@@ -53,6 +55,28 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test('session expiration clears tokens but preserves remember-me', () async {
+    final storage = SecureStorageService(MemoryKeyValueStore());
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+        secureStorageServiceProvider.overrideWithValue(storage),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await storage.saveToken('access-token');
+    await storage.saveRefreshToken('refresh-token');
+    await storage.saveRememberMe(true);
+
+    await container.read(authNotifierProvider.notifier).expireSession();
+
+    expect(await storage.getToken(), isNull);
+    expect(await storage.getRefreshToken(), isNull);
+    expect(await storage.getRememberMe(), isTrue);
+    expect(container.read(authNotifierProvider).value, isNull);
   });
 }
 

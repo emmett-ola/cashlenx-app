@@ -106,6 +106,18 @@ class AuthNotifier extends _$AuthNotifier {
     await ref.read(authRepositoryProvider).logout();
     state = const AsyncValue.data(null);
   }
+
+  Future<void> expireSession() async {
+    await ref.read(secureStorageServiceProvider).clearSession();
+
+    final currentUser = state.value;
+    if (currentUser?.role == 'demo') {
+      state = const AsyncValue.data(null);
+      return;
+    }
+
+    state = const AsyncValue.data(null);
+  }
 }
 
 final authNotifierProvider = authProvider;

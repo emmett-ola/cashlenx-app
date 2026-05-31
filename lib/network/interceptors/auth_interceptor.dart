@@ -1,17 +1,24 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/services/secure_storage_service.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class AuthInterceptor extends Interceptor {
   final Ref _ref;
-  bool _isRefreshing = false;
+  final Dio Function() _dioFactory;
+  Future<String?>? _refreshFuture;
 
-  AuthInterceptor(this._ref);
+  AuthInterceptor(this._ref, {Dio Function()? dioFactory})
+    : _dioFactory = dioFactory ?? _createDio;
 
   @override
   void onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     if (_isAnonymousRequest(options)) {
       super.onRequest(options, handler);
       return;
@@ -53,30 +60,42 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<Response<dynamic>?> _refreshAndRetry(
-      RequestOptions requestOptions) async {
-    if (_isRefreshing) return null;
-
+    RequestOptions requestOptions,
+  ) async {
     final storage = _ref.read(secureStorageServiceProvider);
-    final rememberMe = await storage.getRememberMe();
     final refreshToken = await storage.getRefreshToken();
-    if (!rememberMe || refreshToken == null || refreshToken.isEmpty) {
-      await storage.clearSession();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _expireSession();
       return null;
     }
 
-    _isRefreshing = true;
+    final accessToken = await (_refreshFuture ??= _refreshAccessToken(
+      refreshToken,
+    ));
+    _refreshFuture = null;
+
+    if (accessToken == null) {
+      await _expireSession();
+      return null;
+    }
+
+    final retryDio = _dioFactory();
+    final headers = Map<String, dynamic>.from(requestOptions.headers);
+    headers['Authorization'] = 'Bearer $accessToken';
+
+    return retryDio.fetch<dynamic>(
+      requestOptions.copyWith(
+        headers: headers,
+        extra: {...requestOptions.extra, 'skipAuthRefresh': true},
+      ),
+    );
+  }
+
+  Future<String?> _refreshAccessToken(String refreshToken) async {
+    final storage = _ref.read(secureStorageServiceProvider);
+
     try {
-      final refreshDio = Dio(
-        BaseOptions(
-          baseUrl: AppConfig.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-          headers: const {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        ),
-      );
+      final refreshDio = _dioFactory();
 
       final refreshResponse = await refreshDio.post<Map<String, dynamic>>(
         '/open/auth/login',
@@ -85,44 +104,38 @@ class AuthInterceptor extends Interceptor {
       final wrapper = refreshResponse.data;
       final authData = wrapper?['data'];
       if (authData is! Map<String, dynamic>) {
-        await storage.clearSession();
         return null;
       }
 
       final accessToken = authData['access_token'];
       final newRefreshToken = authData['refresh_token'];
       if (accessToken is! String || newRefreshToken is! String) {
-        await storage.clearSession();
         return null;
       }
 
       await storage.saveToken(accessToken);
       await storage.saveRefreshToken(newRefreshToken);
-
-      final retryDio = Dio(
-        BaseOptions(
-          baseUrl: AppConfig.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-        ),
-      );
-      final headers = Map<String, dynamic>.from(requestOptions.headers);
-      headers['Authorization'] = 'Bearer $accessToken';
-
-      return retryDio.fetch<dynamic>(
-        requestOptions.copyWith(
-          headers: headers,
-          extra: {
-            ...requestOptions.extra,
-            'skipAuthRefresh': true,
-          },
-        ),
-      );
+      return accessToken;
     } catch (_) {
-      await storage.clearSession();
       return null;
-    } finally {
-      _isRefreshing = false;
     }
+  }
+
+  Future<void> _expireSession() async {
+    await _ref.read(authNotifierProvider.notifier).expireSession();
+  }
+
+  static Dio _createDio() {
+    return Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
   }
 }
