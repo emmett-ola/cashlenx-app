@@ -60,6 +60,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png
     - .env
 
 flutter_launcher_icons:
