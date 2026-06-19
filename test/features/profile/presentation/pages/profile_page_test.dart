@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Demo User'), findsWidgets);
     expect(find.text('demo@cashlenx.com'), findsWidgets);
     expect(find.text('Personal Information'), findsOneWidget);
-    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Account Statistics'), findsOneWidget);
     expect(find.text('Log Out'), findsOneWidget);
   });
 }
