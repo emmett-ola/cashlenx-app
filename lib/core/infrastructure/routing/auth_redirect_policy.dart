@@ -4,6 +4,7 @@ class AuthRedirectPolicy {
   final String splashPath;
   final String onboardingPath;
   final String loginPath;
+  final String setupPath;
   final String authenticatedHomePath;
   final Set<String> publicAuthPaths;
 
@@ -11,6 +12,7 @@ class AuthRedirectPolicy {
     required this.splashPath,
     required this.onboardingPath,
     required this.loginPath,
+    required this.setupPath,
     required this.authenticatedHomePath,
     this.publicAuthPaths = const {},
   });
@@ -19,11 +21,13 @@ class AuthRedirectPolicy {
     required AuthStatus authStatus,
     required String location,
     required bool hasSeenOnboarding,
+    required bool hasCompletedSetup,
   }) {
     if (authStatus == AuthStatus.loading) return null;
 
     final isSplash = location == splashPath;
     final isOnboarding = location == onboardingPath;
+    final isSetup = location == setupPath;
     final isPublicAuthPath = publicAuthPaths.contains(location);
 
     if (!hasSeenOnboarding) {
@@ -32,12 +36,13 @@ class AuthRedirectPolicy {
 
     if (isOnboarding) {
       return authStatus == AuthStatus.authenticated
-          ? authenticatedHomePath
+          ? (hasCompletedSetup ? authenticatedHomePath : setupPath)
           : loginPath;
     }
 
     if (authStatus == AuthStatus.authenticated) {
-      if (isSplash || isPublicAuthPath) return authenticatedHomePath;
+      if (!hasCompletedSetup) return isSetup ? null : setupPath;
+      if (isSetup || isSplash || isPublicAuthPath) return authenticatedHomePath;
       return null;
     }
 

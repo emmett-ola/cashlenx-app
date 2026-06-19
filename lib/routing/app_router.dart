@@ -11,6 +11,9 @@ import '../features/home/presentation/pages/home_page.dart';
 import '../features/onboarding/data/onboarding_service.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/setup/data/setup_service.dart';
+import '../features/setup/presentation/pages/currency_setup_page.dart';
+import '../shared/widgets/mobile_page_shell.dart';
 
 part 'app_router.g.dart';
 
@@ -18,6 +21,7 @@ const _authRedirectPolicy = AuthRedirectPolicy(
   splashPath: '/',
   onboardingPath: '/onboarding',
   loginPath: '/login',
+  setupPath: '/setup',
   authenticatedHomePath: '/home',
   publicAuthPaths: {'/login', '/register', '/forgot-password'},
 );
@@ -29,6 +33,9 @@ GoRouter router(Ref ref) {
     listenable.value = Object();
   });
   ref.listen(onboardingSeenProvider, (previous, next) {
+    listenable.value = Object();
+  });
+  ref.listen(setupCompletedProvider, (previous, next) {
     listenable.value = Object();
   });
 
@@ -45,40 +52,59 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => const MobilePageShell(child: LoginPage()),
       ),
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        builder: (context, state) => const OnboardingPage(),
+        builder: (context, state) =>
+            const MobilePageShell(child: OnboardingPage()),
       ),
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) =>
+            const MobilePageShell(child: RegisterPage()),
       ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordPage(),
+        builder: (context, state) =>
+            const MobilePageShell(child: ForgotPasswordPage()),
+      ),
+      GoRoute(
+        path: '/currency-setup',
+        name: 'currency-setup',
+        builder: (context, state) =>
+            const MobilePageShell(child: CurrencySetupPage()),
+      ),
+      GoRoute(
+        path: '/setup',
+        name: 'setup',
+        builder: (context, state) => const MobilePageShell(
+          child: CurrencySetupPage(firstLoginSetup: true),
+        ),
       ),
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomePage(),
+        builder: (context, state) => const MobilePageShell(child: HomePage()),
       ),
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) => const ProfilePage(),
+        builder: (context, state) =>
+            const MobilePageShell(child: ProfilePage()),
       ),
     ],
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
       final onboardingState = ref.read(onboardingSeenProvider);
+      final setupState = ref.read(setupCompletedProvider);
       final hasSeenOnboarding = onboardingState.value;
 
       if (hasSeenOnboarding == null) return null;
+      if (authState.value != null && setupState.value == null) return null;
 
       return _authRedirectPolicy.redirect(
         authStatus: authState.isLoading
@@ -88,6 +114,7 @@ GoRouter router(Ref ref) {
             : AuthStatus.unauthenticated,
         location: state.matchedLocation,
         hasSeenOnboarding: hasSeenOnboarding,
+        hasCompletedSetup: setupState.value ?? true,
       );
     },
   );

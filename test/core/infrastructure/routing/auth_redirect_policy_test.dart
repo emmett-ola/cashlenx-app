@@ -6,6 +6,7 @@ void main() {
     splashPath: '/',
     onboardingPath: '/onboarding',
     loginPath: '/login',
+    setupPath: '/setup',
     authenticatedHomePath: '/home',
     publicAuthPaths: {'/login', '/register', '/forgot-password'},
   );
@@ -16,6 +17,7 @@ void main() {
         authStatus: AuthStatus.loading,
         location: '/',
         hasSeenOnboarding: false,
+        hasCompletedSetup: false,
       ),
       isNull,
     );
@@ -27,6 +29,7 @@ void main() {
         authStatus: AuthStatus.unauthenticated,
         location: '/login',
         hasSeenOnboarding: false,
+        hasCompletedSetup: false,
       ),
       '/onboarding',
     );
@@ -38,6 +41,7 @@ void main() {
         authStatus: AuthStatus.unauthenticated,
         location: '/onboarding',
         hasSeenOnboarding: false,
+        hasCompletedSetup: false,
       ),
       isNull,
     );
@@ -49,6 +53,7 @@ void main() {
         authStatus: AuthStatus.unauthenticated,
         location: '/home',
         hasSeenOnboarding: true,
+        hasCompletedSetup: false,
       ),
       '/login',
     );
@@ -60,6 +65,7 @@ void main() {
         authStatus: AuthStatus.unauthenticated,
         location: '/register',
         hasSeenOnboarding: true,
+        hasCompletedSetup: false,
       ),
       isNull,
     );
@@ -71,6 +77,7 @@ void main() {
         authStatus: AuthStatus.authenticated,
         location: '/login',
         hasSeenOnboarding: true,
+        hasCompletedSetup: true,
       ),
       '/home',
     );
@@ -82,8 +89,45 @@ void main() {
         authStatus: AuthStatus.unauthenticated,
         location: '/onboarding',
         hasSeenOnboarding: true,
+        hasCompletedSetup: false,
       ),
       '/login',
+    );
+  });
+
+  test('sends authenticated users to setup until first-login setup completes', () {
+    expect(
+      policy.redirect(
+        authStatus: AuthStatus.authenticated,
+        location: '/home',
+        hasSeenOnboarding: true,
+        hasCompletedSetup: false,
+      ),
+      '/setup',
+    );
+  });
+
+  test('allows authenticated users to stay on setup before completion', () {
+    expect(
+      policy.redirect(
+        authStatus: AuthStatus.authenticated,
+        location: '/setup',
+        hasSeenOnboarding: true,
+        hasCompletedSetup: false,
+      ),
+      isNull,
+    );
+  });
+
+  test('sends authenticated users away from setup after completion', () {
+    expect(
+      policy.redirect(
+        authStatus: AuthStatus.authenticated,
+        location: '/setup',
+        hasSeenOnboarding: true,
+        hasCompletedSetup: true,
+      ),
+      '/home',
     );
   });
 }

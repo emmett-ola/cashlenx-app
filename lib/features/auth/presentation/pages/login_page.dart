@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/secure_storage_service.dart';
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
@@ -72,6 +73,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.isLoading;
+    final t = ref.watch(translationsProvider);
 
     // Listen for errors
     ref.listen(authNotifierProvider, (previous, next) {
@@ -81,39 +83,42 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           next.value != null &&
           (previous?.isLoading == true || previous == null)) {
         final username = next.value?.username ?? 'User';
-        ToastUtils.showSuccess(context, 'Welcome back, $username!');
+        ToastUtils.showSuccess(context, '${t('welcome_back')}, $username!');
       }
     });
 
     return AuthLayout(
+      subtitle: t('auth_subtitle'),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
             CustomInput(
-              label: 'Email or Username',
+              label: t('email_or_username'),
               controller: _identifierController,
-              placeholder: 'email@example.com or username',
+              placeholder: t('email_or_username_placeholder'),
               keyboardType: TextInputType.text,
               prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
               onChanged: (_) => setState(() {}),
               validator: (value) {
                 final identifier = value?.trim() ?? '';
                 if (identifier.isEmpty) {
-                  return 'Please fill in all fields.';
+                  return t('please_fill_all');
                 }
                 return null;
               },
             ),
             const SizedBox(height: 20),
             CustomInput(
-              label: 'Password',
+              label: t('password'),
               controller: _passwordController,
-              placeholder: 'Enter your password',
+              placeholder: t('enter_password'),
               obscureText: !_isPasswordVisible,
               prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
               suffixIcon: IconButton(
-                tooltip: _isPasswordVisible ? 'Hide password' : 'Show password',
+                tooltip: _isPasswordVisible
+                    ? t('hide_password')
+                    : t('show_password'),
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                   color: Colors.grey[500],
@@ -127,10 +132,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               onChanged: (_) => setState(() {}),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please fill in all fields.';
+                  return t('please_fill_all');
                 }
                 if (value.length < 6) {
-                  return 'Password must be at least 6 characters long.';
+                  return t('password_min_error');
                 }
                 return null;
               },
@@ -143,7 +148,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: Row(
                     children: [
                       Tooltip(
-                        message: 'We will keep you signed in for 30 days',
+                        message: t('remember_me_tooltip'),
                         child: SizedBox(
                           height: 24,
                           width: 24,
@@ -167,9 +172,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             });
                           },
                           child: Tooltip(
-                            message: 'We will keep you signed in for 30 days',
+                            message: t('remember_me_tooltip'),
                             child: Text(
-                              'Remember me',
+                              t('remember_me'),
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
@@ -190,7 +195,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Forgot Password?'),
+                  child: Text(t('forgot_password')),
                 ),
               ],
             ),
@@ -198,7 +203,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             SizedBox(
               width: double.infinity,
               child: CustomButton(
-                text: 'Sign In',
+                text: t('sign_in'),
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
                 height: 48,
@@ -210,7 +215,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  "Don't have an account? ",
+                  '${t('dont_have_account')} ',
                   style: TextStyle(color: Colors.grey[600]),
                 ),
                 TextButton(
@@ -221,7 +226,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Sign Up'),
+                  child: Text(t('sign_up')),
                 ),
               ],
             ),
@@ -229,7 +234,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             const AuthDivider(),
             const SizedBox(height: 24),
             AuthOutlinedActionButton(
-              text: 'Continue with Demo Mode',
+              text: t('continue_demo'),
               onPressed: _handleDemoMode,
             ),
             const SizedBox(height: 12),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
@@ -62,11 +63,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = ref.watch(translationsProvider);
+
     return AuthLayout(
       subtitle: switch (_step) {
-        _RegisterStep.email => 'Create your account',
-        _RegisterStep.verify => 'Verify Email',
-        _RegisterStep.complete => 'Complete Profile',
+        _RegisterStep.email => t('create_account'),
+        _RegisterStep.verify => t('verify_email'),
+        _RegisterStep.complete => t('complete_profile'),
       },
       onBack: () => context.go('/login'),
       child: switch (_step) {
@@ -78,6 +81,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Widget _buildEmailStep() {
+    final t = ref.watch(translationsProvider);
+
     return Column(
       children: [
         Form(
@@ -85,7 +90,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: Column(
             children: [
               CustomInput(
-                label: 'Email *',
+                label: '${t('email')} *',
                 controller: _emailController,
                 placeholder: 'email@example.com',
                 keyboardType: TextInputType.emailAddress,
@@ -97,7 +102,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               SizedBox(
                 width: double.infinity,
                 child: CustomButton(
-                  text: 'Send Verification Code',
+                  text: t('send_verification_code'),
                   onPressed: _canSendCode ? _sendVerificationCode : null,
                   isLoading: _isSendingCode,
                 ),
@@ -116,6 +121,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Widget _buildVerifyStep() {
+    final t = ref.watch(translationsProvider);
+
     return Column(
       children: [
         Form(
@@ -123,7 +130,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: Column(
             children: [
               CustomInput(
-                label: 'Email',
+                label: t('email'),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
@@ -131,15 +138,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               const SizedBox(height: 20),
               CustomInput(
-                label: 'Verification Code *',
+                label: '${t('verification_code')} *',
                 controller: _verificationCodeController,
-                placeholder: 'Enter code',
+                placeholder: t('enter_code'),
                 keyboardType: TextInputType.number,
                 prefixIcon: Icon(Icons.error_outline, color: Colors.grey[500]),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if ((value ?? '').trim().isEmpty) {
-                    return 'Please enter the verification code.';
+                    return t('please_enter_code');
                   }
                   return null;
                 },
@@ -157,8 +164,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ),
                   child: Text(
                     _resendCountdown > 0
-                        ? 'Resend in ${_resendCountdown}s'
-                        : 'Resend Code',
+                        ? '${t('resend_in')} ${_resendCountdown}s'
+                        : t('resend_code'),
                   ),
                 ),
               ),
@@ -166,14 +173,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               SizedBox(
                 width: double.infinity,
                 child: CustomButton(
-                  text: _isVerifying ? 'Verifying...' : 'Verify Code',
+                  text: _isVerifying ? t('verifying') : t('verify_code_button'),
                   onPressed: _canVerify ? _verifyCode : null,
                   isLoading: _isVerifying,
                 ),
               ),
               const SizedBox(height: 12),
               AuthOutlinedActionButton(
-                text: 'Back to Email',
+                text: t('back_to_email'),
                 icon: Icons.arrow_back,
                 onPressed: _backToEmail,
               ),
@@ -191,6 +198,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Widget _buildCompleteStep() {
+    final t = ref.watch(translationsProvider);
+
     return Column(
       children: [
         Form(
@@ -198,29 +207,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: Column(
             children: [
               CustomInput(
-                label: 'Username *',
+                label: '${t('username')} *',
                 controller: _usernameController,
-                placeholder: 'Choose a username',
+                placeholder: t('choose_username'),
                 prefixIcon: Icon(Icons.person_outline, color: Colors.grey[500]),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if ((value ?? '').trim().isEmpty) {
-                    return 'Please fill in all required fields.';
+                    return t('please_fill_required');
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               CustomInput(
-                label: 'Password *',
+                label: '${t('password')} *',
                 controller: _passwordController,
-                placeholder: 'At least 6 characters',
+                placeholder: t('password_min_chars'),
                 obscureText: !_isPasswordVisible,
                 prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
                 suffixIcon: IconButton(
                   tooltip: _isPasswordVisible
-                      ? 'Hide password'
-                      : 'Show password',
+                      ? t('hide_password')
+                      : t('show_password'),
                   icon: Icon(
                     _isPasswordVisible
                         ? Icons.visibility_off
@@ -238,15 +247,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               const SizedBox(height: 20),
               CustomInput(
-                label: 'Confirm Password *',
+                label: '${t('confirm_password')} *',
                 controller: _confirmPasswordController,
-                placeholder: 'Re-enter your password',
+                placeholder: t('reenter_password'),
                 obscureText: !_isConfirmPasswordVisible,
                 prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
                 suffixIcon: IconButton(
                   tooltip: _isConfirmPasswordVisible
-                      ? 'Hide password'
-                      : 'Show password',
+                      ? t('hide_password')
+                      : t('show_password'),
                   icon: Icon(
                     _isConfirmPasswordVisible
                         ? Icons.visibility_off
@@ -262,10 +271,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please fill in all required fields.';
+                    return t('please_fill_required');
                   }
                   if (value != _passwordController.text) {
-                    return 'Passwords do not match.';
+                    return t('passwords_do_not_match');
                   }
                   return null;
                 },
@@ -275,8 +284,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 width: double.infinity,
                 child: CustomButton(
                   text: _isRegistering
-                      ? 'Creating Account...'
-                      : 'Complete Registration',
+                      ? t('creating_account')
+                      : t('complete_registration'),
                   onPressed: _canComplete ? _completeRegistration : null,
                   isLoading: _isRegistering,
                 ),
@@ -308,7 +317,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _isSendingCode = false;
       _step = _RegisterStep.verify;
     });
-    ToastUtils.showSuccess(context, 'Verification code sent to your email!');
+    ToastUtils.showSuccess(
+      context,
+      ref.read(translationsProvider)('verification_sent'),
+    );
     _startResendCountdown();
   }
 
@@ -325,7 +337,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     setState(() {
       _isSendingCode = false;
     });
-    ToastUtils.showSuccess(context, 'Verification code resent!');
+    ToastUtils.showSuccess(
+      context,
+      ref.read(translationsProvider)('verification_resent'),
+    );
     _startResendCountdown();
   }
 
@@ -343,7 +358,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _isVerifying = false;
       _step = _RegisterStep.complete;
     });
-    ToastUtils.showSuccess(context, 'Email verified successfully!');
+    ToastUtils.showSuccess(
+      context,
+      ref.read(translationsProvider)('email_verified'),
+    );
   }
 
   Future<void> _completeRegistration() async {
@@ -361,7 +379,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (!mounted) return;
       ToastUtils.showSuccess(
         context,
-        'Account created successfully! Please sign in to continue.',
+        ref.read(translationsProvider)('account_created'),
       );
       context.go('/login');
     } catch (error) {
@@ -409,41 +427,45 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   String? _validateEmail(String? value) {
+    final t = ref.read(translationsProvider);
     final email = value?.trim() ?? '';
     if (email.isEmpty) {
-      return 'Please enter your email address.';
+      return t('please_enter_email');
     }
     final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
     if (!emailRegex.hasMatch(email)) {
-      return 'Please enter a valid email address.';
+      return t('please_enter_valid_email');
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
+    final t = ref.read(translationsProvider);
     if (value == null || value.isEmpty) {
-      return 'Please fill in all required fields.';
+      return t('please_fill_required');
     }
     if (value.length < 6) {
-      return 'Password must be at least 6 characters long.';
+      return t('password_min_error');
     }
     return null;
   }
 }
 
-class _SignInPrompt extends StatelessWidget {
+class _SignInPrompt extends ConsumerWidget {
   const _SignInPrompt({required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(translationsProvider);
+
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
-          'Already have an account? ',
+          '${t('have_account')} ',
           style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
         TextButton(
@@ -454,7 +476,7 @@ class _SignInPrompt extends StatelessWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text('Sign In'),
+          child: Text(t('sign_in')),
         ),
       ],
     );

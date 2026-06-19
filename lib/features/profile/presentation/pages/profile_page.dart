@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
 import '../../../../shared/widgets/app_surface.dart';
@@ -46,6 +47,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(i18nProvider);
     final profile = _profile;
 
     return Scaffold(
@@ -60,7 +62,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: _ProfileHeader(
-                    title: 'Profile',
+                    title: appT(context, 'profile'),
                     isEditing: _isEditing,
                     isSaving: _isSaving,
                     onBack: () =>
@@ -107,7 +109,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                       .read(authNotifierProvider.notifier)
                                       .logout(),
                             icon: const Icon(Icons.logout),
-                            label: const Text('Log Out'),
+                            label: Text(appT(context, 'log_out')),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.errorColor,
                               minimumSize: const Size.fromHeight(52),
@@ -203,7 +205,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         _isSaving = false;
         _isEditing = false;
       });
-      ToastUtils.showSuccess(context, 'Profile updated');
+      ToastUtils.showSuccess(context, appT(context, 'profile_saved'));
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -289,7 +291,9 @@ class _ProfileHeader extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Icon(isEditing ? Icons.save_outlined : Icons.edit),
-                    label: Text(isEditing ? 'Save' : 'Edit'),
+                    label: Text(
+                      isEditing ? appT(context, 'save') : appT(context, 'edit'),
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: isEditing
                           ? Colors.white

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/onboarding_service.dart';
@@ -20,23 +21,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   static const _slides = [
     _OnboardingSlide(
       icon: Icons.trending_up_rounded,
-      title: 'Track Expenses',
-      description:
-          'Monitor your spending habits and stay in control of your finances.',
+      titleKey: 'onboarding_slide1_title',
+      descriptionKey: 'onboarding_slide1_desc',
       color: AppTheme.primaryColor,
     ),
     _OnboardingSlide(
       icon: Icons.pie_chart_rounded,
-      title: 'Gain Insights',
-      description:
-          'Visualize your money flow with clear charts and useful analytics.',
+      titleKey: 'onboarding_slide2_title',
+      descriptionKey: 'onboarding_slide2_desc',
       color: Color(0xFFFF8A65),
     ),
     _OnboardingSlide(
       icon: Icons.track_changes_rounded,
-      title: 'Plan Budgets',
-      description:
-          'Set goals and follow them with simple budget planning tools.',
+      titleKey: 'onboarding_slide3_title',
+      descriptionKey: 'onboarding_slide3_desc',
       color: Color(0xFF10B981),
     ),
   ];
@@ -71,6 +69,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(i18nProvider);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -87,7 +86,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: TextButton(
                       onPressed: _finish,
-                      child: const Text('Skip'),
+                      child: Text(appT(context, 'skip')),
                     ),
                   ),
                 ),
@@ -121,7 +120,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             ),
                             const SizedBox(height: 36),
                             Text(
-                              slide.title,
+                              appT(context, slide.titleKey),
                               textAlign: TextAlign.center,
                               style: textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -129,7 +128,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              slide.description,
+                              appT(context, slide.descriptionKey),
                               textAlign: TextAlign.center,
                               style: textTheme.bodyLarge?.copyWith(
                                 color: Theme.of(
@@ -195,8 +194,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             icon: const Icon(Icons.chevron_right_rounded),
                             label: Text(
                               _currentSlide == _slides.length - 1
-                                  ? 'Get Started'
-                                  : 'Next',
+                                  ? appT(context, 'get_started')
+                                  : appT(context, 'next'),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
@@ -227,14 +226,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
 class _OnboardingSlide {
   final IconData icon;
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descriptionKey;
   final Color color;
 
   const _OnboardingSlide({
     required this.icon,
-    required this.title,
-    required this.description,
+    required this.titleKey,
+    required this.descriptionKey,
     required this.color,
   });
 }

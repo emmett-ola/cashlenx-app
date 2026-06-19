@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
@@ -38,9 +39,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   var _selectedTab = _HomeTab.home;
   var _showTransactions = false;
   var _showMoreStats = false;
+  String? _selectedTransactionId;
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(i18nProvider);
     final user = ref.watch(authNotifierProvider).value;
     final username = user?.username ?? 'User';
     final isDemo = user?.role == 'demo';
@@ -49,8 +52,18 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: _AppShellColors.background,
       body: SafeArea(
         bottom: false,
-        child: _showTransactions
-            ? _TransactionsScreen(onBack: _closeTransactions)
+        child: _selectedTransactionId != null
+            ? _TransactionDetailScreen(
+                transactionId: _selectedTransactionId!,
+                onBack: _closeTransactionDetail,
+                onDeleted: _handleTransactionDeleted,
+                onUpdated: _handleTransactionUpdated,
+              )
+            : _showTransactions
+            ? _TransactionsScreen(
+                onBack: _closeTransactions,
+                onTransactionTap: _openTransactionDetail,
+              )
             : _showMoreStats
             ? _MoreStatisticsScreen(onBack: _closeMoreStats)
             : IndexedStack(
@@ -60,6 +73,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     username: username,
                     isDemo: isDemo,
                     onAction: _showComingSoon,
+                    onTransactionTap: _openTransactionDetail,
                     onProfileTap: _openProfile,
                     onSeeAllTransactions: _openTransactions,
                     onMoreStats: _openMoreStats,
@@ -76,7 +90,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ],
               ),
       ),
-      bottomNavigationBar: _showTransactions || _showMoreStats
+      bottomNavigationBar:
+          _showTransactions || _showMoreStats || _selectedTransactionId != null
           ? null
           : _BottomNav(
               selectedTab: _selectedTab,
@@ -95,7 +110,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showComingSoon(String feature) {
-    ToastUtils.showInfo(context, '$feature coming soon!');
+    ToastUtils.showInfo(context, '$feature ${appT(context, 'coming_soon')}');
   }
 
   void _openProfile() {
@@ -119,6 +134,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() => _showMoreStats = false);
   }
 
+  void _openTransactionDetail(_Transaction transaction) {
+    setState(() => _selectedTransactionId = transaction.id);
+  }
+
+  void _closeTransactionDetail() {
+    setState(() => _selectedTransactionId = null);
+  }
+
+  void _handleTransactionUpdated() {
+    ref.invalidate(_dashboardProvider);
+  }
+
+  void _handleTransactionDeleted() {
+    setState(() {
+      _selectedTransactionId = null;
+      _showTransactions = false;
+    });
+    ref.invalidate(_dashboardProvider);
+  }
+
   void _showAddTransactionSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -136,6 +171,7 @@ class _DashboardTab extends ConsumerWidget {
     required this.username,
     required this.isDemo,
     required this.onAction,
+    required this.onTransactionTap,
     required this.onProfileTap,
     required this.onSeeAllTransactions,
     required this.onMoreStats,
@@ -144,6 +180,7 @@ class _DashboardTab extends ConsumerWidget {
   final String username;
   final bool isDemo;
   final ValueChanged<String> onAction;
+  final ValueChanged<_Transaction> onTransactionTap;
   final VoidCallback onProfileTap;
   final VoidCallback onSeeAllTransactions;
   final VoidCallback onMoreStats;
@@ -153,7 +190,7 @@ class _DashboardTab extends ConsumerWidget {
     final dashboard = ref.watch(_dashboardProvider);
 
     return dashboard.when(
-      loading: () => const _LoadingPage(title: 'Home'),
+      loading: () => _LoadingPage(title: appT(context, 'home')),
       error: (error, stackTrace) => _ErrorPage(
         onRetry: () {
           ref.invalidate(_dashboardProvider);
@@ -170,6 +207,7 @@ class _DashboardTab extends ConsumerWidget {
           _RecentActivity(
             transactions: data.recentTransactions,
             onSeeAll: onSeeAllTransactions,
+            onTransactionTap: onTransactionTap,
           ),
           _SpendingByCategoryCard(
             categories: data.categoryBreakdown,
@@ -224,8 +262,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
-      title: 'Categories',
-      subtitle: 'Manage your categories',
+      title: appT(context, 'categories'),
+      subtitle: appT(context, 'categories_subtitle'),
       children: [
         _CategoryTypeSwitcher(
           activeType: _activeType,
@@ -360,8 +398,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: AppPanelHeader(
                         title: mode == _CategoryEditorMode.edit
-                            ? 'Edit Category'
-                            : 'Create Category',
+                            ? appT(context, 'edit_category')
+                            : appT(context, 'create_category'),
                       ),
                     ),
                     const Divider(height: 1),
@@ -397,14 +435,17 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            const Text('Name', style: _fieldLabelStyle),
+                            Text(
+                              appT(context, 'name'),
+                              style: _fieldLabelStyle,
+                            ),
                             const SizedBox(height: 8),
                             TextField(
                               controller: nameController,
                               maxLength: 64,
                               onChanged: (_) => setSheetState(() {}),
                               decoration: InputDecoration(
-                                hintText: 'Enter category name',
+                                hintText: appT(context, 'enter_category_name'),
                                 hintStyle: const TextStyle(
                                   color: _AppShellColors.navMuted,
                                   fontSize: 14,
@@ -439,7 +480,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            const Text('Icon', style: _fieldLabelStyle),
+                            Text(
+                              appT(context, 'icon'),
+                              style: _fieldLabelStyle,
+                            ),
                             const SizedBox(height: 8),
                             _EmojiPickerButton(
                               emoji: selectedIcon,
@@ -461,7 +505,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               ),
                             ],
                             const SizedBox(height: 24),
-                            const Text('Color', style: _fieldLabelStyle),
+                            Text(
+                              appT(context, 'color'),
+                              style: _fieldLabelStyle,
+                            ),
                             const SizedBox(height: 12),
                             _CategoryColorPicker(
                               selectedColor: selectedColor,
@@ -470,8 +517,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               },
                             ),
                             const SizedBox(height: 24),
-                            const Text(
-                              'Parent Category (Optional)',
+                            Text(
+                              appT(context, 'parent_category_optional'),
                               style: _fieldLabelStyle,
                             ),
                             const SizedBox(height: 8),
@@ -486,9 +533,11 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                                 ),
                               ),
                               items: [
-                                const DropdownMenuItem<String?>(
+                                DropdownMenuItem<String?>(
                                   value: null,
-                                  child: Text('None (Main Category)'),
+                                  child: Text(
+                                    appT(context, 'none_main_category'),
+                                  ),
                                 ),
                                 ..._visibleParents
                                     .where(
@@ -508,9 +557,9 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               },
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'Select a parent to create a subcategory',
-                              style: TextStyle(
+                            Text(
+                              appT(context, 'select_parent_hint'),
+                              style: const TextStyle(
                                 color: _AppShellColors.navMuted,
                                 fontSize: 12,
                               ),
@@ -531,8 +580,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                         ),
                         child: AppPanelActions(
                           primaryLabel: mode == _CategoryEditorMode.edit
-                              ? 'Save Changes'
-                              : 'Create',
+                              ? appT(context, 'save_changes')
+                              : appT(context, 'create'),
                           onPrimaryPressed: nameController.text.trim().isEmpty
                               ? null
                               : () {
@@ -580,7 +629,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
           remark: category.remark,
         );
         if (mounted) {
-          ToastUtils.showSuccess(context, 'Category updated.');
+          ToastUtils.showSuccess(context, appT(context, 'category_updated'));
         }
       } else {
         await _createCategory(
@@ -591,7 +640,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
           bgColor: request.resolvedBgColorHex,
         );
         if (mounted) {
-          ToastUtils.showSuccess(context, 'Category created.');
+          ToastUtils.showSuccess(context, appT(context, 'category_created'));
         }
       }
       await _loadCategories();
@@ -623,7 +672,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Move Category',
+                        appT(context, 'move_category'),
                         style: _sectionTitle(context),
                       ),
                     ),
@@ -634,27 +683,27 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Moving:',
-                  style: TextStyle(color: _AppShellColors.mutedText),
+                Text(
+                  appT(context, 'moving'),
+                  style: const TextStyle(color: _AppShellColors.mutedText),
                 ),
                 const SizedBox(height: 8),
                 _MoveCategoryOption(
                   icon: category.icon,
                   color: category.color,
                   title: category.name,
-                  subtitle: 'Current category',
+                  subtitle: appT(context, 'current_category'),
                   selected: false,
                   onTap: null,
                 ),
                 const SizedBox(height: 18),
-                const Text('Move to:', style: _fieldLabelStyle),
+                Text(appT(context, 'move_to'), style: _fieldLabelStyle),
                 const SizedBox(height: 8),
                 _MoveCategoryOption(
                   icon: '*',
                   color: AppTheme.primaryColor,
-                  title: 'Main Category',
-                  subtitle: 'Make it a top-level category',
+                  title: appT(context, 'main_category'),
+                  subtitle: appT(context, 'main_category_hint'),
                   selected: category.parentId == null,
                   onTap: () {
                     Navigator.pop(context);
@@ -669,7 +718,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                       color: parent.color,
                       title: parent.name,
                       subtitle:
-                          '${_childrenOf(parent.id).length} subcategories',
+                          '${_childrenOf(parent.id).length} ${appT(context, 'subcategories')}',
                       selected: category.parentId == parent.id,
                       onTap: () {
                         Navigator.pop(context);
@@ -690,7 +739,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                         width: 2,
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text(appT(context, 'cancel')),
                   ),
                 ),
               ],
@@ -713,7 +762,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
         remark: category.remark,
       );
       if (mounted) {
-        ToastUtils.showSuccess(context, 'Category moved.');
+        ToastUtils.showSuccess(context, appT(context, 'category_moved'));
       }
       await _loadCategories();
     } catch (error) {
@@ -745,17 +794,20 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
               size: 30,
             ),
           ),
-          title: const Text('Delete Category?', textAlign: TextAlign.center),
+          title: Text(
+            appT(context, 'delete_category_title'),
+            textAlign: TextAlign.center,
+          ),
           content: Text(
             'This will delete "${category.name}"'
-            '${childCount > 0 ? ' and all $childCount subcategories' : ''}, '
-            'This action cannot be undone.',
+            '${childCount > 0 ? ' and all $childCount ${appT(context, 'subcategories')}' : ''}, '
+            '${appT(context, 'delete_category_warning')}',
             textAlign: TextAlign.center,
           ),
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(appT(context, 'cancel')),
             ),
             FilledButton(
               onPressed: () {
@@ -765,7 +817,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
               ),
-              child: const Text('Delete'),
+              child: Text(appT(context, 'delete')),
             ),
           ],
         );
@@ -777,7 +829,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
     try {
       await _deleteCategoryById(category.id);
       if (mounted) {
-        ToastUtils.showSuccess(context, 'Category deleted.');
+        ToastUtils.showSuccess(context, appT(context, 'category_deleted'));
       }
       await _loadCategories();
     } catch (error) {
@@ -931,7 +983,7 @@ class _CategoryTypeSwitcher extends StatelessWidget {
                       : null,
                 ),
                 child: Text(
-                  type.label,
+                  appT(context, type.labelKey),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isSelected
@@ -977,12 +1029,12 @@ class _CategoryListCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: parentCategories.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(32),
+          ? Padding(
+              padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  'No categories yet. Create one below!',
-                  style: TextStyle(color: _AppShellColors.mutedText),
+                  appT(context, 'no_categories'),
+                  style: const TextStyle(color: _AppShellColors.mutedText),
                 ),
               ),
             )
@@ -1058,9 +1110,9 @@ class _CategoryErrorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _EmptyStateCard(
       icon: Icons.error_outline,
-      title: 'Categories failed to load',
-      message: 'The category request did not complete.',
-      actionLabel: 'Retry',
+      title: appT(context, 'categories_failed'),
+      message: appT(context, 'category_request_failed'),
+      actionLabel: appT(context, 'retry'),
       onAction: onRetry,
     );
   }
@@ -1218,7 +1270,7 @@ class _CreateCategoryButton extends StatelessWidget {
     return FilledButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.add),
-      label: const Text('Create New Category'),
+      label: Text(appT(context, 'create_new_category')),
       style: FilledButton.styleFrom(
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
@@ -1257,10 +1309,10 @@ class _EmojiPickerButton extends StatelessWidget {
             children: [
               Text(emoji, style: const TextStyle(fontSize: 24)),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Tap to change emoji',
-                  style: TextStyle(color: _AppShellColors.mutedText),
+                  appT(context, 'tap_change_emoji'),
+                  style: const TextStyle(color: _AppShellColors.mutedText),
                 ),
               ),
             ],
@@ -1287,24 +1339,24 @@ class _CategoryEmojiPicker extends StatelessWidget {
         ),
         child: EmojiPicker(
           onEmojiSelected: (_, emoji) => onEmojiSelected(emoji.emoji),
-          config: const Config(
+          config: Config(
             height: 400,
-            emojiViewConfig: EmojiViewConfig(
+            emojiViewConfig: const EmojiViewConfig(
               columns: 8,
               emojiSizeMax: 28,
               backgroundColor: Colors.white,
               gridPadding: EdgeInsets.all(8),
             ),
             searchViewConfig: SearchViewConfig(
-              hintText: 'Search emoji...',
-              backgroundColor: Color(0xFFF3F4F6),
+              hintText: appT(context, 'search_emoji'),
+              backgroundColor: const Color(0xFFF3F4F6),
             ),
-            categoryViewConfig: CategoryViewConfig(
+            categoryViewConfig: const CategoryViewConfig(
               backgroundColor: Colors.white,
               indicatorColor: AppTheme.primaryColor,
               iconColorSelected: AppTheme.primaryColor,
             ),
-            bottomActionBarConfig: BottomActionBarConfig(
+            bottomActionBarConfig: const BottomActionBarConfig(
               backgroundColor: Colors.white,
               buttonColor: AppTheme.primaryColor,
             ),
@@ -1426,27 +1478,30 @@ class _BudgetTab extends ConsumerWidget {
     final dashboard = ref.watch(_dashboardProvider);
 
     return dashboard.when(
-      loading: () => const _LoadingPage(title: 'Budget'),
+      loading: () => _LoadingPage(title: appT(context, 'budgets')),
       error: (error, stackTrace) => _ErrorPage(
         onRetry: () {
           ref.invalidate(_dashboardProvider);
         },
       ),
       data: (data) => _PageScaffold(
-        title: 'Budgets',
-        subtitle: 'Manage your spending limits',
+        title: appT(context, 'budgets'),
+        subtitle: appT(context, 'budget_subtitle'),
         trailing: _RoundIconButton(
           icon: Icons.add,
-          onPressed: () => onAction('Add budget'),
+          onPressed: () => onAction(appT(context, 'add_new_budget')),
         ),
         children: [
           _TotalBudgetCard(budget: data.budget),
-          Text('Category Budgets', style: _sectionTitle(context)),
+          Text(
+            appT(context, 'category_budgets'),
+            style: _sectionTitle(context),
+          ),
           ...data.categoryBudgets.map(_CategoryBudgetTile.new),
           FilledButton.icon(
-            onPressed: () => onAction('Add budget'),
+            onPressed: () => onAction(appT(context, 'add_new_budget')),
             icon: const Icon(Icons.add),
-            label: const Text('Add New Budget'),
+            label: Text(appT(context, 'add_new_budget')),
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
@@ -1465,9 +1520,13 @@ class _BudgetTab extends ConsumerWidget {
 }
 
 class _TransactionsScreen extends ConsumerStatefulWidget {
-  const _TransactionsScreen({required this.onBack});
+  const _TransactionsScreen({
+    required this.onBack,
+    required this.onTransactionTap,
+  });
 
   final VoidCallback onBack;
+  final ValueChanged<_Transaction> onTransactionTap;
 
   @override
   ConsumerState<_TransactionsScreen> createState() =>
@@ -1549,7 +1608,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
       slivers: [
         SliverToBoxAdapter(
           child: _NavigationHeader(
-            title: 'Transactions',
+            title: appT(context, 'transactions'),
             onBack: widget.onBack,
             trailing: Stack(
               clipBehavior: Clip.none,
@@ -1601,12 +1660,12 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                   child: _TransactionErrorCard(onRetry: _loadData),
                 )
               : filteredTransactions.isEmpty
-              ? const SliverToBoxAdapter(
+              ? SliverToBoxAdapter(
                   child: _EmptyStateCard(
                     icon: Icons.receipt_long_outlined,
-                    title: 'No transactions found',
-                    message: 'Adjust your filters or add a new transaction.',
-                    actionLabel: 'Clear Filters',
+                    title: appT(context, 'no_transactions_found'),
+                    message: appT(context, 'adjust_filters'),
+                    actionLabel: appT(context, 'clear_filters'),
                     onAction: null,
                   ),
                 )
@@ -1639,7 +1698,10 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                             ),
                           ),
                         ],
-                        _TransactionTile(transaction: transaction),
+                        _TransactionTile(
+                          transaction: transaction,
+                          onTap: () => widget.onTransactionTap(transaction),
+                        ),
                       ],
                     );
                   },
@@ -1694,6 +1756,605 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   }
 }
 
+class _TransactionDetailScreen extends ConsumerStatefulWidget {
+  const _TransactionDetailScreen({
+    required this.transactionId,
+    required this.onBack,
+    required this.onDeleted,
+    required this.onUpdated,
+  });
+
+  final String transactionId;
+  final VoidCallback onBack;
+  final VoidCallback onDeleted;
+  final VoidCallback onUpdated;
+
+  @override
+  ConsumerState<_TransactionDetailScreen> createState() =>
+      _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState
+    extends ConsumerState<_TransactionDetailScreen> {
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  var _isLoading = true;
+  var _isEditing = false;
+  var _isSaving = false;
+  var _showDeleteConfirm = false;
+  Object? _error;
+  _Transaction? _transaction;
+  List<_CategoryItem> _categories = const [];
+  var _type = _CategoryType.expense;
+  var _date = DateTime.now();
+  String? _selectedCategoryId;
+
+  bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
+
+  List<_CategoryItem> get _visibleCategories {
+    return _categories
+        .where((category) => category.type == _type)
+        .toList(growable: false);
+  }
+
+  _CategoryItem? get _selectedCategory {
+    for (final category in _categories) {
+      if (category.id == _selectedCategoryId) return category;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transaction = _transaction;
+
+    if (_isLoading) {
+      return _LoadingPage(title: appT(context, 'transaction_detail'));
+    }
+
+    if (_error != null || transaction == null) {
+      return _PageScaffold(
+        header: _NavigationHeader(
+          title: appT(context, 'transaction_detail'),
+          onBack: widget.onBack,
+        ),
+        children: [
+          _EmptyStateCard(
+            icon: Icons.receipt_long_outlined,
+            title: appT(context, 'transaction_detail_failed'),
+            message: appT(context, 'transaction_request_failed'),
+            actionLabel: appT(context, 'retry'),
+            onAction: _loadData,
+          ),
+        ],
+      );
+    }
+
+    final isIncome = transaction.flowType == _CashFlowType.income;
+    final amountColor = isIncome ? AppTheme.successColor : AppTheme.errorColor;
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  _themeColor(context),
+                  _themeColor(context).withValues(alpha: 0.78),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _HeaderCircleButton(
+                        icon: Icons.arrow_back,
+                        onTap: widget.onBack,
+                      ),
+                      Expanded(
+                        child: Text(
+                          appT(context, 'transaction_detail'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      _isEditing
+                          ? Row(
+                              children: [
+                                _HeaderCircleButton(
+                                  icon: Icons.close,
+                                  onTap: _cancelEditing,
+                                ),
+                                const SizedBox(width: 8),
+                                _HeaderCircleButton(
+                                  icon: Icons.check,
+                                  onTap: _isSaving ? null : _saveTransaction,
+                                ),
+                              ],
+                            )
+                          : TextButton(
+                              onPressed: () =>
+                                  setState(() => _isEditing = true),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.white24,
+                              ),
+                              child: Text(appT(context, 'edit')),
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 26),
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        transaction.icon,
+                        style: const TextStyle(fontSize: 32),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_isEditing)
+                    SizedBox(
+                      width: 180,
+                      child: TextField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: '0.00',
+                          hintStyle: TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    transaction.category,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(appT(context, 'type'), style: _fieldLabelStyle),
+                const SizedBox(height: 8),
+                _isEditing
+                    ? _CategoryTypeSwitcher(
+                        activeType: _type,
+                        onChanged: (type) {
+                          setState(() {
+                            _type = type;
+                            _selectedCategoryId = null;
+                          });
+                        },
+                      )
+                    : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(
+                          label: Text(
+                            appT(context, isIncome ? 'income' : 'expense'),
+                          ),
+                          labelStyle: TextStyle(
+                            color: amountColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          backgroundColor: amountColor.withValues(alpha: 0.1),
+                        ),
+                      ),
+                const SizedBox(height: 20),
+                Text(appT(context, 'note'), style: _fieldLabelStyle),
+                const SizedBox(height: 8),
+                _isEditing
+                    ? TextField(
+                        controller: _descriptionController,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: appT(
+                            context,
+                            'add_transaction_note_placeholder',
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF3F4F6),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      )
+                    : _DetailValue(
+                        icon: Icons.notes,
+                        value: transaction.description.isEmpty
+                            ? '-'
+                            : transaction.description,
+                      ),
+                const SizedBox(height: 20),
+                Text(appT(context, 'category'), style: _fieldLabelStyle),
+                const SizedBox(height: 8),
+                _isEditing
+                    ? _CategoryChoiceGrid(
+                        categories: _visibleCategories,
+                        selectedCategoryId: _selectedCategoryId,
+                        onSelected: (category) {
+                          setState(() => _selectedCategoryId = category.id);
+                        },
+                      )
+                    : _DetailValue(
+                        icon: Icons.category_outlined,
+                        value: transaction.category,
+                      ),
+                const SizedBox(height: 20),
+                Text(appT(context, 'date'), style: _fieldLabelStyle),
+                const SizedBox(height: 8),
+                _isEditing
+                    ? _DateSelector(
+                        date: _date,
+                        onDateChanged: (date) => setState(() => _date = date),
+                      )
+                    : _DetailValue(
+                        icon: Icons.calendar_today_outlined,
+                        value: transaction.dateLabel,
+                      ),
+                const SizedBox(height: 20),
+                Text(
+                  appT(context, 'transaction_attachments'),
+                  style: _fieldLabelStyle,
+                ),
+                const SizedBox(height: 8),
+                _DetailValue(
+                  icon: Icons.attach_file,
+                  value: appT(context, 'transaction_attach_coming_soon'),
+                  muted: true,
+                ),
+                const SizedBox(height: 24),
+                if (!_showDeleteConfirm)
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() => _showDeleteConfirm = true),
+                    icon: const Icon(Icons.delete_outline),
+                    label: Text(appT(context, 'transaction_delete')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.errorColor,
+                      minimumSize: const Size.fromHeight(52),
+                      side: BorderSide(
+                        color: AppTheme.errorColor.withValues(alpha: 0.28),
+                      ),
+                    ),
+                  )
+                else
+                  _Card(
+                    child: Column(
+                      children: [
+                        Text(
+                          appT(context, 'transaction_delete_confirm'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          appT(context, 'transaction_delete_warning'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _AppShellColors.mutedText,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  setState(() => _showDeleteConfirm = false);
+                                },
+                                child: Text(appT(context, 'cancel')),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _deleteTransaction,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppTheme.errorColor,
+                                ),
+                                child: Text(appT(context, 'delete')),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final responses = _isDemo
+          ? await Future.wait([
+              ref
+                  .read(demoDataStoreProvider)
+                  .getTransactionById(widget.transactionId),
+              ref.read(demoDataStoreProvider).listAllCategories(),
+            ])
+          : await Future.wait([
+              ref
+                  .read(cashlenxApiProvider)
+                  .getTransactionById(widget.transactionId),
+              ref.read(cashlenxApiProvider).listAllCategories(),
+            ]);
+      final transaction = _Transaction.fromResponse(responses[0]);
+      final categories = _CategoryItem.listFromResponse(responses[1]);
+      if (!mounted) return;
+      setState(() {
+        _transaction = transaction;
+        _categories = categories;
+        _isLoading = false;
+      });
+      _resetEditingState(transaction);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _isLoading = false;
+      });
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+
+  void _resetEditingState(_Transaction transaction) {
+    _amountController.text = transaction.amount.abs().toStringAsFixed(2);
+    _descriptionController.text = transaction.description;
+    _type = transaction.flowType == _CashFlowType.income
+        ? _CategoryType.income
+        : _CategoryType.expense;
+    _selectedCategoryId = transaction.categoryId;
+    _date = _parseTransactionDate(transaction.belongsDate) ?? DateTime.now();
+  }
+
+  void _cancelEditing() {
+    final transaction = _transaction;
+    if (transaction != null) _resetEditingState(transaction);
+    setState(() => _isEditing = false);
+  }
+
+  Future<void> _saveTransaction() async {
+    final transaction = _transaction;
+    final amount = double.tryParse(_amountController.text.trim());
+    final category = _selectedCategory;
+    if (transaction == null) return;
+    if (amount == null || amount <= 0) {
+      ToastUtils.showInfo(context, appT(context, 'enter_amount_gt_zero'));
+      return;
+    }
+    if (category == null) {
+      ToastUtils.showInfo(context, appT(context, 'choose_category'));
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final belongsDate = _dateToken(_date);
+      final description = _descriptionController.text.trim();
+      final typeChanged =
+          (_type == _CategoryType.income) !=
+          (transaction.flowType == _CashFlowType.income);
+
+      if (_isDemo) {
+        final store = ref.read(demoDataStoreProvider);
+        if (typeChanged) {
+          await store.deleteTransactionById(transaction.id);
+          await store.createTransaction(
+            type: _type.apiValue,
+            belongsDate: belongsDate,
+            categoryName: category.name,
+            amount: amount,
+            description: description.isEmpty ? null : description,
+          );
+        } else {
+          await store.updateTransactionById(
+            transaction.id,
+            belongsDate: belongsDate,
+            categoryName: category.name,
+            amount: amount,
+            description: description.isEmpty ? null : description,
+          );
+        }
+        ref.read(demoDataRevisionProvider.notifier).bump();
+      } else {
+        final api = ref.read(cashlenxApiProvider);
+        if (typeChanged) {
+          await api.deleteTransactionById(transaction.id);
+          if (_type == _CategoryType.income) {
+            await api.createIncome(
+              belongsDate: belongsDate,
+              categoryName: category.name,
+              amount: amount,
+              description: description.isEmpty ? null : description,
+            );
+          } else {
+            await api.createExpense(
+              belongsDate: belongsDate,
+              categoryName: category.name,
+              amount: amount,
+              description: description.isEmpty ? null : description,
+            );
+          }
+        } else {
+          await api.updateTransactionById(
+            transaction.id,
+            belongsDate: belongsDate,
+            categoryName: category.name,
+            amount: amount,
+            description: description.isEmpty ? null : description,
+          );
+        }
+      }
+
+      widget.onUpdated();
+      if (!mounted) return;
+      if (typeChanged) {
+        widget.onBack();
+        ToastUtils.showSuccess(context, appT(context, 'transaction_updated'));
+      } else {
+        setState(() {
+          _isEditing = false;
+          _isSaving = false;
+        });
+        await _loadData();
+        if (!mounted) return;
+        ToastUtils.showSuccess(context, appT(context, 'transaction_updated'));
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+
+  Future<void> _deleteTransaction() async {
+    try {
+      if (_isDemo) {
+        await ref
+            .read(demoDataStoreProvider)
+            .deleteTransactionById(widget.transactionId);
+        ref.read(demoDataRevisionProvider.notifier).bump();
+      } else {
+        await ref
+            .read(cashlenxApiProvider)
+            .deleteTransactionById(widget.transactionId);
+      }
+      widget.onDeleted();
+      if (!mounted) return;
+      ToastUtils.showSuccess(context, appT(context, 'transaction_deleted'));
+    } catch (error) {
+      if (!mounted) return;
+      ToastUtils.showServerErrors(context, error);
+    }
+  }
+}
+
+class _HeaderCircleButton extends StatelessWidget {
+  const _HeaderCircleButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white24,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailValue extends StatelessWidget {
+  const _DetailValue({
+    required this.icon,
+    required this.value,
+    this.muted = false,
+  });
+
+  final IconData icon;
+  final String value;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: _AppShellColors.mutedText, size: 19),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: muted ? _AppShellColors.mutedText : _AppShellColors.text,
+                fontWeight: muted ? FontWeight.w500 : FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MoreStatisticsScreen extends StatelessWidget {
   const _MoreStatisticsScreen({required this.onBack});
 
@@ -1702,15 +2363,17 @@ class _MoreStatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
-      header: _NavigationHeader(title: 'More Statistics', onBack: onBack),
-      children: const [
+      header: _NavigationHeader(
+        title: appT(context, 'more_statistics_title'),
+        onBack: onBack,
+      ),
+      children: [
         _InfoCard(
           icon: Icons.info_outline,
-          title: 'Test Data',
-          message:
-              'These comparison charts use sample data until analytics endpoints are available.',
+          title: appT(context, 'test_data'),
+          message: appT(context, 'more_statistics_test_data_description'),
         ),
-        _WeeklyComparisonCard(),
+        const _WeeklyComparisonCard(),
       ],
     );
   }
@@ -1780,9 +2443,11 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: AppPanelHeader(title: 'Add Transaction'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: AppPanelHeader(
+                title: appT(context, 'add_transaction_title'),
+              ),
             ),
             const Divider(height: 1),
             Flexible(
@@ -1801,7 +2466,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    const Text('Amount', style: _fieldLabelStyle),
+                    Text(appT(context, 'amount'), style: _fieldLabelStyle),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _amountController,
@@ -1820,7 +2485,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text('Category', style: _fieldLabelStyle),
+                    Text(appT(context, 'category'), style: _fieldLabelStyle),
                     const SizedBox(height: 10),
                     if (_isLoading)
                       const _TransactionLoadingCard()
@@ -1835,20 +2500,23 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                         },
                       ),
                     const SizedBox(height: 20),
-                    const Text('Date', style: _fieldLabelStyle),
+                    Text(appT(context, 'date'), style: _fieldLabelStyle),
                     const SizedBox(height: 8),
                     _DateSelector(
                       date: _date,
                       onDateChanged: (date) => setState(() => _date = date),
                     ),
                     const SizedBox(height: 20),
-                    const Text('Note', style: _fieldLabelStyle),
+                    Text(appT(context, 'note'), style: _fieldLabelStyle),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _noteController,
                       maxLines: 2,
                       decoration: InputDecoration(
-                        hintText: 'Add a note',
+                        hintText: appT(
+                          context,
+                          'add_transaction_note_placeholder',
+                        ),
                         filled: true,
                         fillColor: const Color(0xFFF3F4F6),
                         border: OutlineInputBorder(
@@ -1882,7 +2550,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                           dimension: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Add Transaction'),
+                      : Text(appT(context, 'add_transaction_title')),
                 ),
               ),
             ),
@@ -1919,11 +2587,11 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     final amount = double.tryParse(_amountController.text.trim());
     final category = _selectedCategory;
     if (amount == null || amount <= 0) {
-      ToastUtils.showInfo(context, 'Enter an amount greater than zero.');
+      ToastUtils.showInfo(context, appT(context, 'enter_amount_gt_zero'));
       return;
     }
     if (category == null) {
-      ToastUtils.showInfo(context, 'Choose a category.');
+      ToastUtils.showInfo(context, appT(context, 'choose_category'));
       return;
     }
 
@@ -1964,7 +2632,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       ref.invalidate(_dashboardProvider);
       if (!mounted) return;
       Navigator.pop(context);
-      ToastUtils.showSuccess(context, 'Transaction added.');
+      ToastUtils.showSuccess(context, appT(context, 'transaction_added'));
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -1995,10 +2663,11 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
   Widget build(BuildContext context) {
     final themeColor = ref.watch(themeColorProvider);
     final currency = ref.watch(currencyProvider);
+    final language = ref.watch(i18nProvider);
 
     return _PageScaffold(
-      title: 'Settings',
-      subtitle: 'Personalize your experience',
+      title: appT(context, 'settings'),
+      subtitle: appT(context, 'settings_subtitle'),
       children: [
         _ProfileCard(
           username: widget.username,
@@ -2006,19 +2675,19 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
           onTap: widget.onProfileTap,
         ),
         _SettingsSection(
-          title: 'Preferences',
+          title: appT(context, 'preferences'),
           children: [
             _SettingsTile(
               icon: Icons.palette_outlined,
               color: themeColor,
-              label: 'Theme',
+              label: appT(context, 'theme'),
               trailing: _ColorDot(color: themeColor),
               onTap: _showThemeColorDialog,
             ),
             _SettingsTile(
               icon: Icons.attach_money,
               color: AppTheme.successColor,
-              label: 'Currency',
+              label: appT(context, 'currency'),
               trailing: Text(
                 '${currency.code} (${currency.symbol})',
                 style: const TextStyle(
@@ -2029,20 +2698,33 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
               onTap: _showCurrencyDialog,
             ),
             _SettingsTile(
+              icon: Icons.language,
+              color: const Color(0xFF2563EB),
+              label: appT(context, 'language'),
+              trailing: Text(
+                language.nativeName,
+                style: const TextStyle(
+                  color: _AppShellColors.mutedText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onTap: _showLanguageDialog,
+            ),
+            _SettingsTile(
               icon: Icons.settings_outlined,
               color: _AppShellColors.mutedText,
-              label: 'More Setting',
-              onTap: () => widget.onAction('More Setting'),
+              label: appT(context, 'more_setting'),
+              onTap: () => widget.onAction(appT(context, 'more_setting')),
             ),
           ],
         ),
         _SettingsSection(
-          title: 'Support',
+          title: appT(context, 'support'),
           children: [
             _SettingsTile(
               icon: Icons.help_outline,
               color: AppTheme.successColor,
-              label: 'About',
+              label: appT(context, 'about'),
               onTap: _showAboutDialog,
             ),
           ],
@@ -2068,7 +2750,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const AppPanelHeader(title: 'Choose Theme Color'),
+                    AppPanelHeader(title: appT(context, 'choose_theme_color')),
                     const SizedBox(height: 18),
                     Container(
                       width: 80,
@@ -2088,7 +2770,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Selected: ${AppTheme.hexColor(draftColor)}',
+                      '${appT(context, 'selected')}: ${AppTheme.hexColor(draftColor)}',
                       style: const TextStyle(
                         color: _AppShellColors.mutedText,
                         fontSize: 13,
@@ -2110,9 +2792,9 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'This theme color will be used throughout the app for primary buttons, accents, and highlights.',
-                        style: TextStyle(
+                      child: Text(
+                        appT(context, 'theme_note'),
+                        style: const TextStyle(
                           color: _AppShellColors.text,
                           fontSize: 13,
                         ),
@@ -2120,7 +2802,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                     ),
                     const SizedBox(height: 20),
                     AppPanelActions(
-                      primaryLabel: 'Apply',
+                      primaryLabel: appT(context, 'apply'),
+                      cancelLabel: appT(context, 'cancel'),
                       onPrimaryPressed: () {
                         ref
                             .read(themeColorProvider.notifier)
@@ -2156,11 +2839,11 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppPanelHeader(title: 'Select Currency'),
+                    AppPanelHeader(title: appT(context, 'select_currency')),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Choose the currency used for balances and transaction amounts.',
-                      style: TextStyle(color: _AppShellColors.mutedText),
+                    Text(
+                      appT(context, 'currency_description'),
+                      style: const TextStyle(color: _AppShellColors.mutedText),
                     ),
                     const SizedBox(height: 18),
                     ...CurrencyOption.values.map(
@@ -2177,7 +2860,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                     ),
                     const SizedBox(height: 12),
                     AppPanelActions(
-                      primaryLabel: 'Apply',
+                      primaryLabel: appT(context, 'apply'),
+                      cancelLabel: appT(context, 'cancel'),
                       onPrimaryPressed: () {
                         ref
                             .read(currencyProvider.notifier)
@@ -2185,7 +2869,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                         Navigator.pop(context);
                         ToastUtils.showSuccess(
                           context,
-                          'Currency updated to ${draftCurrency.code}.',
+                          '${appT(context, 'currency_updated')} ${draftCurrency.code}.',
                         );
                       },
                     ),
@@ -2194,6 +2878,50 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showLanguageDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final selectedLanguage = ref.read(i18nProvider);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppPanelHeader(title: appT(context, 'select_language')),
+                const SizedBox(height: 8),
+                Text(
+                  appT(context, 'language_description'),
+                  style: const TextStyle(color: _AppShellColors.mutedText),
+                ),
+                const SizedBox(height: 18),
+                ...AppLanguage.values.map(
+                  (language) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _LanguageOptionTile(
+                      language: language,
+                      selected: selectedLanguage == language,
+                      onTap: () {
+                        ref.read(i18nProvider.notifier).setLanguage(language);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -2215,7 +2943,10 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text('About', style: _sectionTitle(context)),
+                      child: Text(
+                        appT(context, 'about_title'),
+                        style: _sectionTitle(context),
+                      ),
                     ),
                     IconButton.filledTonal(
                       onPressed: () => Navigator.pop(context),
@@ -2242,19 +2973,19 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                   child: Image.asset('assets/images/app_icon.png'),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'CashLenX',
-                  style: TextStyle(
+                Text(
+                  appT(context, 'app_name'),
+                  style: const TextStyle(
                     color: _AppShellColors.text,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Your Financial Companion',
+                Text(
+                  appT(context, 'app_tagline'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: _AppShellColors.mutedText),
+                  style: const TextStyle(color: _AppShellColors.mutedText),
                 ),
                 const SizedBox(height: 20),
                 const _AboutVersionCard(),
@@ -2266,18 +2997,18 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                         onPressed: () {
                           ToastUtils.showInfo(
                             context,
-                            'You are on the latest version.',
+                            appT(context, 'latest_version'),
                           );
                         },
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Check Update'),
+                        label: Text(appT(context, 'check_update')),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
+                        child: Text(appT(context, 'close')),
                       ),
                     ),
                   ],
@@ -2384,7 +3115,7 @@ class _DashboardHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _greeting(),
+                  _greeting(context),
                   style: const TextStyle(
                     color: _AppShellColors.mutedText,
                     fontSize: 14,
@@ -2402,7 +3133,7 @@ class _DashboardHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                'Demo',
+                appT(context, 'demo'),
                 style: TextStyle(
                   color: themeColor,
                   fontWeight: FontWeight.w700,
@@ -2502,7 +3233,7 @@ class _SummaryCardState extends State<_SummaryCard> {
             children: [
               Expanded(
                 child: Text(
-                  summary.balanceLabel,
+                  appT(context, _summaryBalanceKey(_selectedRange)),
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white70,
@@ -2538,7 +3269,7 @@ class _SummaryCardState extends State<_SummaryCard> {
               Expanded(
                 child: _SummaryMetric(
                   icon: Icons.south_west,
-                  label: 'Income',
+                  label: appT(context, 'income'),
                   value: _money(summary.income),
                   iconColor: AppTheme.successColor,
                 ),
@@ -2547,7 +3278,7 @@ class _SummaryCardState extends State<_SummaryCard> {
               Expanded(
                 child: _SummaryMetric(
                   icon: Icons.north_east,
-                  label: 'Expense',
+                  label: appT(context, 'expense'),
                   value: _money(summary.expense),
                   iconColor: AppTheme.errorColor,
                 ),
@@ -2609,7 +3340,7 @@ class _SummaryRangeSwitcher extends StatelessWidget {
                       : null,
                 ),
                 child: Text(
-                  range.label,
+                  appT(context, range.labelKey),
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
                     fontSize: 12,
@@ -2686,10 +3417,15 @@ class _SummaryMetric extends StatelessWidget {
 }
 
 class _RecentActivity extends StatelessWidget {
-  const _RecentActivity({required this.transactions, required this.onSeeAll});
+  const _RecentActivity({
+    required this.transactions,
+    required this.onSeeAll,
+    required this.onTransactionTap,
+  });
 
   final List<_Transaction> transactions;
   final VoidCallback onSeeAll;
+  final ValueChanged<_Transaction> onTransactionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2699,7 +3435,7 @@ class _RecentActivity extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Recent Activity',
+                appT(context, 'recent_activity'),
                 overflow: TextOverflow.ellipsis,
                 style: _sectionTitle(context),
               ),
@@ -2708,7 +3444,7 @@ class _RecentActivity extends StatelessWidget {
               onPressed: onSeeAll,
               iconAlignment: IconAlignment.end,
               icon: const Icon(Icons.chevron_right, size: 18),
-              label: const Text('See All'),
+              label: Text(appT(context, 'see_all')),
             ),
           ],
         ),
@@ -2716,7 +3452,10 @@ class _RecentActivity extends StatelessWidget {
         ...transactions.map(
           (transaction) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _TransactionTile(transaction: transaction),
+            child: _TransactionTile(
+              transaction: transaction,
+              onTap: () => onTransactionTap(transaction),
+            ),
           ),
         ),
       ],
@@ -2725,9 +3464,10 @@ class _RecentActivity extends StatelessWidget {
 }
 
 class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({required this.transaction});
+  const _TransactionTile({required this.transaction, this.onTap});
 
   final _Transaction transaction;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2736,58 +3476,62 @@ class _TransactionTile extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: transaction.color,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  transaction.icon,
-                  style: const TextStyle(fontSize: 22),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: transaction.color,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    transaction.icon,
+                    style: const TextStyle(fontSize: 22),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    transaction.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _AppShellColors.text,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _AppShellColors.text,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    transaction.dateLabel,
-                    style: const TextStyle(
-                      color: _AppShellColors.mutedText,
-                      fontSize: 13,
+                    const SizedBox(height: 3),
+                    Text(
+                      transaction.dateLabel,
+                      style: const TextStyle(
+                        color: _AppShellColors.mutedText,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
-              style: TextStyle(
-                color: isIncome ? AppTheme.errorColor : AppTheme.successColor,
-                fontWeight: FontWeight.w800,
+              const SizedBox(width: 10),
+              Text(
+                '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
+                style: TextStyle(
+                  color: isIncome ? AppTheme.errorColor : AppTheme.successColor,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2812,7 +3556,10 @@ class _SpendingByCategoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Spending by Category', style: _sectionTitle(context)),
+          Text(
+            appT(context, 'spending_by_category'),
+            style: _sectionTitle(context),
+          ),
           const SizedBox(height: 18),
           SizedBox(
             height: 200,
@@ -2866,7 +3613,7 @@ class _SpendingByCategoryCard extends StatelessWidget {
               onPressed: onMoreStats,
               iconAlignment: IconAlignment.end,
               icon: const Icon(Icons.chevron_right, size: 18),
-              label: const Text('More Statistics Charts'),
+              label: Text(appT(context, 'more_statistics')),
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                 foregroundColor: AppTheme.primaryColor,
@@ -2959,9 +3706,9 @@ class _TotalBudgetCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Monthly Budget',
-            style: TextStyle(
+          Text(
+            appT(context, 'total_monthly_budget'),
+            style: const TextStyle(
               color: Colors.white70,
               fontWeight: FontWeight.w600,
             ),
@@ -2988,12 +3735,12 @@ class _TotalBudgetCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Spent: ${_money(budget.spent, decimals: 0)}',
+                        '${appT(context, 'spent')}: ${_money(budget.spent, decimals: 0)}',
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),
                     Text(
-                      'Remaining: ${_money(budget.remaining, decimals: 0)}',
+                      '${appT(context, 'remaining')}: ${_money(budget.remaining, decimals: 0)}',
                       style: const TextStyle(color: Colors.white),
                     ),
                   ],
@@ -3086,7 +3833,7 @@ class _CategoryBudgetTile extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${percent.round()}% used',
+                '${percent.round()}% ${appT(context, 'used')}',
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.w700,
@@ -3094,7 +3841,7 @@ class _CategoryBudgetTile extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '${_money(budget.remaining, decimals: 0)} left',
+                '${_money(budget.remaining, decimals: 0)} ${appT(context, 'left')}',
                 style: const TextStyle(color: _AppShellColors.mutedText),
               ),
             ],
@@ -3192,7 +3939,7 @@ class _TransactionFiltersCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Type', style: _fieldLabelStyle),
+          Text(appT(context, 'type'), style: _fieldLabelStyle),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -3200,13 +3947,13 @@ class _TransactionFiltersCard extends StatelessWidget {
               final selected = selectedType == type;
               return ChoiceChip(
                 selected: selected,
-                label: Text(type.label),
+                label: Text(appT(context, type.labelKey)),
                 onSelected: (_) => onTypeChanged(type),
               );
             }).toList(),
           ),
           const SizedBox(height: 16),
-          const Text('Category', style: _fieldLabelStyle),
+          Text(appT(context, 'category'), style: _fieldLabelStyle),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
             initialValue: selectedCategoryId,
@@ -3219,9 +3966,9 @@ class _TransactionFiltersCard extends StatelessWidget {
               ),
             ),
             items: [
-              const DropdownMenuItem<String?>(
+              DropdownMenuItem<String?>(
                 value: null,
-                child: Text('All Categories'),
+                child: Text(appT(context, 'all_categories')),
               ),
               ...categories.map(
                 (category) => DropdownMenuItem<String?>(
@@ -3233,13 +3980,13 @@ class _TransactionFiltersCard extends StatelessWidget {
             onChanged: onCategoryChanged,
           ),
           const SizedBox(height: 16),
-          const Text('Search', style: _fieldLabelStyle),
+          Text(appT(context, 'search'), style: _fieldLabelStyle),
           const SizedBox(height: 8),
           TextField(
             controller: searchController,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search),
-              hintText: 'Search transactions',
+              hintText: appT(context, 'search_transactions'),
               filled: true,
               fillColor: const Color(0xFFF3F4F6),
               border: OutlineInputBorder(
@@ -3253,7 +4000,7 @@ class _TransactionFiltersCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: onClear,
-              child: const Text('Clear Filters'),
+              child: Text(appT(context, 'clear_filters')),
             ),
           ),
         ],
@@ -3287,9 +4034,9 @@ class _TransactionErrorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _EmptyStateCard(
       icon: Icons.error_outline,
-      title: 'Transactions failed to load',
-      message: 'The transaction request did not complete.',
-      actionLabel: 'Retry',
+      title: appT(context, 'transactions_failed'),
+      message: appT(context, 'transaction_request_failed'),
+      actionLabel: appT(context, 'retry'),
       onAction: onRetry,
     );
   }
@@ -3362,7 +4109,10 @@ class _WeeklyComparisonCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Weekly Comparison', style: _sectionTitle(context)),
+          Text(
+            appT(context, 'weekly_comparison'),
+            style: _sectionTitle(context),
+          ),
           const SizedBox(height: 18),
           SizedBox(
             height: 200,
@@ -3380,8 +4130,14 @@ class _WeeklyComparisonCard extends StatelessWidget {
             spacing: 20,
             runSpacing: 8,
             children: [
-              const _LegendDot(color: Color(0xFFD1D5DB), label: 'Last Week'),
-              _LegendDot(color: _themeColor(context), label: 'This Week'),
+              _LegendDot(
+                color: const Color(0xFFD1D5DB),
+                label: appT(context, 'last_week'),
+              ),
+              _LegendDot(
+                color: _themeColor(context),
+                label: appT(context, 'this_week'),
+              ),
             ],
           ),
         ],
@@ -3497,11 +4253,11 @@ class _CategoryChoiceGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) {
-      return const _Card(
+      return _Card(
         child: Center(
           child: Text(
-            'No categories available.',
-            style: TextStyle(color: _AppShellColors.mutedText),
+            appT(context, 'no_categories_available'),
+            style: const TextStyle(color: _AppShellColors.mutedText),
           ),
         ),
       );
@@ -3676,6 +4432,77 @@ class _CurrencyOptionTile extends StatelessWidget {
   }
 }
 
+class _LanguageOptionTile extends StatelessWidget {
+  const _LanguageOptionTile({
+    required this.language,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppLanguage language;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? _themeColor(context).withValues(alpha: 0.08)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? _themeColor(context) : _AppShellColors.border,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              AppIconCircle(
+                icon: Icons.language,
+                color: selected
+                    ? _themeColor(context)
+                    : const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      language.nativeName,
+                      style: const TextStyle(
+                        color: _AppShellColors.text,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      language.name,
+                      style: const TextStyle(
+                        color: _AppShellColors.mutedText,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle, color: _themeColor(context)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AboutVersionCard extends StatelessWidget {
   const _AboutVersionCard();
 
@@ -3687,11 +4514,14 @@ class _AboutVersionCard extends StatelessWidget {
         color: const Color(0xFFF3F4F6),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          _AboutVersionRow(label: 'Version', value: '1.0.0'),
-          SizedBox(height: 10),
-          _AboutVersionRow(label: 'Build Date', value: '2026-05-21'),
+          _AboutVersionRow(label: appT(context, 'version'), value: '1.0.0'),
+          const SizedBox(height: 10),
+          _AboutVersionRow(
+            label: appT(context, 'build_date'),
+            value: '2026-05-21',
+          ),
         ],
       ),
     );
@@ -3842,12 +4672,13 @@ class _BottomNav extends StatelessWidget {
         children: _HomeTab.values.map((tab) {
           final isAdd = tab == _HomeTab.add;
           final isSelected = selectedTab == tab;
+          final label = appT(context, tab.labelKey);
 
           if (isAdd) {
             return Expanded(
               child: Semantics(
                 button: true,
-                label: tab.label,
+                label: label,
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => onSelect(tab),
@@ -3872,7 +4703,7 @@ class _BottomNav extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        tab.label,
+                        label,
                         style: TextStyle(
                           color: themeColor,
                           fontSize: 11,
@@ -3901,7 +4732,7 @@ class _BottomNav extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      tab.label,
+                      label,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: isSelected
@@ -4105,13 +4936,13 @@ class _ErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
-      title: 'Home',
+      title: appT(context, 'home'),
       children: [
         _EmptyStateCard(
           icon: Icons.error_outline,
-          title: 'Dashboard data failed to load',
-          message: 'The mock request did not complete.',
-          actionLabel: 'Retry',
+          title: appT(context, 'dashboard_failed'),
+          message: appT(context, 'mock_request_failed'),
+          actionLabel: appT(context, 'retry'),
           onAction: onRetry,
         ),
       ],
@@ -4120,25 +4951,25 @@ class _ErrorPage extends StatelessWidget {
 }
 
 enum _HomeTab {
-  home('Home', Icons.home_outlined),
-  stats('Category', Icons.grid_view_outlined),
-  add('Add', Icons.add),
-  budget('Budget', Icons.account_balance_wallet_outlined),
-  settings('Settings', Icons.settings_outlined);
+  home('nav_home', Icons.home_outlined),
+  stats('nav_category', Icons.grid_view_outlined),
+  add('nav_add', Icons.add),
+  budget('nav_budget', Icons.account_balance_wallet_outlined),
+  settings('nav_settings', Icons.settings_outlined);
 
-  const _HomeTab(this.label, this.icon);
+  const _HomeTab(this.labelKey, this.icon);
 
-  final String label;
+  final String labelKey;
   final IconData icon;
 }
 
 enum _CategoryType {
-  expense('Expense', 'expense'),
-  income('Income', 'income');
+  expense('expense', 'expense'),
+  income('income', 'income');
 
-  const _CategoryType(this.label, this.apiValue);
+  const _CategoryType(this.labelKey, this.apiValue);
 
-  final String label;
+  final String labelKey;
   final String apiValue;
 
   static _CategoryType fromApi(Object? value) {
@@ -4524,14 +5355,14 @@ class _SummaryRangeValues {
 }
 
 enum _SummaryRange {
-  day('Day'),
-  month('Month'),
-  year('Year'),
-  total('Total');
+  day('day'),
+  month('month'),
+  year('year'),
+  total('total');
 
-  const _SummaryRange(this.label);
+  const _SummaryRange(this.labelKey);
 
-  final String label;
+  final String labelKey;
 }
 
 enum _CashFlowType {
@@ -4547,13 +5378,13 @@ enum _CashFlowType {
 }
 
 enum _TransactionFilterType {
-  all('All', null, null),
-  income('Income', _CashFlowType.income, _CategoryType.income),
-  expense('Expense', _CashFlowType.expense, _CategoryType.expense);
+  all('all', null, null),
+  income('income', _CashFlowType.income, _CategoryType.income),
+  expense('expense', _CashFlowType.expense, _CategoryType.expense);
 
-  const _TransactionFilterType(this.label, this.flowType, this.categoryType);
+  const _TransactionFilterType(this.labelKey, this.flowType, this.categoryType);
 
-  final String label;
+  final String labelKey;
   final _CashFlowType? flowType;
   final _CategoryType? categoryType;
 }
@@ -4609,6 +5440,8 @@ class _Transaction {
   const _Transaction({
     required this.id,
     required this.title,
+    required this.description,
+    required this.belongsDate,
     required this.dateLabel,
     required this.dateGroupLabel,
     required this.dateSort,
@@ -4622,6 +5455,8 @@ class _Transaction {
 
   final String id;
   final String title;
+  final String description;
+  final String belongsDate;
   final String dateLabel;
   final String dateGroupLabel;
   final DateTime dateSort;
@@ -4658,6 +5493,8 @@ class _Transaction {
     return _Transaction(
       id: (json['id'] ?? json['Id'] ?? json['_id'] ?? '').toString(),
       title: description ?? categoryName,
+      description: description ?? '',
+      belongsDate: rawDate?.toString() ?? '',
       dateLabel: _transactionDateLabel(rawDate),
       dateGroupLabel: _transactionDateGroupLabel(rawDate),
       dateSort: _transactionDateSort(rawDate),
@@ -4688,6 +5525,14 @@ class _Transaction {
         .whereType<Map>()
         .map((item) => _Transaction.fromJson(Map<String, dynamic>.from(item)))
         .toList(growable: false);
+  }
+
+  static _Transaction fromResponse(ApiJson response) {
+    final data = _unwrapData(response);
+    if (data is Map) {
+      return _Transaction.fromJson(Map<String, dynamic>.from(data));
+    }
+    return _Transaction.fromJson(response);
   }
 }
 
@@ -4886,11 +5731,20 @@ String _dateToken(DateTime date) {
       '${date.day.toString().padLeft(2, '0')}';
 }
 
-String _greeting() {
+String _greeting(BuildContext context) {
   final hour = DateTime.now().hour;
-  if (hour < 12) return 'Good Morning';
-  if (hour < 18) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return appT(context, 'greeting_morning');
+  if (hour < 18) return appT(context, 'greeting_afternoon');
+  return appT(context, 'greeting_evening');
+}
+
+String _summaryBalanceKey(_SummaryRange range) {
+  return switch (range) {
+    _SummaryRange.day => 'day_balance',
+    _SummaryRange.month => 'month_balance',
+    _SummaryRange.year => 'year_balance',
+    _SummaryRange.total => 'total_balance',
+  };
 }
 
 String _money(double value, {int decimals = 2}) {

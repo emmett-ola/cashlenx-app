@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_input.dart';
@@ -51,14 +52,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
-      await ref.read(authNotifierProvider.notifier).requestPasswordReset(
-            _emailController.text.trim(),
-          );
+      await ref
+          .read(authNotifierProvider.notifier)
+          .requestPasswordReset(_emailController.text.trim());
 
       if (!mounted) return;
       ToastUtils.showSuccess(
         context,
-        'If the account exists, a reset token will be sent.',
+        ref.read(translationsProvider)('reset_token_sent'),
       );
       setState(() {
         _isConfirmStep = true;
@@ -83,13 +84,18 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
-      await ref.read(authNotifierProvider.notifier).confirmPasswordReset(
+      await ref
+          .read(authNotifierProvider.notifier)
+          .confirmPasswordReset(
             _tokenController.text.trim(),
             _passwordController.text,
           );
 
       if (!mounted) return;
-      ToastUtils.showSuccess(context, 'Password reset. Please sign in.');
+      ToastUtils.showSuccess(
+        context,
+        ref.read(translationsProvider)('password_reset_success'),
+      );
       context.go('/login');
     } catch (error) {
       if (!mounted) return;
@@ -105,20 +111,24 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = ref.watch(translationsProvider);
+
     return AuthLayout(
-      subtitle: 'Reset your password',
+      subtitle: t('reset_password_title'),
       onBack: () => context.go('/login'),
       child: _isConfirmStep ? _buildConfirmForm() : _buildRequestForm(),
     );
   }
 
   Widget _buildRequestForm() {
+    final t = ref.watch(translationsProvider);
+
     return Form(
       key: _requestFormKey,
       child: Column(
         children: [
           CustomInput(
-            label: 'Email',
+            label: t('email'),
             controller: _emailController,
             placeholder: 'email@example.com',
             keyboardType: TextInputType.emailAddress,
@@ -127,11 +137,11 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             validator: (value) {
               final email = value?.trim() ?? '';
               if (email.isEmpty) {
-                return 'Please fill in all fields.';
+                return t('please_fill_all');
               }
               final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
               if (!emailRegex.hasMatch(email)) {
-                return 'Please enter a valid email address.';
+                return t('please_enter_valid_email');
               }
               return null;
             },
@@ -140,7 +150,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           SizedBox(
             width: double.infinity,
             child: CustomButton(
-              text: 'Send Reset Token',
+              text: t('send_reset_token'),
               onPressed: _canRequest ? _handleRequestReset : null,
               isLoading: _isLoading,
             ),
@@ -152,10 +162,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 _isConfirmStep = true;
               });
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.primaryColor,
-            ),
-            child: const Text('Already have a token?'),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+            child: Text(t('already_have_token')),
           ),
         ],
       ),
@@ -163,32 +171,36 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   }
 
   Widget _buildConfirmForm() {
+    final t = ref.watch(translationsProvider);
+
     return Form(
       key: _confirmFormKey,
       child: Column(
         children: [
           CustomInput(
-            label: 'Reset Token',
+            label: t('reset_token'),
             controller: _tokenController,
-            placeholder: 'Enter reset token',
+            placeholder: t('enter_reset_token'),
             prefixIcon: Icon(Icons.key_outlined, color: Colors.grey[500]),
             onChanged: (_) => setState(() {}),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please fill in all fields.';
+                return t('please_fill_all');
               }
               return null;
             },
           ),
           const SizedBox(height: 20),
           CustomInput(
-            label: 'New Password',
+            label: t('new_password'),
             controller: _passwordController,
-            placeholder: 'At least 6 characters',
+            placeholder: t('password_min_chars'),
             obscureText: !_isPasswordVisible,
             prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
             suffixIcon: IconButton(
-              tooltip: _isPasswordVisible ? 'Hide password' : 'Show password',
+              tooltip: _isPasswordVisible
+                  ? t('hide_password')
+                  : t('show_password'),
               icon: Icon(
                 _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                 color: Colors.grey[500],
@@ -202,24 +214,25 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             onChanged: (_) => setState(() {}),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please fill in all fields.';
+                return t('please_fill_all');
               }
               if (value.length < 6) {
-                return 'Password must be at least 6 characters long.';
+                return t('password_min_error');
               }
               return null;
             },
           ),
           const SizedBox(height: 20),
           CustomInput(
-            label: 'Confirm Password',
+            label: t('confirm_password'),
             controller: _confirmPasswordController,
-            placeholder: 'Re-enter your password',
+            placeholder: t('reenter_password'),
             obscureText: !_isConfirmPasswordVisible,
             prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
             suffixIcon: IconButton(
-              tooltip:
-                  _isConfirmPasswordVisible ? 'Hide password' : 'Show password',
+              tooltip: _isConfirmPasswordVisible
+                  ? t('hide_password')
+                  : t('show_password'),
               icon: Icon(
                 _isConfirmPasswordVisible
                     ? Icons.visibility_off
@@ -235,10 +248,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             onChanged: (_) => setState(() {}),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please fill in all fields.';
+                return t('please_fill_all');
               }
               if (value != _passwordController.text) {
-                return 'Passwords do not match.';
+                return t('passwords_do_not_match');
               }
               return null;
             },
@@ -247,7 +260,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           SizedBox(
             width: double.infinity,
             child: CustomButton(
-              text: 'Reset Password',
+              text: t('reset_password'),
               onPressed: _canConfirm ? _handleConfirmReset : null,
               isLoading: _isLoading,
             ),
@@ -259,10 +272,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 _isConfirmStep = false;
               });
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.primaryColor,
-            ),
-            child: const Text('Request a new token'),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+            child: Text(t('request_new_token')),
           ),
         ],
       ),

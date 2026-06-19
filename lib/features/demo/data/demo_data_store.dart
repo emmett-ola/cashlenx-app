@@ -145,6 +145,58 @@ class DemoDataStore {
     return _wrappedData(Map<String, dynamic>.from(transaction));
   }
 
+  Future<ApiJson> getTransactionById(String id) async {
+    final transaction = _transactions.firstWhere(
+      (transaction) => transaction['id'] == id,
+      orElse: () => <String, dynamic>{},
+    );
+    if (transaction.isEmpty) {
+      throw StateError('Demo transaction not found.');
+    }
+    return _wrappedData(Map<String, dynamic>.from(transaction));
+  }
+
+  Future<ApiJson> updateTransactionById(
+    String id, {
+    required String belongsDate,
+    required String categoryName,
+    required num amount,
+    String? description,
+  }) async {
+    final index = _transactions.indexWhere(
+      (transaction) => transaction['id'] == id,
+    );
+    if (index == -1) {
+      throw StateError('Demo transaction not found.');
+    }
+
+    final currentType = _transactions[index]['flow_type']?.toString();
+    final category = _categories.firstWhere(
+      (category) =>
+          category['name'] == categoryName && category['type'] == currentType,
+      orElse: () => <String, dynamic>{},
+    );
+    final updated = {
+      ..._transactions[index],
+      'belongs_date': belongsDate,
+      'category_id': category['Id'] ?? _transactions[index]['category_id'],
+      'category_name': categoryName,
+      'amount': amount,
+      'description': description,
+      'category_emoji':
+          category['emoji'] ?? _transactions[index]['category_emoji'],
+      'category_bg_color':
+          category['bg_color'] ?? _transactions[index]['category_bg_color'],
+    };
+    _transactions[index] = updated;
+    return _wrappedData(Map<String, dynamic>.from(updated));
+  }
+
+  Future<ApiJson> deleteTransactionById(String id) async {
+    _transactions.removeWhere((transaction) => transaction['id'] == id);
+    return _wrappedData({'deleted': true});
+  }
+
   Future<ApiJson> listAllCategories({
     int? limit,
     int? offset,

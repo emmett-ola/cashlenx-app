@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../theme/app_theme.dart';
 
-class AuthLanguageButton extends StatelessWidget {
+class AuthLanguageButton extends ConsumerWidget {
   const AuthLanguageButton({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(translationsProvider);
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () => _showLanguageDialog(context),
+        onPressed: () => _showLanguageDialog(context, ref),
         icon: const Icon(Icons.language, size: 20),
-        label: const Text('Change Language'),
+        label: Text(t('change_language')),
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: AppTheme.primaryColor, width: 2),
           foregroundColor: AppTheme.primaryColor,
@@ -28,26 +32,51 @@ class AuthLanguageButton extends StatelessWidget {
     );
   }
 
-  void _showLanguageDialog(BuildContext context) {
+  void _showLanguageDialog(BuildContext context, WidgetRef ref) {
+    final selectedLanguage = ref.read(i18nProvider);
+    final t = ref.read(translationsProvider);
+
     showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Language'),
+          title: Text(t('select_language')),
+          contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ListTile(
-                leading: const Icon(Icons.check, color: AppTheme.primaryColor),
-                title: const Text('English'),
-                onTap: () => Navigator.pop(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  t('language_description'),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
               ),
+              const SizedBox(height: 8),
+              ...AppLanguage.values.map((language) {
+                final isSelected = language == selectedLanguage;
+                return ListTile(
+                  leading: Icon(
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: isSelected ? AppTheme.primaryColor : Colors.grey,
+                  ),
+                  title: Text(language.nativeName),
+                  subtitle: Text(language.name),
+                  onTap: () {
+                    ref.read(i18nProvider.notifier).setLanguage(language);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
+              child: Text(t('close')),
             ),
           ],
         );
@@ -56,18 +85,20 @@ class AuthLanguageButton extends StatelessWidget {
   }
 }
 
-class AuthDivider extends StatelessWidget {
+class AuthDivider extends ConsumerWidget {
   const AuthDivider({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(translationsProvider);
+
     return Row(
       children: [
         Expanded(child: Divider(color: Colors.grey[300])),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'or',
+            t('or'),
             style: TextStyle(color: Colors.grey[500], fontSize: 14),
           ),
         ),
