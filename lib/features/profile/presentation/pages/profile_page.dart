@@ -20,6 +20,9 @@ const _avatarPresets = [
   Color(0xFF3B82F6),
 ];
 
+const _defaultAvatarAsset =
+    'assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png';
+
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -622,7 +625,8 @@ class _ProfileAvatar extends StatelessWidget {
       );
     }
 
-    if (avatarValue.isNotEmpty) {
+    if (avatarValue.startsWith('http://') ||
+        avatarValue.startsWith('https://')) {
       return ClipOval(
         child: Image.network(
           avatarValue,
@@ -630,20 +634,44 @@ class _ProfileAvatar extends StatelessWidget {
           height: size,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            return _AvatarFallback(
-              initial: _profileInitial(profile, displayName),
-              color: Theme.of(context).colorScheme.primary,
-              size: size,
-            );
+            return _DefaultProfileAvatar(size: size);
           },
         ),
       );
     }
 
-    return _AvatarFallback(
-      initial: _profileInitial(profile, displayName),
-      color: Theme.of(context).colorScheme.primary,
-      size: size,
+    if (avatarValue.startsWith('assets/')) {
+      return ClipOval(
+        child: Image.asset(
+          avatarValue,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _DefaultProfileAvatar(size: size);
+          },
+        ),
+      );
+    }
+
+    return _DefaultProfileAvatar(size: size);
+  }
+}
+
+class _DefaultProfileAvatar extends StatelessWidget {
+  const _DefaultProfileAvatar({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: Image.asset(
+        _defaultAvatarAsset,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
     );
   }
 }
