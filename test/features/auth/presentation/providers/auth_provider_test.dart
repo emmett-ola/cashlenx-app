@@ -37,11 +37,25 @@ void main() {
 
     notifier.continueAsDemo();
     await demoStore.createCategory(name: 'Custom', type: 'expense');
+    await demoStore.createTransaction(
+      type: 'expense',
+      belongsDate: '20260619',
+      categoryName: 'Food & Dining',
+      amount: 2,
+      description: 'Demo edit',
+    );
 
     final changedCategories = await demoStore.listAllCategories();
     expect(
       (changedCategories['data'] as List).any(
         (category) => category['name'] == 'Custom',
+      ),
+      isTrue,
+    );
+    final changedTransactions = await demoStore.listAllTransactions();
+    expect(
+      (changedTransactions['data'] as List).any(
+        (transaction) => transaction['description'] == 'Demo edit',
       ),
       isTrue,
     );
@@ -52,6 +66,13 @@ void main() {
     expect(
       (resetCategories['data'] as List).any(
         (category) => category['name'] == 'Custom',
+      ),
+      isFalse,
+    );
+    final resetTransactions = await demoStore.listAllTransactions();
+    expect(
+      (resetTransactions['data'] as List).any(
+        (transaction) => transaction['description'] == 'Demo edit',
       ),
       isFalse,
     );

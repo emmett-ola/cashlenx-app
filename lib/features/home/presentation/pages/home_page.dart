@@ -368,9 +368,11 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   }) {
     final nameController = TextEditingController(text: category?.name ?? '');
     var selectedIcon = category?.icon ?? _defaultCategoryEmoji;
-    var selectedColor = category?.color ?? AppTheme.primaryColor;
+    var selectedColor = category?.color ?? _themeColor(context);
     var selectedParentId = category?.parentId;
     var showEmojiPicker = false;
+    var showNameError = false;
+    var validationShakeTrigger = 0;
 
     showModalBottomSheet<void>(
       context: context,
@@ -440,41 +442,52 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                               style: _fieldLabelStyle,
                             ),
                             const SizedBox(height: 8),
-                            TextField(
-                              controller: nameController,
-                              maxLength: 64,
-                              onChanged: (_) => setSheetState(() {}),
-                              decoration: InputDecoration(
-                                hintText: appT(context, 'enter_category_name'),
-                                hintStyle: const TextStyle(
-                                  color: _AppShellColors.navMuted,
-                                  fontSize: 14,
-                                ),
-                                counterStyle: const TextStyle(
-                                  color: _AppShellColors.navMuted,
-                                  fontSize: 12,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFD1D5DB),
+                            _ValidationField(
+                              errorText: showNameError
+                                  ? appT(context, 'enter_category_name')
+                                  : null,
+                              shakeTrigger: validationShakeTrigger,
+                              child: TextField(
+                                controller: nameController,
+                                maxLength: 64,
+                                onChanged: (_) {
+                                  setSheetState(() => showNameError = false);
+                                },
+                                decoration: InputDecoration(
+                                  hintText: appT(
+                                    context,
+                                    'enter_category_name',
                                   ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFD1D5DB),
+                                  hintStyle: const TextStyle(
+                                    color: _AppShellColors.navMuted,
+                                    fontSize: 14,
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: AppTheme.primaryColor,
-                                    width: 2,
+                                  counterStyle: const TextStyle(
+                                    color: _AppShellColors.navMuted,
+                                    fontSize: 12,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFD1D5DB),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFD1D5DB),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: _themeColor(context),
+                                      width: 2,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -582,23 +595,30 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                           primaryLabel: mode == _CategoryEditorMode.edit
                               ? appT(context, 'save_changes')
                               : appT(context, 'create'),
-                          onPrimaryPressed: nameController.text.trim().isEmpty
-                              ? null
-                              : () {
-                                  final request = _CategoryEditorRequest(
-                                    name: nameController.text.trim(),
-                                    type: _activeType,
-                                    parentId: selectedParentId,
-                                    emoji: selectedIcon,
-                                    bgColor: selectedColor,
-                                  );
-                                  Navigator.pop(context);
-                                  _saveCategory(
-                                    mode: mode,
-                                    category: category,
-                                    request: request,
-                                  );
-                                },
+                          onPrimaryPressed: () {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              setSheetState(() {
+                                showNameError = true;
+                                validationShakeTrigger++;
+                              });
+                              return;
+                            }
+
+                            final request = _CategoryEditorRequest(
+                              name: name,
+                              type: _activeType,
+                              parentId: selectedParentId,
+                              emoji: selectedIcon,
+                              bgColor: selectedColor,
+                            );
+                            Navigator.pop(context);
+                            _saveCategory(
+                              mode: mode,
+                              category: category,
+                              request: request,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -701,7 +721,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                 const SizedBox(height: 8),
                 _MoveCategoryOption(
                   icon: '*',
-                  color: AppTheme.primaryColor,
+                  color: _themeColor(context),
                   title: appT(context, 'main_category'),
                   subtitle: appT(context, 'main_category_hint'),
                   selected: category.parentId == null,
@@ -1194,7 +1214,7 @@ class _CategoryRow extends StatelessWidget {
                       children: [
                         _CategoryActionButton(
                           icon: Icons.edit_outlined,
-                          color: AppTheme.primaryColor,
+                          color: _themeColor(context),
                           onTap: () =>
                               onAction(_CategoryRowAction.edit, category),
                         ),
@@ -1267,16 +1287,18 @@ class _CreateCategoryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return FilledButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.add),
       label: Text(appT(context, 'create_new_category')),
       style: FilledButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: themeColor,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(56),
         elevation: 8,
-        shadowColor: AppTheme.primaryColor.withValues(alpha: 0.28),
+        shadowColor: themeColor.withValues(alpha: 0.28),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
@@ -1351,14 +1373,14 @@ class _CategoryEmojiPicker extends StatelessWidget {
               hintText: appT(context, 'search_emoji'),
               backgroundColor: const Color(0xFFF3F4F6),
             ),
-            categoryViewConfig: const CategoryViewConfig(
+            categoryViewConfig: CategoryViewConfig(
               backgroundColor: Colors.white,
-              indicatorColor: AppTheme.primaryColor,
-              iconColorSelected: AppTheme.primaryColor,
+              indicatorColor: _themeColor(context),
+              iconColorSelected: _themeColor(context),
             ),
-            bottomActionBarConfig: const BottomActionBarConfig(
+            bottomActionBarConfig: BottomActionBarConfig(
               backgroundColor: Colors.white,
-              buttonColor: AppTheme.primaryColor,
+              buttonColor: _themeColor(context),
             ),
           ),
         ),
@@ -1405,10 +1427,10 @@ class _MoveCategoryOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return Material(
-      color: selected
-          ? AppTheme.primaryColor.withValues(alpha: 0.08)
-          : Colors.white,
+      color: selected ? themeColor.withValues(alpha: 0.08) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -1417,7 +1439,7 @@ class _MoveCategoryOption extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             border: Border.all(
-              color: selected ? AppTheme.primaryColor : _AppShellColors.border,
+              color: selected ? themeColor : _AppShellColors.border,
               width: 2,
             ),
             borderRadius: BorderRadius.circular(14),
@@ -1476,6 +1498,7 @@ class _BudgetTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(_dashboardProvider);
+    final themeColor = _themeColor(context);
 
     return dashboard.when(
       loading: () => _LoadingPage(title: appT(context, 'budgets')),
@@ -1503,10 +1526,10 @@ class _BudgetTab extends ConsumerWidget {
             icon: const Icon(Icons.add),
             label: Text(appT(context, 'add_new_budget')),
             style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: themeColor,
               foregroundColor: Colors.white,
               elevation: 8,
-              shadowColor: AppTheme.primaryColor.withValues(alpha: 0.28),
+              shadowColor: themeColor.withValues(alpha: 0.28),
               minimumSize: const Size.fromHeight(56),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1789,6 +1812,9 @@ class _TransactionDetailScreenState
   var _date = DateTime.now();
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
+  var _showAmountError = false;
+  var _showCategoryError = false;
+  var _validationShakeTrigger = 0;
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
 
@@ -1951,21 +1977,32 @@ class _TransactionDetailScreenState
                   if (_isEditing)
                     SizedBox(
                       width: 180,
-                      child: TextField(
-                        controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '0.00',
-                          hintStyle: TextStyle(color: Colors.white70),
+                      child: _ValidationField(
+                        errorText: _showAmountError
+                            ? appT(context, 'enter_amount_gt_zero')
+                            : null,
+                        shakeTrigger: _validationShakeTrigger,
+                        child: TextField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (_) {
+                            if (_showAmountError) {
+                              setState(() => _showAmountError = false);
+                            }
+                          },
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '0.00',
+                            hintStyle: TextStyle(color: Colors.white70),
+                          ),
                         ),
                       ),
                     )
@@ -2055,6 +2092,10 @@ class _TransactionDetailScreenState
                         allCategories: _categories,
                         selectedCategoryId: _selectedCategoryId,
                         activeParentId: _activeCategoryParentId,
+                        errorText: _showCategoryError
+                            ? appT(context, 'choose_category')
+                            : null,
+                        shakeTrigger: _validationShakeTrigger,
                         onSelected: _handleCategorySelected,
                       )
                     : _DetailValue(
@@ -2197,11 +2238,14 @@ class _TransactionDetailScreenState
     final selectedCategory = _selectedCategory;
     _activeCategoryParentId = selectedCategory?.parentId;
     _date = _parseTransactionDate(transaction.belongsDate) ?? DateTime.now();
+    _showAmountError = false;
+    _showCategoryError = false;
   }
 
   void _handleCategorySelected(_CategoryItem category) {
     setState(() {
       _selectedCategoryId = category.id;
+      _showCategoryError = false;
       if (!_hasChildren(category)) return;
 
       if (_activeCategoryParentId == category.id) {
@@ -2224,11 +2268,17 @@ class _TransactionDetailScreenState
     final category = _selectedCategory;
     if (transaction == null) return;
     if (amount == null || amount <= 0) {
-      ToastUtils.showInfo(context, appT(context, 'enter_amount_gt_zero'));
+      setState(() {
+        _showAmountError = true;
+        _validationShakeTrigger++;
+      });
       return;
     }
     if (category == null) {
-      ToastUtils.showInfo(context, appT(context, 'choose_category'));
+      setState(() {
+        _showCategoryError = true;
+        _validationShakeTrigger++;
+      });
       return;
     }
 
@@ -2437,6 +2487,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   var _date = DateTime.now();
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
+  var _showAmountError = false;
+  var _showCategoryError = false;
+  var _validationShakeTrigger = 0;
   var _isLoading = true;
   var _isSaving = false;
   var _showDetails = false;
@@ -2544,12 +2597,18 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      r'$' + _amountText,
-                      style: TextStyle(
-                        color: _themeColor(context),
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
+                    _ValidationField(
+                      errorText: _showAmountError
+                          ? appT(context, 'enter_amount_gt_zero')
+                          : null,
+                      shakeTrigger: _validationShakeTrigger,
+                      child: Text(
+                        r'$' + _amountText,
+                        style: TextStyle(
+                          color: _themeColor(context),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -2570,6 +2629,10 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                         allCategories: _categories,
                         selectedCategoryId: _selectedCategoryId,
                         activeParentId: _activeCategoryParentId,
+                        categoryErrorText: _showCategoryError
+                            ? appT(context, 'choose_category')
+                            : null,
+                        validationShakeTrigger: _validationShakeTrigger,
                         date: _date,
                         onRetry: _loadCategories,
                         onCategorySelected: _handleCategorySelected,
@@ -2599,7 +2662,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                   onPressed: _isSaving ? null : _saveTransaction,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: _themeColor(context),
                   ),
                   child: _isSaving
                       ? const SizedBox.square(
@@ -2647,12 +2710,18 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     final amount = double.tryParse(_amountText);
     final category = _selectedCategory;
     if (amount == null || amount <= 0) {
-      ToastUtils.showInfo(context, appT(context, 'enter_amount_gt_zero'));
+      setState(() {
+        _showAmountError = true;
+        _validationShakeTrigger++;
+      });
       return;
     }
     if (category == null) {
-      setState(() => _showDetails = true);
-      ToastUtils.showInfo(context, appT(context, 'choose_category'));
+      setState(() {
+        _showDetails = true;
+        _showCategoryError = true;
+        _validationShakeTrigger++;
+      });
       return;
     }
 
@@ -2704,6 +2773,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   void _handleCategorySelected(_CategoryItem category) {
     setState(() {
       _selectedCategoryId = category.id;
+      _showCategoryError = false;
       if (!_hasChildren(category)) return;
 
       if (_activeCategoryParentId == category.id) {
@@ -2729,6 +2799,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
 
     if (_amountText == '0') {
       _amountText = key;
+      _showAmountError = false;
       return;
     }
 
@@ -2737,6 +2808,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       return;
     }
     _amountText = '$_amountText$key';
+    _showAmountError = false;
   }
 
   String _combinedTransactionDescription() {
@@ -2804,6 +2876,8 @@ class _AddTransactionDetails extends StatelessWidget {
     required this.allCategories,
     required this.selectedCategoryId,
     required this.activeParentId,
+    required this.categoryErrorText,
+    required this.validationShakeTrigger,
     required this.date,
     required this.onRetry,
     required this.onCategorySelected,
@@ -2818,6 +2892,8 @@ class _AddTransactionDetails extends StatelessWidget {
   final List<_CategoryItem> allCategories;
   final String? selectedCategoryId;
   final String? activeParentId;
+  final String? categoryErrorText;
+  final int validationShakeTrigger;
   final DateTime date;
   final VoidCallback onRetry;
   final ValueChanged<_CategoryItem> onCategorySelected;
@@ -2871,6 +2947,8 @@ class _AddTransactionDetails extends StatelessWidget {
               allCategories: allCategories,
               selectedCategoryId: selectedCategoryId,
               activeParentId: activeParentId,
+              errorText: categoryErrorText,
+              shakeTrigger: validationShakeTrigger,
               onSelected: onCategorySelected,
             ),
           const SizedBox(height: 18),
@@ -3109,76 +3187,151 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 24,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppPanelHeader(title: appT(context, 'choose_theme_color')),
-                    const SizedBox(height: 18),
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: draftColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: draftColor.withValues(alpha: 0.32),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 384),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppPanelHeader(
+                        title: appT(context, 'choose_theme_color'),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${appT(context, 'selected')}: ${AppTheme.hexColor(draftColor)}',
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
-                        fontSize: 13,
+                      const SizedBox(height: 34),
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: draftColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: draftColor.withValues(alpha: 0.24),
+                              blurRadius: 14,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    AppColorPicker(
-                      colors: _categoryColorChoices,
-                      selectedColor: draftColor,
-                      layout: AppColorPickerLayout.wrap,
-                      onColorSelected: (color) {
-                        setDialogState(() => draftColor = color);
-                      },
-                    ),
-                    const SizedBox(height: 22),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        appT(context, 'theme_note'),
+                      const SizedBox(height: 16),
+                      Text(
+                        '${appT(context, 'selected')}: ${AppTheme.hexColor(draftColor)}',
                         style: const TextStyle(
-                          color: _AppShellColors.text,
+                          color: _AppShellColors.mutedText,
                           fontSize: 13,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    AppPanelActions(
-                      primaryLabel: appT(context, 'apply'),
-                      cancelLabel: appT(context, 'cancel'),
-                      onPrimaryPressed: () {
-                        ref
-                            .read(themeColorProvider.notifier)
-                            .setColor(draftColor);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 28),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: Theme.of(
+                            context,
+                          ).colorScheme.copyWith(primary: draftColor),
+                        ),
+                        child: AppColorPicker(
+                          colors: _categoryColorChoices,
+                          selectedColor: draftColor,
+                          onColorSelected: (color) {
+                            setDialogState(() => draftColor = color);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '\uD83D\uDCA1',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                appT(context, 'theme_note'),
+                                style: const TextStyle(
+                                  color: _AppShellColors.text,
+                                  fontSize: 13,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _AppShellColors.text,
+                                minimumSize: const Size.fromHeight(52),
+                                side: const BorderSide(
+                                  color: Color(0xFFD1D5DB),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                appT(context, 'cancel'),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () {
+                                ref
+                                    .read(themeColorProvider.notifier)
+                                    .setColor(draftColor);
+                                Navigator.pop(context);
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: draftColor,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(52),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                appT(context, 'apply'),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -3873,6 +4026,7 @@ class _SpendingByCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibleCategories = categories.take(5).toList(growable: false);
+    final themeColor = _themeColor(context);
 
     return _Card(
       padding: const EdgeInsets.all(24),
@@ -3938,8 +4092,8 @@ class _SpendingByCategoryCard extends StatelessWidget {
               icon: const Icon(Icons.chevron_right, size: 18),
               label: Text(appT(context, 'more_statistics')),
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                foregroundColor: AppTheme.primaryColor,
+                backgroundColor: themeColor.withValues(alpha: 0.1),
+                foregroundColor: themeColor,
                 elevation: 0,
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
@@ -4562,12 +4716,98 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+class _ValidationField extends StatefulWidget {
+  const _ValidationField({
+    required this.child,
+    this.errorText,
+    this.shakeTrigger = 0,
+  });
+
+  final Widget child;
+  final String? errorText;
+  final int shakeTrigger;
+
+  @override
+  State<_ValidationField> createState() => _ValidationFieldState();
+}
+
+class _ValidationFieldState extends State<_ValidationField>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _ValidationField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.errorText != null &&
+        widget.shakeTrigger != oldWidget.shakeTrigger) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const errorColor = Color(0xFFFF2A2A);
+    final hasError = widget.errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasError) ...[
+          Text(
+            widget.errorText!,
+            style: const TextStyle(
+              color: errorColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        AnimatedBuilder(
+          animation: _controller,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: double.infinity,
+            padding: hasError ? const EdgeInsets.all(8) : EdgeInsets.zero,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: hasError ? Border.all(color: errorColor, width: 2) : null,
+            ),
+            child: widget.child,
+          ),
+          builder: (context, child) {
+            final offset = math.sin(_controller.value * math.pi * 6) * 7;
+            return Transform.translate(offset: Offset(offset, 0), child: child);
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class _CategoryChoiceGrid extends StatelessWidget {
   const _CategoryChoiceGrid({
     required this.categories,
     this.allCategories,
     required this.selectedCategoryId,
     this.activeParentId,
+    this.errorText,
+    this.shakeTrigger = 0,
     required this.onSelected,
   });
 
@@ -4575,6 +4815,8 @@ class _CategoryChoiceGrid extends StatelessWidget {
   final List<_CategoryItem>? allCategories;
   final String? selectedCategoryId;
   final String? activeParentId;
+  final String? errorText;
+  final int shakeTrigger;
   final ValueChanged<_CategoryItem> onSelected;
 
   @override
@@ -4600,84 +4842,91 @@ class _CategoryChoiceGrid extends StatelessWidget {
 
     return Column(
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.38,
-          ),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final category = categories[index];
-            final selected = category.id == selectedCategoryId;
-            final hasChildren = (allCategories ?? categories).any(
-              (item) =>
-                  item.type == category.type && item.parentId == category.id,
-            );
-            final isActiveParent = activeParentId == category.id;
+        _ValidationField(
+          errorText: errorText,
+          shakeTrigger: shakeTrigger,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.38,
+            ),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              final selected = category.id == selectedCategoryId;
+              final hasChildren = (allCategories ?? categories).any(
+                (item) =>
+                    item.type == category.type && item.parentId == category.id,
+              );
+              final isActiveParent = activeParentId == category.id;
 
-            return InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => onSelected(category),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? _themeColor(context)
-                      : const Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Stack(
-                  children: [
-                    if (hasChildren)
-                      Positioned(
-                        top: -3,
-                        right: -3,
-                        child: Icon(
-                          isActiveParent
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          size: 15,
-                          color: selected
-                              ? Colors.white70
-                              : _AppShellColors.mutedText,
+              return InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => onSelected(category),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? _themeColor(context)
+                        : const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Stack(
+                    children: [
+                      if (hasChildren)
+                        Positioned(
+                          top: -3,
+                          right: -3,
+                          child: Icon(
+                            isActiveParent
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            size: 15,
+                            color: selected
+                                ? Colors.white70
+                                : _AppShellColors.mutedText,
+                          ),
+                        ),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              category.icon,
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              category.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: selected
+                                    ? Colors.white
+                                    : _AppShellColors.text,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            category.icon,
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            category.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: selected
-                                  ? Colors.white
-                                  : _AppShellColors.text,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
         if (selectedCategory != null) ...[
           const SizedBox(height: 8),
@@ -5039,6 +5288,8 @@ class _SelectionDialog<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 384),
@@ -5562,6 +5813,8 @@ class _EmptyStateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+
     return _Card(
       child: Column(
         children: [
@@ -5569,10 +5822,10 @@ class _EmptyStateCard extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              color: themeColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 34),
+            child: Icon(icon, color: themeColor, size: 34),
           ),
           const SizedBox(height: 18),
           Text(

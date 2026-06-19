@@ -371,7 +371,7 @@ class DemoDataStore {
   }
 
   List<ApiJson> _initialTransactions() {
-    return const [
+    return [
       {
         'id': 'demo-transaction-coffee',
         'belongs_date': '20260517',

@@ -47,14 +47,20 @@ class AppTheme {
   static const successColor = Color(0xFF388E3C);
 
   static ThemeData lightTheme(Color themeColor) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: themeColor,
+      brightness: Brightness.light,
+      secondary: secondaryColor,
+      error: errorColor,
+    ).copyWith(primary: themeColor, onPrimary: Colors.white);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: themeColor,
-        brightness: Brightness.light,
-        secondary: secondaryColor,
-        error: errorColor,
+      colorScheme: colorScheme,
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
       ),
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       inputDecorationTheme: InputDecorationTheme(
@@ -65,15 +71,18 @@ class AppTheme {
   }
 
   static ThemeData darkTheme(Color themeColor) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: themeColor,
+      brightness: Brightness.dark,
+      secondary: secondaryColor,
+      error: errorColor,
+    ).copyWith(primary: themeColor, onPrimary: Colors.white);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: themeColor,
-        brightness: Brightness.dark,
-        secondary: secondaryColor,
-        error: errorColor,
-      ),
+      colorScheme: colorScheme,
+      dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
