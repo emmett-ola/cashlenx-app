@@ -14,7 +14,24 @@ import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../demo/data/demo_data_store.dart';
+import '../../../profile/domain/user_profile.dart';
 import '../providers/currency_provider.dart';
+
+const _defaultAvatarAsset =
+    'assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png';
+
+final _userProfileProvider = FutureProvider<UserProfile?>((ref) async {
+  final user = await ref.watch(authNotifierProvider.future);
+  if (user == null) return null;
+  if (user.role == 'demo') {
+    return UserProfile.demo(user);
+  }
+
+  return UserProfile.fromResponse(
+    await ref.watch(cashlenxApiProvider).getUserProfile(),
+    fallback: UserProfile.fromUser(user),
+  );
+});
 
 final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
   final user = ref.watch(authNotifierProvider).value;
@@ -45,7 +62,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     ref.watch(i18nProvider);
     final user = ref.watch(authNotifierProvider).value;
-    final username = user?.username ?? 'User';
+    final profile = ref
+        .watch(_userProfileProvider)
+        .whenOrNull(data: (profile) => profile);
+    final username = profile?.displayName ?? user?.username ?? 'User';
+    final avatarUrl = profile?.avatarUrl;
     final isDemo = user?.role == 'demo';
 
     return Scaffold(
@@ -71,7 +92,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 children: [
                   _DashboardTab(
                     username: username,
-                    isDemo: isDemo,
+                    avatarUrl: avatarUrl,
                     onAction: _showComingSoon,
                     onTransactionTap: _openTransactionDetail,
                     onProfileTap: _openProfile,
@@ -84,6 +105,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _SettingsTab(
                     username: username,
                     email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
+                    avatarUrl: avatarUrl,
                     onAction: _showComingSoon,
                     onProfileTap: _openProfile,
                   ),
@@ -113,8 +135,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     ToastUtils.showInfo(context, '$feature ${appT(context, 'coming_soon')}');
   }
 
-  void _openProfile() {
-    context.push('/profile');
+  Future<void> _openProfile() async {
+    await context.push('/profile');
+    ref.invalidate(_userProfileProvider);
   }
 
   void _openTransactions() {
@@ -169,7 +192,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 class _DashboardTab extends ConsumerWidget {
   const _DashboardTab({
     required this.username,
-    required this.isDemo,
+    required this.avatarUrl,
     required this.onAction,
     required this.onTransactionTap,
     required this.onProfileTap,
@@ -178,7 +201,7 @@ class _DashboardTab extends ConsumerWidget {
   });
 
   final String username;
-  final bool isDemo;
+  final String? avatarUrl;
   final ValueChanged<String> onAction;
   final ValueChanged<_Transaction> onTransactionTap;
   final VoidCallback onProfileTap;
@@ -199,7 +222,7 @@ class _DashboardTab extends ConsumerWidget {
       data: (data) => _PageScaffold(
         header: _DashboardHeader(
           username: username,
-          isDemo: isDemo,
+          avatarUrl: avatarUrl,
           onProfileTap: onProfileTap,
         ),
         children: [
@@ -1799,12 +1822,14 @@ class _TransactionDetailScreen extends ConsumerStatefulWidget {
 
 class _TransactionDetailScreenState
     extends ConsumerState<_TransactionDetailScreen> {
-  final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _remarkController = TextEditingController();
+  var _amountText = '0';
   var _isLoading = true;
   var _isEditing = false;
   var _isSaving = false;
   var _showDeleteConfirm = false;
+  var _showAmountPad = false;
   Object? _error;
   _Transaction? _transaction;
   List<_CategoryItem> _categories = const [];
@@ -1864,8 +1889,8 @@ class _TransactionDetailScreenState
 
   @override
   void dispose() {
-    _amountController.dispose();
     _descriptionController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
 
@@ -1934,22 +1959,17 @@ class _TransactionDetailScreenState
                         ),
                       ),
                       _isEditing
-                          ? Row(
-                              children: [
-                                _HeaderCircleButton(
-                                  icon: Icons.close,
-                                  onTap: _cancelEditing,
-                                ),
-                                const SizedBox(width: 8),
-                                _HeaderCircleButton(
-                                  icon: Icons.check,
-                                  onTap: _isSaving ? null : _saveTransaction,
-                                ),
-                              ],
+                          ? _HeaderCircleButton(
+                              icon: Icons.check,
+                              onTap: _isSaving ? null : _saveTransaction,
                             )
                           : TextButton(
-                              onPressed: () =>
-                                  setState(() => _isEditing = true),
+                              onPressed: () {
+                                setState(() {
+                                  _isEditing = true;
+                                  _showAmountPad = false;
+                                });
+                              },
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 backgroundColor: Colors.white24,
@@ -1975,36 +1995,18 @@ class _TransactionDetailScreenState
                   ),
                   const SizedBox(height: 14),
                   if (_isEditing)
-                    SizedBox(
-                      width: 180,
-                      child: _ValidationField(
-                        errorText: _showAmountError
-                            ? appT(context, 'enter_amount_gt_zero')
-                            : null,
-                        shakeTrigger: _validationShakeTrigger,
-                        child: TextField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (_) {
-                            if (_showAmountError) {
-                              setState(() => _showAmountError = false);
-                            }
-                          },
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                          ),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: '0.00',
-                            hintStyle: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                      ),
+                    _TransactionAmountDisplay(
+                      amountText: _amountText,
+                      prefix: _type == _CategoryType.income ? '+' : '-',
+                      amountColor: Colors.white,
+                      errorText: _showAmountError
+                          ? appT(context, 'enter_amount_gt_zero')
+                          : null,
+                      shakeTrigger: _validationShakeTrigger,
+                      expanded: _showAmountPad,
+                      onToggleExpanded: () {
+                        setState(() => _showAmountPad = !_showAmountPad);
+                      },
                     )
                   else
                     Text(
@@ -2025,6 +2027,14 @@ class _TransactionDetailScreenState
             ),
           ),
         ),
+        if (_isEditing && _showAmountPad)
+          SliverToBoxAdapter(
+            child: _TransactionAmountPad(
+              onKeyPressed: (key) {
+                setState(() => _handleAmountKey(key));
+              },
+            ),
+          ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -2058,7 +2068,10 @@ class _TransactionDetailScreenState
                         ),
                       ),
                 const SizedBox(height: 20),
-                Text(appT(context, 'note'), style: _fieldLabelStyle),
+                _AddTransactionFieldLabel(
+                  icon: Icons.description_outlined,
+                  text: appT(context, 'add_transaction_description_label'),
+                ),
                 const SizedBox(height: 8),
                 _isEditing
                     ? TextField(
@@ -2067,7 +2080,7 @@ class _TransactionDetailScreenState
                         decoration: InputDecoration(
                           hintText: appT(
                             context,
-                            'add_transaction_note_placeholder',
+                            'add_transaction_description_placeholder',
                           ),
                           filled: true,
                           fillColor: const Color(0xFFF3F4F6),
@@ -2115,6 +2128,30 @@ class _TransactionDetailScreenState
                         value: transaction.dateLabel,
                       ),
                 const SizedBox(height: 20),
+                if (_isEditing) ...[
+                  _AddTransactionFieldLabel(
+                    icon: Icons.description_outlined,
+                    text: appT(context, 'add_transaction_remark_label'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _remarkController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: appT(
+                        context,
+                        'add_transaction_remark_placeholder',
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF3F4F6),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 Text(
                   appT(context, 'transaction_attachments'),
                   style: _fieldLabelStyle,
@@ -2229,17 +2266,39 @@ class _TransactionDetailScreenState
   }
 
   void _resetEditingState(_Transaction transaction) {
-    _amountController.text = transaction.amount.abs().toStringAsFixed(2);
-    _descriptionController.text = transaction.description;
+    final noteParts = _splitTransactionDescription(transaction.description);
+    _amountText = _formatEditableAmount(transaction.amount.abs());
+    _descriptionController.text = noteParts.$1;
+    _remarkController.text = noteParts.$2;
     _type = transaction.flowType == _CashFlowType.income
         ? _CategoryType.income
         : _CategoryType.expense;
-    _selectedCategoryId = transaction.categoryId;
+    _selectedCategoryId = _categoryForTransaction(transaction)?.id;
     final selectedCategory = _selectedCategory;
-    _activeCategoryParentId = selectedCategory?.parentId;
+    _activeCategoryParentId = selectedCategory == null
+        ? null
+        : _hasChildren(selectedCategory)
+        ? selectedCategory.id
+        : selectedCategory.parentId;
     _date = _parseTransactionDate(transaction.belongsDate) ?? DateTime.now();
+    _showAmountPad = false;
     _showAmountError = false;
     _showCategoryError = false;
+  }
+
+  _CategoryItem? _categoryForTransaction(_Transaction transaction) {
+    final categoryId = transaction.categoryId;
+    if (categoryId != null) {
+      final category = _categoryById(categoryId);
+      if (category != null) return category;
+    }
+
+    for (final category in _categories) {
+      if (category.type == _type && category.name == transaction.category) {
+        return category;
+      }
+    }
+    return null;
   }
 
   void _handleCategorySelected(_CategoryItem category) {
@@ -2256,15 +2315,9 @@ class _TransactionDetailScreenState
     });
   }
 
-  void _cancelEditing() {
-    final transaction = _transaction;
-    if (transaction != null) _resetEditingState(transaction);
-    setState(() => _isEditing = false);
-  }
-
   Future<void> _saveTransaction() async {
     final transaction = _transaction;
-    final amount = double.tryParse(_amountController.text.trim());
+    final amount = double.tryParse(_amountText);
     final category = _selectedCategory;
     if (transaction == null) return;
     if (amount == null || amount <= 0) {
@@ -2285,7 +2338,10 @@ class _TransactionDetailScreenState
     setState(() => _isSaving = true);
     try {
       final belongsDate = _dateToken(_date);
-      final description = _descriptionController.text.trim();
+      final description = _combinedTransactionDescription(
+        _descriptionController,
+        _remarkController,
+      );
       final typeChanged =
           (_type == _CategoryType.income) !=
           (transaction.flowType == _CashFlowType.income);
@@ -2360,6 +2416,11 @@ class _TransactionDetailScreenState
       setState(() => _isSaving = false);
       ToastUtils.showServerErrors(context, error);
     }
+  }
+
+  void _handleAmountKey(String key) {
+    _amountText = _updatedAmountText(_amountText, key);
+    _showAmountError = false;
   }
 
   Future<void> _deleteTransaction() async {
@@ -2589,27 +2650,18 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                       },
                     ),
                     const SizedBox(height: 34),
-                    Text(
-                      appT(context, 'add_transaction_amount_label'),
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _ValidationField(
+                    _TransactionAmountDisplay(
+                      label: appT(context, 'add_transaction_amount_label'),
+                      amountText: _amountText,
+                      amountColor: _themeColor(context),
                       errorText: _showAmountError
                           ? appT(context, 'enter_amount_gt_zero')
                           : null,
                       shakeTrigger: _validationShakeTrigger,
-                      child: Text(
-                        r'$' + _amountText,
-                        style: TextStyle(
-                          color: _themeColor(context),
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                      expanded: !_showDetails,
+                      onToggleExpanded: () {
+                        setState(() => _showDetails = !_showDetails);
+                      },
                     ),
                     const SizedBox(height: 20),
                     _DetailsToggleButton(
@@ -2639,7 +2691,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                         onDateChanged: (date) => setState(() => _date = date),
                       )
                     else
-                      _NumericKeypad(
+                      _TransactionAmountPad(
                         onKeyPressed: (key) {
                           setState(() => _handleAmountKey(key));
                         },
@@ -2728,7 +2780,10 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     setState(() => _isSaving = true);
     try {
       final belongsDate = _dateToken(_date);
-      final description = _combinedTransactionDescription();
+      final description = _combinedTransactionDescription(
+        _descriptionController,
+        _remarkController,
+      );
       if (_isDemo) {
         await ref
             .read(demoDataStoreProvider)
@@ -2785,38 +2840,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   }
 
   void _handleAmountKey(String key) {
-    if (key == 'backspace') {
-      _amountText = _amountText.length > 1
-          ? _amountText.substring(0, _amountText.length - 1)
-          : '0';
-      return;
-    }
-
-    if (key == '.') {
-      if (!_amountText.contains('.')) _amountText = '$_amountText.';
-      return;
-    }
-
-    if (_amountText == '0') {
-      _amountText = key;
-      _showAmountError = false;
-      return;
-    }
-
-    final decimalIndex = _amountText.indexOf('.');
-    if (decimalIndex != -1 && _amountText.length - decimalIndex > 2) {
-      return;
-    }
-    _amountText = '$_amountText$key';
+    _amountText = _updatedAmountText(_amountText, key);
     _showAmountError = false;
-  }
-
-  String _combinedTransactionDescription() {
-    final description = _descriptionController.text.trim();
-    final remark = _remarkController.text.trim();
-    if (description.isEmpty) return remark;
-    if (remark.isEmpty) return description;
-    return '$description\n\n$remark';
   }
 }
 
@@ -2862,6 +2887,79 @@ class _DetailsToggleButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TransactionAmountDisplay extends StatelessWidget {
+  const _TransactionAmountDisplay({
+    required this.amountText,
+    required this.amountColor,
+    required this.expanded,
+    required this.onToggleExpanded,
+    this.prefix = '',
+    this.label,
+    this.errorText,
+    this.shakeTrigger = 0,
+  });
+
+  final String? label;
+  final String amountText;
+  final String prefix;
+  final Color amountColor;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
+  final String? errorText;
+  final int shakeTrigger;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (label != null) ...[
+          Text(
+            label!,
+            style: const TextStyle(
+              color: _AppShellColors.mutedText,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        _ValidationField(
+          errorText: errorText,
+          shakeTrigger: shakeTrigger,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onToggleExpanded,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$prefix\$$amountText',
+                    style: TextStyle(
+                      color: amountColor,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: amountColor.withValues(alpha: 0.78),
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -3034,8 +3132,8 @@ class _AddTransactionFieldLabel extends StatelessWidget {
   }
 }
 
-class _NumericKeypad extends StatelessWidget {
-  const _NumericKeypad({required this.onKeyPressed});
+class _TransactionAmountPad extends StatelessWidget {
+  const _TransactionAmountPad({required this.onKeyPressed});
 
   final ValueChanged<String> onKeyPressed;
 
@@ -3048,40 +3146,45 @@ class _NumericKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 3,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2.65,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        for (final row in _keys)
-          for (final key in row)
-            Material(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: GridView.count(
+        crossAxisCount: 3,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 2.65,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          for (final row in _keys)
+            for (final key in row)
+              Material(
+                color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => onKeyPressed(key),
-                child: Center(
-                  child: key == 'backspace'
-                      ? const Icon(
-                          Icons.backspace_outlined,
-                          color: _AppShellColors.mutedText,
-                        )
-                      : Text(
-                          key,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => onKeyPressed(key),
+                  child: Center(
+                    child: key == 'backspace'
+                        ? const Icon(
+                            Icons.backspace_outlined,
+                            color: _AppShellColors.mutedText,
+                          )
+                        : Text(
+                            key,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ),
-            ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -3090,12 +3193,14 @@ class _SettingsTab extends ConsumerStatefulWidget {
   const _SettingsTab({
     required this.username,
     required this.email,
+    required this.avatarUrl,
     required this.onAction,
     required this.onProfileTap,
   });
 
   final String username;
   final String email;
+  final String? avatarUrl;
   final ValueChanged<String> onAction;
   final VoidCallback onProfileTap;
 
@@ -3117,6 +3222,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         _ProfileCard(
           username: widget.username,
           email: widget.email,
+          avatarUrl: widget.avatarUrl,
           onTap: widget.onProfileTap,
         ),
         _SettingsSection(
@@ -3551,18 +3657,16 @@ class _PageScaffold extends StatelessWidget {
 class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({
     required this.username,
-    required this.isDemo,
+    required this.avatarUrl,
     required this.onProfileTap,
   });
 
   final String username;
-  final bool isDemo;
+  final String? avatarUrl;
   final VoidCallback onProfileTap;
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = _themeColor(context);
-
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       decoration: const BoxDecoration(
@@ -3600,24 +3704,11 @@ class _DashboardHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (isDemo)
-            Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: themeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                appT(context, 'demo'),
-                style: TextStyle(
-                  color: themeColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          _AvatarButton(username: username, onTap: onProfileTap),
+          _AvatarButton(
+            username: username,
+            avatarUrl: avatarUrl,
+            onTap: onProfileTap,
+          ),
         ],
       ),
     );
@@ -4852,7 +4943,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
               crossAxisCount: 4,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
-              childAspectRatio: 1.38,
+              mainAxisExtent: 78,
             ),
             itemCount: categories.length,
             itemBuilder: (context, index) {
@@ -4869,10 +4960,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
                 onTap: () => onSelected(category),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 9,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
                   decoration: BoxDecoration(
                     color: selected
                         ? _themeColor(context)
@@ -4901,21 +4989,26 @@ class _CategoryChoiceGrid extends StatelessWidget {
                           children: [
                             Text(
                               category.icon,
-                              style: const TextStyle(fontSize: 24),
+                              style: const TextStyle(fontSize: 22),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              category.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: selected
-                                    ? Colors.white
-                                    : _AppShellColors.text,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
+                            const SizedBox(height: 5),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  category.name,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: selected
+                                        ? Colors.white
+                                        : _AppShellColors.text,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.05,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -5541,11 +5634,13 @@ class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
     required this.username,
     required this.email,
+    required this.avatarUrl,
     required this.onTap,
   });
 
   final String username;
   final String email;
+  final String? avatarUrl;
   final VoidCallback onTap;
 
   @override
@@ -5554,7 +5649,7 @@ class _ProfileCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          _AvatarBadge(username: username),
+          _AvatarBadge(username: username, avatarUrl: avatarUrl),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -5708,9 +5803,14 @@ class _Card extends StatelessWidget {
 }
 
 class _AvatarButton extends StatelessWidget {
-  const _AvatarButton({required this.username, required this.onTap});
+  const _AvatarButton({
+    required this.username,
+    required this.avatarUrl,
+    required this.onTap,
+  });
 
   final String username;
+  final String? avatarUrl;
   final VoidCallback onTap;
 
   @override
@@ -5718,42 +5818,100 @@ class _AvatarButton extends StatelessWidget {
     return InkWell(
       customBorder: const CircleBorder(),
       onTap: onTap,
-      child: _AvatarBadge(username: username),
+      child: _AvatarBadge(username: username, avatarUrl: avatarUrl),
     );
   }
 }
 
 class _AvatarBadge extends StatelessWidget {
-  const _AvatarBadge({required this.username});
+  const _AvatarBadge({required this.username, required this.avatarUrl});
+
+  final String username;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7E8A7),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(5),
+        child: ClipOval(
+          child: _AvatarImage(username: username, avatarUrl: avatarUrl),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({required this.username, required this.avatarUrl});
+
+  final String username;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = avatarUrl?.trim() ?? '';
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return Image.network(
+        value,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _DefaultAvatarImage(username: username),
+      );
+    }
+
+    if (value.startsWith('assets/')) {
+      return Image.asset(
+        value,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _DefaultAvatarImage(username: username),
+      );
+    }
+
+    return _DefaultAvatarImage(username: username);
+  }
+}
+
+class _DefaultAvatarImage extends StatelessWidget {
+  const _DefaultAvatarImage({required this.username});
 
   final String username;
 
   @override
   Widget build(BuildContext context) {
-    final initial = username.trim().isEmpty ? 'U' : username.trim()[0];
-    final themeColor = _themeColor(context);
-
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [themeColor, AppTheme.secondaryColor],
-        ),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          initial.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    return Image.asset(
+      _defaultAvatarAsset,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        final initial = username.trim().isEmpty ? 'U' : username.trim()[0];
+        return ColoredBox(
+          color: _themeColor(context),
+          child: Center(
+            child: Text(
+              initial.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -6724,6 +6882,48 @@ DateTime _addMonths(DateTime date, int monthOffset) {
 
 bool _isSameDate(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+String _formatEditableAmount(num value) {
+  var text = value.toStringAsFixed(2);
+  text = text.replaceFirst(RegExp(r'\.?0+$'), '');
+  return text.isEmpty ? '0' : text;
+}
+
+String _updatedAmountText(String current, String key) {
+  if (key == 'backspace') {
+    return current.length > 1 ? current.substring(0, current.length - 1) : '0';
+  }
+
+  if (key == '.') {
+    return current.contains('.') ? current : '$current.';
+  }
+
+  if (current == '0') return key;
+
+  final decimalIndex = current.indexOf('.');
+  if (decimalIndex != -1 && current.length - decimalIndex > 2) {
+    return current;
+  }
+
+  return '$current$key';
+}
+
+String _combinedTransactionDescription(
+  TextEditingController descriptionController,
+  TextEditingController remarkController,
+) {
+  final description = descriptionController.text.trim();
+  final remark = remarkController.text.trim();
+  if (description.isEmpty) return remark;
+  if (remark.isEmpty) return description;
+  return '$description\n\n$remark';
+}
+
+(String, String) _splitTransactionDescription(String value) {
+  final parts = value.split('\n\n');
+  if (parts.length < 2) return (value, '');
+  return (parts.first, parts.skip(1).join('\n\n'));
 }
 
 String _dateToken(DateTime date) {
