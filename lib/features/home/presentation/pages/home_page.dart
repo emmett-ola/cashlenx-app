@@ -1788,20 +1788,46 @@ class _TransactionDetailScreenState
   var _type = _CategoryType.expense;
   var _date = DateTime.now();
   String? _selectedCategoryId;
+  String? _activeCategoryParentId;
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
 
   List<_CategoryItem> get _visibleCategories {
-    return _categories
+    final typeCategories = _categories
         .where((category) => category.type == _type)
         .toList(growable: false);
+
+    if (_activeCategoryParentId == null) {
+      return typeCategories
+          .where((category) => category.parentId == null)
+          .toList(growable: false);
+    }
+
+    final parent = _categoryById(_activeCategoryParentId);
+    return [
+      if (parent != null && parent.type == _type) parent,
+      ...typeCategories.where(
+        (category) => category.parentId == _activeCategoryParentId,
+      ),
+    ];
   }
 
   _CategoryItem? get _selectedCategory {
+    return _categoryById(_selectedCategoryId);
+  }
+
+  _CategoryItem? _categoryById(String? id) {
+    if (id == null) return null;
     for (final category in _categories) {
-      if (category.id == _selectedCategoryId) return category;
+      if (category.id == id) return category;
     }
     return null;
+  }
+
+  bool _hasChildren(_CategoryItem category) {
+    return _categories.any(
+      (item) => item.type == _type && item.parentId == category.id,
+    );
   }
 
   @override
@@ -1977,6 +2003,7 @@ class _TransactionDetailScreenState
                           setState(() {
                             _type = type;
                             _selectedCategoryId = null;
+                            _activeCategoryParentId = null;
                           });
                         },
                       )
@@ -2025,10 +2052,10 @@ class _TransactionDetailScreenState
                 _isEditing
                     ? _CategoryChoiceGrid(
                         categories: _visibleCategories,
+                        allCategories: _categories,
                         selectedCategoryId: _selectedCategoryId,
-                        onSelected: (category) {
-                          setState(() => _selectedCategoryId = category.id);
-                        },
+                        activeParentId: _activeCategoryParentId,
+                        onSelected: _handleCategorySelected,
                       )
                     : _DetailValue(
                         icon: Icons.category_outlined,
@@ -2167,7 +2194,22 @@ class _TransactionDetailScreenState
         ? _CategoryType.income
         : _CategoryType.expense;
     _selectedCategoryId = transaction.categoryId;
+    final selectedCategory = _selectedCategory;
+    _activeCategoryParentId = selectedCategory?.parentId;
     _date = _parseTransactionDate(transaction.belongsDate) ?? DateTime.now();
+  }
+
+  void _handleCategorySelected(_CategoryItem category) {
+    setState(() {
+      _selectedCategoryId = category.id;
+      if (!_hasChildren(category)) return;
+
+      if (_activeCategoryParentId == category.id) {
+        _activeCategoryParentId = category.parentId;
+      } else {
+        _activeCategoryParentId = category.id;
+      }
+    });
   }
 
   void _cancelEditing() {
@@ -2388,29 +2430,57 @@ class _AddTransactionSheet extends ConsumerStatefulWidget {
 }
 
 class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
-  final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _remarkController = TextEditingController();
+  var _amountText = '0';
   var _type = _CategoryType.expense;
   var _date = DateTime.now();
   String? _selectedCategoryId;
+  String? _activeCategoryParentId;
   var _isLoading = true;
   var _isSaving = false;
+  var _showDetails = false;
   Object? _error;
   List<_CategoryItem> _categories = const [];
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
 
   List<_CategoryItem> get _visibleCategories {
-    return _categories
+    final typeCategories = _categories
         .where((category) => category.type == _type)
         .toList(growable: false);
+
+    if (_activeCategoryParentId == null) {
+      return typeCategories
+          .where((category) => category.parentId == null)
+          .toList(growable: false);
+    }
+
+    final parent = _categoryById(_activeCategoryParentId);
+    return [
+      if (parent != null && parent.type == _type) parent,
+      ...typeCategories.where(
+        (category) => category.parentId == _activeCategoryParentId,
+      ),
+    ];
   }
 
   _CategoryItem? get _selectedCategory {
+    return _categoryById(_selectedCategoryId);
+  }
+
+  _CategoryItem? _categoryById(String? id) {
+    if (id == null) return null;
     for (final category in _categories) {
-      if (category.id == _selectedCategoryId) return category;
+      if (category.id == id) return category;
     }
     return null;
+  }
+
+  bool _hasChildren(_CategoryItem category) {
+    return _categories.any(
+      (item) => item.type == _type && item.parentId == category.id,
+    );
   }
 
   @override
@@ -2421,8 +2491,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
 
   @override
   void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
+    _descriptionController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
 
@@ -2452,9 +2522,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
             const Divider(height: 1),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _CategoryTypeSwitcher(
                       activeType: _type,
@@ -2462,69 +2531,56 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                         setState(() {
                           _type = type;
                           _selectedCategoryId = null;
+                          _activeCategoryParentId = null;
                         });
                       },
                     ),
-                    const SizedBox(height: 20),
-                    Text(appT(context, 'amount'), style: _fieldLabelStyle),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                    const SizedBox(height: 34),
+                    Text(
+                      appT(context, 'add_transaction_amount_label'),
+                      style: const TextStyle(
+                        color: _AppShellColors.mutedText,
+                        fontSize: 14,
                       ),
-                      decoration: InputDecoration(
-                        prefixText: r'$ ',
-                        hintText: '0.00',
-                        filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      r'$' + _amountText,
+                      style: TextStyle(
+                        color: _themeColor(context),
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(appT(context, 'category'), style: _fieldLabelStyle),
-                    const SizedBox(height: 10),
-                    if (_isLoading)
-                      const _TransactionLoadingCard()
-                    else if (_error != null)
-                      _TransactionErrorCard(onRetry: _loadCategories)
-                    else
-                      _CategoryChoiceGrid(
+                    _DetailsToggleButton(
+                      expanded: _showDetails,
+                      onTap: () {
+                        setState(() => _showDetails = !_showDetails);
+                      },
+                    ),
+                    const SizedBox(height: 28),
+                    if (_showDetails)
+                      _AddTransactionDetails(
+                        descriptionController: _descriptionController,
+                        remarkController: _remarkController,
+                        isLoading: _isLoading,
+                        error: _error,
                         categories: _visibleCategories,
+                        allCategories: _categories,
                         selectedCategoryId: _selectedCategoryId,
-                        onSelected: (category) {
-                          setState(() => _selectedCategoryId = category.id);
+                        activeParentId: _activeCategoryParentId,
+                        date: _date,
+                        onRetry: _loadCategories,
+                        onCategorySelected: _handleCategorySelected,
+                        onDateChanged: (date) => setState(() => _date = date),
+                      )
+                    else
+                      _NumericKeypad(
+                        onKeyPressed: (key) {
+                          setState(() => _handleAmountKey(key));
                         },
                       ),
-                    const SizedBox(height: 20),
-                    Text(appT(context, 'date'), style: _fieldLabelStyle),
-                    const SizedBox(height: 8),
-                    _DateSelector(
-                      date: _date,
-                      onDateChanged: (date) => setState(() => _date = date),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(appT(context, 'note'), style: _fieldLabelStyle),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _noteController,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: appT(
-                          context,
-                          'add_transaction_note_placeholder',
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF3F4F6),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -2550,7 +2606,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                           dimension: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(appT(context, 'add_transaction_title')),
+                      : Text(appT(context, 'add_transaction_submit_button')),
                 ),
               ),
             ),
@@ -2572,6 +2628,10 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       if (!mounted) return;
       setState(() {
         _categories = _CategoryItem.listFromResponse(response);
+        if (_activeCategoryParentId != null &&
+            _categoryById(_activeCategoryParentId) == null) {
+          _activeCategoryParentId = null;
+        }
         _isLoading = false;
       });
     } catch (error) {
@@ -2584,13 +2644,14 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   }
 
   Future<void> _saveTransaction() async {
-    final amount = double.tryParse(_amountController.text.trim());
+    final amount = double.tryParse(_amountText);
     final category = _selectedCategory;
     if (amount == null || amount <= 0) {
       ToastUtils.showInfo(context, appT(context, 'enter_amount_gt_zero'));
       return;
     }
     if (category == null) {
+      setState(() => _showDetails = true);
       ToastUtils.showInfo(context, appT(context, 'choose_category'));
       return;
     }
@@ -2598,7 +2659,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     setState(() => _isSaving = true);
     try {
       final belongsDate = _dateToken(_date);
-      final description = _noteController.text.trim();
+      final description = _combinedTransactionDescription();
       if (_isDemo) {
         await ref
             .read(demoDataStoreProvider)
@@ -2638,6 +2699,312 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
       setState(() => _isSaving = false);
       ToastUtils.showServerErrors(context, error);
     }
+  }
+
+  void _handleCategorySelected(_CategoryItem category) {
+    setState(() {
+      _selectedCategoryId = category.id;
+      if (!_hasChildren(category)) return;
+
+      if (_activeCategoryParentId == category.id) {
+        _activeCategoryParentId = category.parentId;
+      } else {
+        _activeCategoryParentId = category.id;
+      }
+    });
+  }
+
+  void _handleAmountKey(String key) {
+    if (key == 'backspace') {
+      _amountText = _amountText.length > 1
+          ? _amountText.substring(0, _amountText.length - 1)
+          : '0';
+      return;
+    }
+
+    if (key == '.') {
+      if (!_amountText.contains('.')) _amountText = '$_amountText.';
+      return;
+    }
+
+    if (_amountText == '0') {
+      _amountText = key;
+      return;
+    }
+
+    final decimalIndex = _amountText.indexOf('.');
+    if (decimalIndex != -1 && _amountText.length - decimalIndex > 2) {
+      return;
+    }
+    _amountText = '$_amountText$key';
+  }
+
+  String _combinedTransactionDescription() {
+    final description = _descriptionController.text.trim();
+    final remark = _remarkController.text.trim();
+    if (description.isEmpty) return remark;
+    if (remark.isEmpty) return description;
+    return '$description\n\n$remark';
+  }
+}
+
+class _DetailsToggleButton extends StatelessWidget {
+  const _DetailsToggleButton({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F4F6),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                size: 18,
+                color: _AppShellColors.mutedText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                appT(
+                  context,
+                  expanded
+                      ? 'add_transaction_hide_details'
+                      : 'add_transaction_show_details',
+                ),
+                style: const TextStyle(
+                  color: _AppShellColors.text,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddTransactionDetails extends StatelessWidget {
+  const _AddTransactionDetails({
+    required this.descriptionController,
+    required this.remarkController,
+    required this.isLoading,
+    required this.error,
+    required this.categories,
+    required this.allCategories,
+    required this.selectedCategoryId,
+    required this.activeParentId,
+    required this.date,
+    required this.onRetry,
+    required this.onCategorySelected,
+    required this.onDateChanged,
+  });
+
+  final TextEditingController descriptionController;
+  final TextEditingController remarkController;
+  final bool isLoading;
+  final Object? error;
+  final List<_CategoryItem> categories;
+  final List<_CategoryItem> allCategories;
+  final String? selectedCategoryId;
+  final String? activeParentId;
+  final DateTime date;
+  final VoidCallback onRetry;
+  final ValueChanged<_CategoryItem> onCategorySelected;
+  final ValueChanged<DateTime> onDateChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 18),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: _AppShellColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _AddTransactionFieldLabel(
+            icon: Icons.description_outlined,
+            text: appT(context, 'add_transaction_description_label'),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: descriptionController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: appT(
+                context,
+                'add_transaction_description_placeholder',
+              ),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            appT(context, 'add_transaction_category_label'),
+            style: _fieldLabelStyle,
+          ),
+          const SizedBox(height: 10),
+          if (isLoading)
+            const _TransactionLoadingCard()
+          else if (error != null)
+            _TransactionErrorCard(onRetry: onRetry)
+          else
+            _CategoryChoiceGrid(
+              categories: categories,
+              allCategories: allCategories,
+              selectedCategoryId: selectedCategoryId,
+              activeParentId: activeParentId,
+              onSelected: onCategorySelected,
+            ),
+          const SizedBox(height: 18),
+          _AddTransactionFieldLabel(
+            icon: Icons.calendar_today_outlined,
+            text: appT(context, 'add_transaction_date_label'),
+          ),
+          const SizedBox(height: 8),
+          _DateSelector(date: date, onDateChanged: onDateChanged),
+          const SizedBox(height: 18),
+          _AddTransactionFieldLabel(
+            icon: Icons.description_outlined,
+            text: appT(context, 'add_transaction_remark_label'),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: remarkController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: appT(context, 'add_transaction_remark_placeholder'),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _AddTransactionFieldLabel(
+            icon: Icons.attach_file,
+            text: appT(context, 'transaction_attachments'),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              border: Border.all(color: _AppShellColors.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.attach_file,
+                  size: 18,
+                  color: _AppShellColors.mutedText,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    appT(context, 'transaction_attach_coming_soon'),
+                    style: const TextStyle(
+                      color: _AppShellColors.mutedText,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddTransactionFieldLabel extends StatelessWidget {
+  const _AddTransactionFieldLabel({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: _AppShellColors.mutedText),
+        const SizedBox(width: 5),
+        Text(text, style: _fieldLabelStyle),
+      ],
+    );
+  }
+}
+
+class _NumericKeypad extends StatelessWidget {
+  const _NumericKeypad({required this.onKeyPressed});
+
+  final ValueChanged<String> onKeyPressed;
+
+  static const _keys = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['.', '0', 'backspace'],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.65,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (final row in _keys)
+          for (final key in row)
+            Material(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onKeyPressed(key),
+                child: Center(
+                  child: key == 'backspace'
+                      ? const Icon(
+                          Icons.backspace_outlined,
+                          color: _AppShellColors.mutedText,
+                        )
+                      : Text(
+                          key,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+      ],
+    );
   }
 }
 
@@ -2822,60 +3189,31 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
   }
 
   void _showCurrencyDialog() {
-    var draftCurrency = ref.read(currencyProvider);
-
     showDialog<void>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+        final selectedCurrency = ref.read(currencyProvider);
+
+        return _SelectionDialog<CurrencyOption>(
+          title: appT(context, 'select_currency'),
+          description: appT(context, 'currency_description'),
+          selectedValue: selectedCurrency,
+          options: [
+            for (final currency in CurrencyOption.values)
+              _SelectionOption(
+                value: currency,
+                leadingText: currency.symbol,
+                title: currency.code,
+                subtitle: currency.name,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppPanelHeader(title: appT(context, 'select_currency')),
-                    const SizedBox(height: 8),
-                    Text(
-                      appT(context, 'currency_description'),
-                      style: const TextStyle(color: _AppShellColors.mutedText),
-                    ),
-                    const SizedBox(height: 18),
-                    ...CurrencyOption.values.map(
-                      (currency) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _CurrencyOptionTile(
-                          currency: currency,
-                          selected: draftCurrency == currency,
-                          onTap: () {
-                            setDialogState(() => draftCurrency = currency);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppPanelActions(
-                      primaryLabel: appT(context, 'apply'),
-                      cancelLabel: appT(context, 'cancel'),
-                      onPrimaryPressed: () {
-                        ref
-                            .read(currencyProvider.notifier)
-                            .setCurrency(draftCurrency);
-                        Navigator.pop(context);
-                        ToastUtils.showSuccess(
-                          context,
-                          '${appT(context, 'currency_updated')} ${draftCurrency.code}.',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+          ],
+          onSelected: (currency) async {
+            await ref.read(currencyProvider.notifier).setCurrency(currency);
+            if (!context.mounted) return;
+            Navigator.pop(context);
+            ToastUtils.showSuccess(
+              context,
+              '${appT(context, 'currency_updated')} ${currency.code}.',
             );
           },
         );
@@ -2889,39 +3227,24 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
       builder: (context) {
         final selectedLanguage = ref.read(i18nProvider);
 
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppPanelHeader(title: appT(context, 'select_language')),
-                const SizedBox(height: 8),
-                Text(
-                  appT(context, 'language_description'),
-                  style: const TextStyle(color: _AppShellColors.mutedText),
-                ),
-                const SizedBox(height: 18),
-                ...AppLanguage.values.map(
-                  (language) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _LanguageOptionTile(
-                      language: language,
-                      selected: selectedLanguage == language,
-                      onTap: () {
-                        ref.read(i18nProvider.notifier).setLanguage(language);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return _SelectionDialog<AppLanguage>(
+          title: appT(context, 'select_language'),
+          description: appT(context, 'language_description'),
+          selectedValue: selectedLanguage,
+          options: [
+            for (final language in AppLanguage.values)
+              _SelectionOption(
+                value: language,
+                leadingText: _languageLeadingText(language),
+                title: _languageNativeName(language),
+                subtitle: language.name,
+              ),
+          ],
+          onSelected: (language) async {
+            await ref.read(i18nProvider.notifier).setLanguage(language);
+            if (!context.mounted) return;
+            Navigator.pop(context);
+          },
         );
       },
     );
@@ -4242,12 +4565,16 @@ class _LegendDot extends StatelessWidget {
 class _CategoryChoiceGrid extends StatelessWidget {
   const _CategoryChoiceGrid({
     required this.categories,
+    this.allCategories,
     required this.selectedCategoryId,
+    this.activeParentId,
     required this.onSelected,
   });
 
   final List<_CategoryItem> categories;
+  final List<_CategoryItem>? allCategories;
   final String? selectedCategoryId;
+  final String? activeParentId;
   final ValueChanged<_CategoryItem> onSelected;
 
   @override
@@ -4263,123 +4590,547 @@ class _CategoryChoiceGrid extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 0.86,
-      ),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        final selected = category.id == selectedCategoryId;
+    _CategoryItem? selectedCategory;
+    for (final category in categories) {
+      if (category.id == selectedCategoryId) {
+        selectedCategory = category;
+        break;
+      }
+    }
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => onSelected(category),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: selected ? _themeColor(context) : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.38,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final category = categories[index];
+            final selected = category.id == selectedCategoryId;
+            final hasChildren = (allCategories ?? categories).any(
+              (item) =>
+                  item.type == category.type && item.parentId == category.id,
+            );
+            final isActiveParent = activeParentId == category.id;
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => onSelected(category),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? _themeColor(context)
+                      : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Stack(
+                  children: [
+                    if (hasChildren)
+                      Positioned(
+                        top: -3,
+                        right: -3,
+                        child: Icon(
+                          isActiveParent
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 15,
+                          color: selected
+                              ? Colors.white70
+                              : _AppShellColors.mutedText,
+                        ),
+                      ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            category.icon,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            category.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : _AppShellColors.text,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        if (selectedCategory != null) ...[
+          const SizedBox(height: 8),
+          Text.rich(
+            TextSpan(
+              text: '${appT(context, 'selected')}: ',
+              style: const TextStyle(
+                color: _AppShellColors.mutedText,
+                fontSize: 13,
+              ),
               children: [
-                Text(category.icon, style: const TextStyle(fontSize: 24)),
-                const SizedBox(height: 6),
-                Text(
-                  category.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
+                TextSpan(
+                  text: selectedCategory.name,
                   style: TextStyle(
-                    color: selected ? Colors.white : _AppShellColors.text,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    color: _themeColor(context),
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ],
     );
   }
 }
 
-class _DateSelector extends StatelessWidget {
+class _DateSelector extends StatefulWidget {
   const _DateSelector({required this.date, required this.onDateChanged});
 
   final DateTime date;
   final ValueChanged<DateTime> onDateChanged;
 
   @override
+  State<_DateSelector> createState() => _DateSelectorState();
+}
+
+class _DateSelectorState extends State<_DateSelector> {
+  late var _visibleMonth = DateTime(widget.date.year, widget.date.month);
+  var _isExpanded = false;
+
+  @override
+  void didUpdateWidget(covariant _DateSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isSameDate(oldWidget.date, widget.date)) {
+      _visibleMonth = DateTime(widget.date.year, widget.date.month);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: date,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-        );
-        if (picked != null) onDateChanged(picked);
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
+    return Column(
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _shortDateLabel(widget.date),
+                    style: const TextStyle(
+                      color: _AppShellColors.text,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 20,
+                  color: _AppShellColors.mutedText,
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today_outlined, size: 18),
-            const SizedBox(width: 10),
-            Text(_dateLabel(date)),
-          ],
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _InlineCalendar(
+              selectedDate: widget.date,
+              visibleMonth: _visibleMonth,
+              onMonthChanged: (month) {
+                setState(() => _visibleMonth = month);
+              },
+              onDateSelected: widget.onDateChanged,
+            ),
+          ),
+          crossFadeState: _isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 180),
+          firstCurve: Curves.easeOut,
+          secondCurve: Curves.easeOut,
+          sizeCurve: Curves.easeOut,
+        ),
+      ],
+    );
+  }
+}
+
+class _InlineCalendar extends StatelessWidget {
+  const _InlineCalendar({
+    required this.selectedDate,
+    required this.visibleMonth,
+    required this.onMonthChanged,
+    required this.onDateSelected,
+  });
+
+  final DateTime selectedDate;
+  final DateTime visibleMonth;
+  final ValueChanged<DateTime> onMonthChanged;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstDay = DateTime(visibleMonth.year, visibleMonth.month);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      visibleMonth.year,
+      visibleMonth.month,
+    );
+    final leadingEmptyCells = firstDay.weekday % DateTime.daysPerWeek;
+    final cellCount = leadingEmptyCells + daysInMonth;
+    final rowCount = (cellCount / DateTime.daysPerWeek).ceil();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _AppShellColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _CalendarIconButton(
+                icon: Icons.chevron_left,
+                onTap: () => onMonthChanged(_addMonths(visibleMonth, -1)),
+              ),
+              Expanded(
+                child: Text(
+                  _monthYearLabel(visibleMonth),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: _AppShellColors.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              _CalendarIconButton(
+                icon: Icons.chevron_right,
+                onTap: () => onMonthChanged(_addMonths(visibleMonth, 1)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              for (final weekday in [
+                'Sun',
+                'Mon',
+                'Tue',
+                'Wed',
+                'Thu',
+                'Fri',
+                'Sat',
+              ])
+                Expanded(
+                  child: Text(
+                    weekday,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: _AppShellColors.mutedText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Column(
+            children: [
+              for (var row = 0; row < rowCount; row++) ...[
+                Row(
+                  children: [
+                    for (
+                      var column = 0;
+                      column < DateTime.daysPerWeek;
+                      column++
+                    )
+                      Expanded(
+                        child: _CalendarDayCell(
+                          day: _dayForCell(
+                            row: row,
+                            column: column,
+                            leadingEmptyCells: leadingEmptyCells,
+                            daysInMonth: daysInMonth,
+                          ),
+                          month: visibleMonth,
+                          selectedDate: selectedDate,
+                          onDateSelected: onDateSelected,
+                        ),
+                      ),
+                  ],
+                ),
+                if (row != rowCount - 1) const SizedBox(height: 10),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: _AppShellColors.border),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 36,
+            child: TextButton(
+              onPressed: () {
+                final today = DateTime.now();
+                onDateSelected(DateTime(today.year, today.month, today.day));
+                onMonthChanged(DateTime(today.year, today.month));
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: _AppShellColors.text,
+                backgroundColor: const Color(0xFFF3F4F6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: Text(
+                appT(context, 'today'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int? _dayForCell({
+    required int row,
+    required int column,
+    required int leadingEmptyCells,
+    required int daysInMonth,
+  }) {
+    final day = row * DateTime.daysPerWeek + column - leadingEmptyCells + 1;
+    if (day < 1 || day > daysInMonth) return null;
+    return day;
+  }
+}
+
+class _CalendarIconButton extends StatelessWidget {
+  const _CalendarIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon),
+      color: _AppShellColors.text,
+      iconSize: 22,
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
+
+class _CalendarDayCell extends StatelessWidget {
+  const _CalendarDayCell({
+    required this.day,
+    required this.month,
+    required this.selectedDate,
+    required this.onDateSelected,
+  });
+
+  final int? day;
+  final DateTime month;
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final day = this.day;
+    if (day == null) return const SizedBox(height: 48);
+
+    final date = DateTime(month.year, month.month, day);
+    final isSelected = _isSameDate(date, selectedDate);
+
+    return Center(
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => onDateSelected(date),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected ? _themeColor(context) : Colors.transparent,
+            shape: BoxShape.circle,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: _themeColor(context).withValues(alpha: 0.24),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              '$day',
+              style: TextStyle(
+                color: isSelected ? Colors.white : _AppShellColors.text,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _CurrencyOptionTile extends StatelessWidget {
-  const _CurrencyOptionTile({
-    required this.currency,
+class _SelectionDialog<T> extends StatelessWidget {
+  const _SelectionDialog({
+    required this.title,
+    required this.description,
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+  });
+
+  final String title;
+  final String description;
+  final List<_SelectionOption<T>> options;
+  final T selectedValue;
+  final Future<void> Function(T value) onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 384),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppPanelHeader(title: title),
+              const SizedBox(height: 24),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: _AppShellColors.mutedText,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 18),
+              for (final option in options) ...[
+                _SelectionOptionTile<T>(
+                  option: option,
+                  selected: option.value == selectedValue,
+                  onTap: () => onSelected(option.value),
+                ),
+                if (option != options.last) const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _AppShellColors.text,
+                    side: const BorderSide(
+                      color: Color(0xFFD1D5DB),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    appT(context, 'cancel'),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionOption<T> {
+  const _SelectionOption({
+    required this.value,
+    required this.leadingText,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final T value;
+  final String leadingText;
+  final String title;
+  final String subtitle;
+}
+
+class _SelectionOptionTile<T> extends StatelessWidget {
+  const _SelectionOptionTile({
+    required this.option,
     required this.selected,
     required this.onTap,
   });
 
-  final CurrencyOption currency;
+  final _SelectionOption<T> option;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected
-          ? _themeColor(context).withValues(alpha: 0.08)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: selected ? const Color(0xFFF3F4F6) : Colors.white,
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? _themeColor(context) : _AppShellColors.border,
-              width: selected ? 2 : 1,
-            ),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
@@ -4391,7 +5142,7 @@ class _CurrencyOptionTile extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    currency.symbol,
+                    option.leadingText,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -4405,7 +5156,7 @@ class _CurrencyOptionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currency.code,
+                      option.title,
                       style: const TextStyle(
                         color: _AppShellColors.text,
                         fontWeight: FontWeight.w800,
@@ -4413,7 +5164,7 @@ class _CurrencyOptionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      currency.name,
+                      option.subtitle,
                       style: const TextStyle(
                         color: _AppShellColors.mutedText,
                         fontSize: 13,
@@ -4423,78 +5174,15 @@ class _CurrencyOptionTile extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(Icons.check_circle, color: _themeColor(context)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguageOptionTile extends StatelessWidget {
-  const _LanguageOptionTile({
-    required this.language,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AppLanguage language;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected
-          ? _themeColor(context).withValues(alpha: 0.08)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? _themeColor(context) : _AppShellColors.border,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              AppIconCircle(
-                icon: Icons.language,
-                color: selected
-                    ? _themeColor(context)
-                    : const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      language.nativeName,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      language.name,
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _themeColor(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle, color: _themeColor(context)),
             ],
           ),
         ),
@@ -5668,6 +6356,22 @@ Color _categoryColorOrDefault(Object? value) {
   return Color(0xFF000000 | rgb);
 }
 
+String _languageLeadingText(AppLanguage language) {
+  return switch (language) {
+    AppLanguage.english => 'E',
+    AppLanguage.simplifiedChinese => '\u7B80',
+    AppLanguage.traditionalChinese => '\u7E41',
+  };
+}
+
+String _languageNativeName(AppLanguage language) {
+  return switch (language) {
+    AppLanguage.english => 'English',
+    AppLanguage.simplifiedChinese => '\u7B80\u4F53\u4E2D\u6587',
+    AppLanguage.traditionalChinese => '\u7E41\u9AD4\u4E2D\u6587',
+  };
+}
+
 String _transactionDateLabel(Object? value) {
   final date = _parseTransactionDate(value);
   if (date == null) {
@@ -5723,6 +6427,50 @@ int _compareTransactionsNewestFirst(_Transaction a, _Transaction b) {
 String _dateLabel(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
+}
+
+String _shortDateLabel(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
+}
+
+String _monthYearLabel(DateTime date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${months[date.month - 1]} ${date.year}';
+}
+
+DateTime _addMonths(DateTime date, int monthOffset) {
+  return DateTime(date.year, date.month + monthOffset);
+}
+
+bool _isSameDate(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 String _dateToken(DateTime date) {
