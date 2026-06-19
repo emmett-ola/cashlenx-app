@@ -1208,19 +1208,5 @@ String _formatReadableDate(BuildContext context, String value) {
   if (value.trim().isEmpty) return appT(context, 'profile_currency_not_set');
   final date = DateTime.tryParse(value);
   if (date == null) return value;
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  return MaterialLocalizations.of(context).formatShortDate(date);
 }

@@ -1723,7 +1723,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                         : filteredTransactions[index - 1];
                     final showHeader =
                         previous == null ||
-                        previous.dateGroupLabel != transaction.dateGroupLabel;
+                        !_isSameDate(previous.dateSort, transaction.dateSort);
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1735,7 +1735,10 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                               bottom: 8,
                             ),
                             child: Text(
-                              transaction.dateGroupLabel,
+                              _transactionDateGroupLabel(
+                                context,
+                                transaction.belongsDate,
+                              ),
                               style: const TextStyle(
                                 color: _AppShellColors.mutedText,
                                 fontWeight: FontWeight.w800,
@@ -2125,7 +2128,10 @@ class _TransactionDetailScreenState
                       )
                     : _DetailValue(
                         icon: Icons.calendar_today_outlined,
-                        value: transaction.dateLabel,
+                        value: _transactionDateLabel(
+                          context,
+                          transaction.belongsDate,
+                        ),
                       ),
                 const SizedBox(height: 20),
                 if (_isEditing) ...[
@@ -4080,7 +4086,7 @@ class _TransactionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      transaction.dateLabel,
+                      _transactionDateLabel(context, transaction.belongsDate),
                       style: const TextStyle(
                         color: _AppShellColors.mutedText,
                         fontSize: 13,
@@ -5087,7 +5093,7 @@ class _DateSelectorState extends State<_DateSelector> {
               children: [
                 Expanded(
                   child: Text(
-                    _shortDateLabel(widget.date),
+                    _shortDateLabel(context, widget.date),
                     style: const TextStyle(
                       color: _AppShellColors.text,
                       fontWeight: FontWeight.w500,
@@ -5149,7 +5155,11 @@ class _InlineCalendar extends StatelessWidget {
       visibleMonth.year,
       visibleMonth.month,
     );
-    final leadingEmptyCells = firstDay.weekday % DateTime.daysPerWeek;
+    final localizations = MaterialLocalizations.of(context);
+    final firstWeekday = firstDay.weekday % DateTime.daysPerWeek;
+    final leadingEmptyCells =
+        (firstWeekday - localizations.firstDayOfWeekIndex) %
+        DateTime.daysPerWeek;
     final cellCount = leadingEmptyCells + daysInMonth;
     final rowCount = (cellCount / DateTime.daysPerWeek).ceil();
 
@@ -5171,7 +5181,7 @@ class _InlineCalendar extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  _monthYearLabel(visibleMonth),
+                  _monthYearLabel(context, visibleMonth),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: _AppShellColors.text,
@@ -5188,15 +5198,7 @@ class _InlineCalendar extends StatelessWidget {
           const SizedBox(height: 18),
           Row(
             children: [
-              for (final weekday in [
-                'Sun',
-                'Mon',
-                'Tue',
-                'Wed',
-                'Thu',
-                'Fri',
-                'Sat',
-              ])
+              for (final weekday in _localizedWeekdays(context))
                 Expanded(
                   child: Text(
                     weekday,
@@ -6594,8 +6596,8 @@ class _Transaction {
       title: description ?? categoryName,
       description: description ?? '',
       belongsDate: rawDate?.toString() ?? '',
-      dateLabel: _transactionDateLabel(rawDate),
-      dateGroupLabel: _transactionDateGroupLabel(rawDate),
+      dateLabel: _fallbackTransactionDateLabel(rawDate),
+      dateGroupLabel: _fallbackTransactionDateLabel(rawDate),
       dateSort: _transactionDateSort(rawDate),
       amount: amount,
       category: categoryName,
@@ -6783,35 +6785,46 @@ String _languageNativeName(AppLanguage language) {
   };
 }
 
-String _transactionDateLabel(Object? value) {
+String _transactionDateLabel(BuildContext context, Object? value) {
   final date = _parseTransactionDate(value);
   if (date == null) {
     final text = value?.toString().trim();
-    return text == null || text.isEmpty ? 'Recent' : text;
+    return text == null || text.isEmpty ? appT(context, 'recent') : text;
   }
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final transactionDay = DateTime(date.year, date.month, date.day);
   final dayDelta = today.difference(transactionDay).inDays;
-  if (dayDelta == 0) return 'Today';
-  if (dayDelta == 1) return 'Yesterday';
+  if (dayDelta == 0) return appT(context, 'today');
+  if (dayDelta == 1) return appT(context, 'yesterday');
 
-  return _dateLabel(date);
+  return _dateLabel(context, date);
 }
 
-String _transactionDateGroupLabel(Object? value) {
+String _transactionDateGroupLabel(BuildContext context, Object? value) {
   final date = _parseTransactionDate(value);
-  if (date == null) return _transactionDateLabel(value);
+  if (date == null) return _transactionDateLabel(context, value);
 
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final transactionDay = DateTime(date.year, date.month, date.day);
   final dayDelta = today.difference(transactionDay).inDays;
-  if (dayDelta == 0) return 'Today';
-  if (dayDelta == 1) return 'Yesterday';
+  if (dayDelta == 0) return appT(context, 'today');
+  if (dayDelta == 1) return appT(context, 'yesterday');
 
-  return _dateLabel(date);
+  return _dateLabel(context, date);
+}
+
+String _fallbackTransactionDateLabel(Object? value) {
+  final date = _parseTransactionDate(value);
+  if (date == null) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? 'Recent' : text;
+  }
+
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }
 
 DateTime _transactionDateSort(Object? value) {
@@ -6835,45 +6848,26 @@ int _compareTransactionsNewestFirst(_Transaction a, _Transaction b) {
   return b.id.compareTo(a.id);
 }
 
-String _dateLabel(DateTime date) {
-  return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
+String _dateLabel(BuildContext context, DateTime date) {
+  return MaterialLocalizations.of(context).formatShortDate(date);
 }
 
-String _shortDateLabel(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
+String _shortDateLabel(BuildContext context, DateTime date) {
+  return MaterialLocalizations.of(context).formatShortDate(date);
 }
 
-String _monthYearLabel(DateTime date) {
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+String _monthYearLabel(BuildContext context, DateTime date) {
+  return MaterialLocalizations.of(context).formatMonthYear(date);
+}
+
+List<String> _localizedWeekdays(BuildContext context) {
+  final localizations = MaterialLocalizations.of(context);
+  final weekdays = localizations.narrowWeekdays;
+  return [
+    for (var index = 0; index < DateTime.daysPerWeek; index++)
+      weekdays[(localizations.firstDayOfWeekIndex + index) %
+          DateTime.daysPerWeek],
   ];
-  return '${months[date.month - 1]} ${date.year}';
 }
 
 DateTime _addMonths(DateTime date, int monthOffset) {
