@@ -1840,6 +1840,8 @@ class _TransactionDetailScreenState
   var _date = DateTime.now();
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
+  final _selectedCategoryByType = <_CategoryType, String?>{};
+  final _activeCategoryParentByType = <_CategoryType, String?>{};
   var _showAmountError = false;
   var _showCategoryError = false;
   var _validationShakeTrigger = 0;
@@ -2051,9 +2053,7 @@ class _TransactionDetailScreenState
                         activeType: _type,
                         onChanged: (type) {
                           setState(() {
-                            _type = type;
-                            _selectedCategoryId = null;
-                            _activeCategoryParentId = null;
+                            _switchCategoryType(type);
                           });
                         },
                       )
@@ -2286,6 +2286,7 @@ class _TransactionDetailScreenState
         : _hasChildren(selectedCategory)
         ? selectedCategory.id
         : selectedCategory.parentId;
+    _rememberCategoryState();
     _date = _parseTransactionDate(transaction.belongsDate) ?? DateTime.now();
     _showAmountPad = false;
     _showAmountError = false;
@@ -2311,14 +2312,43 @@ class _TransactionDetailScreenState
     setState(() {
       _selectedCategoryId = category.id;
       _showCategoryError = false;
-      if (!_hasChildren(category)) return;
+      if (!_hasChildren(category)) {
+        _rememberCategoryState();
+        return;
+      }
 
       if (_activeCategoryParentId == category.id) {
         _activeCategoryParentId = category.parentId;
       } else {
         _activeCategoryParentId = category.id;
       }
+      _rememberCategoryState();
     });
+  }
+
+  void _switchCategoryType(_CategoryType type) {
+    if (_type == type) return;
+    _rememberCategoryState();
+    _type = type;
+    _restoreCategoryState(type);
+    _showCategoryError = false;
+  }
+
+  void _rememberCategoryState() {
+    _selectedCategoryByType[_type] = _selectedCategoryId;
+    _activeCategoryParentByType[_type] = _activeCategoryParentId;
+  }
+
+  void _restoreCategoryState(_CategoryType type) {
+    final selectedCategory = _categoryById(_selectedCategoryByType[type]);
+    _selectedCategoryId = selectedCategory?.type == type
+        ? selectedCategory?.id
+        : null;
+
+    final activeParent = _categoryById(_activeCategoryParentByType[type]);
+    _activeCategoryParentId = activeParent?.type == type
+        ? activeParent?.id
+        : null;
   }
 
   Future<void> _saveTransaction() async {
@@ -2554,6 +2584,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   var _date = DateTime.now();
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
+  final _selectedCategoryByType = <_CategoryType, String?>{};
+  final _activeCategoryParentByType = <_CategoryType, String?>{};
   var _showAmountError = false;
   var _showCategoryError = false;
   var _validationShakeTrigger = 0;
@@ -2649,9 +2681,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                       activeType: _type,
                       onChanged: (type) {
                         setState(() {
-                          _type = type;
-                          _selectedCategoryId = null;
-                          _activeCategoryParentId = null;
+                          _switchCategoryType(type);
                         });
                       },
                     ),
@@ -2753,6 +2783,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
             _categoryById(_activeCategoryParentId) == null) {
           _activeCategoryParentId = null;
         }
+        _rememberCategoryState();
         _isLoading = false;
       });
     } catch (error) {
@@ -2835,14 +2866,43 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     setState(() {
       _selectedCategoryId = category.id;
       _showCategoryError = false;
-      if (!_hasChildren(category)) return;
+      if (!_hasChildren(category)) {
+        _rememberCategoryState();
+        return;
+      }
 
       if (_activeCategoryParentId == category.id) {
         _activeCategoryParentId = category.parentId;
       } else {
         _activeCategoryParentId = category.id;
       }
+      _rememberCategoryState();
     });
+  }
+
+  void _switchCategoryType(_CategoryType type) {
+    if (_type == type) return;
+    _rememberCategoryState();
+    _type = type;
+    _restoreCategoryState(type);
+    _showCategoryError = false;
+  }
+
+  void _rememberCategoryState() {
+    _selectedCategoryByType[_type] = _selectedCategoryId;
+    _activeCategoryParentByType[_type] = _activeCategoryParentId;
+  }
+
+  void _restoreCategoryState(_CategoryType type) {
+    final selectedCategory = _categoryById(_selectedCategoryByType[type]);
+    _selectedCategoryId = selectedCategory?.type == type
+        ? selectedCategory?.id
+        : null;
+
+    final activeParent = _categoryById(_activeCategoryParentByType[type]);
+    _activeCategoryParentId = activeParent?.type == type
+        ? activeParent?.id
+        : null;
   }
 
   void _handleAmountKey(String key) {
