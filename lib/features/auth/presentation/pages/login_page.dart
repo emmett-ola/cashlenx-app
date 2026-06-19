@@ -96,9 +96,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             CustomInput(
               label: t('email_or_username'),
               controller: _identifierController,
-              placeholder: t('email_or_username_placeholder'),
+              placeholder: t('enter_username'),
               keyboardType: TextInputType.text,
-              prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
               onChanged: (_) => setState(() {}),
               validator: (value) {
                 final identifier = value?.trim() ?? '';
@@ -114,7 +113,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               controller: _passwordController,
               placeholder: t('enter_password'),
               obscureText: !_isPasswordVisible,
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
               suffixIcon: IconButton(
                 tooltip: _isPasswordVisible
                     ? t('hide_password')
@@ -207,6 +205,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
                 height: 48,
+                borderRadius: 28,
               ),
             ),
             const SizedBox(height: 16),

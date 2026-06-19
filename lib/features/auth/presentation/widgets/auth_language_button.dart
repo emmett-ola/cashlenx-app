@@ -25,7 +25,9 @@ class AuthLanguageButton extends ConsumerWidget {
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
@@ -130,6 +132,7 @@ class AuthOutlinedActionButton extends StatelessWidget {
           isOutlined: true,
           onPressed: onPressed,
           height: 48,
+          borderRadius: 28,
         ),
       );
     }
@@ -147,7 +150,9 @@ class AuthOutlinedActionButton extends StatelessWidget {
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),

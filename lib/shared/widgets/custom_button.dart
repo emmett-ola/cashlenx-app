@@ -21,7 +21,7 @@ class CustomButton extends StatelessWidget {
     this.textColor,
     this.height = 48,
     this.fontSize = 16,
-    this.borderRadius = 8,
+    this.borderRadius = 28,
   });
 
   @override
@@ -67,13 +67,13 @@ class CustomButton extends StatelessWidget {
         minimumSize: Size(0, height),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        elevation: 4,
-        shadowColor: (backgroundColor ?? defaultColor).withValues(alpha: 0.25),
+        elevation: 8,
+        shadowColor: (backgroundColor ?? defaultColor).withValues(alpha: 0.22),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         disabledBackgroundColor: (backgroundColor ?? defaultColor).withValues(
-          alpha: 0.5,
+          alpha: 0.48,
         ),
       ),
       child: isLoading

@@ -13,6 +13,8 @@ void main() {
     tester,
   ) async {
     final repository = _FakeAuthRepository();
+    await tester.binding.setSurfaceSize(const Size(430, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ProviderScope(
