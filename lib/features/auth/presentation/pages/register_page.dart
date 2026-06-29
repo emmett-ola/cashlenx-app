@@ -39,6 +39,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   var _resendCountdown = 0;
   var _isPasswordVisible = false;
   var _isConfirmPasswordVisible = false;
+  String? _verificationToken;
   Timer? _resendTimer;
 
   @override
@@ -310,18 +311,28 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _isSendingCode = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-
-    if (!mounted) return;
-    setState(() {
-      _isSendingCode = false;
-      _step = _RegisterStep.verify;
-    });
-    ToastUtils.showSuccess(
-      context,
-      ref.read(translationsProvider)('verification_sent'),
-    );
-    _startResendCountdown();
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .sendVerificationCode('signup', _emailController.text.trim());
+      if (!mounted) return;
+      setState(() {
+        _step = _RegisterStep.verify;
+      });
+      ToastUtils.showSuccess(
+        context,
+        ref.read(translationsProvider)('verification_sent'),
+      );
+      _startResendCountdown();
+    } catch (error) {
+      if (mounted) ToastUtils.showServerErrors(context, error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingCode = false;
+        });
+      }
+    }
   }
 
   Future<void> _resendCode() async {
@@ -331,17 +342,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _isSendingCode = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-
-    if (!mounted) return;
-    setState(() {
-      _isSendingCode = false;
-    });
-    ToastUtils.showSuccess(
-      context,
-      ref.read(translationsProvider)('verification_resent'),
-    );
-    _startResendCountdown();
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .sendVerificationCode('signup', _emailController.text.trim());
+      if (!mounted) return;
+      ToastUtils.showSuccess(
+        context,
+        ref.read(translationsProvider)('verification_resent'),
+      );
+      _startResendCountdown();
+    } catch (error) {
+      if (mounted) ToastUtils.showServerErrors(context, error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingCode = false;
+        });
+      }
+    }
   }
 
   Future<void> _verifyCode() async {
@@ -351,21 +370,43 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       _isVerifying = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-
-    if (!mounted) return;
-    setState(() {
-      _isVerifying = false;
-      _step = _RegisterStep.complete;
-    });
-    ToastUtils.showSuccess(
-      context,
-      ref.read(translationsProvider)('email_verified'),
-    );
+    try {
+      final token = await ref
+          .read(authNotifierProvider.notifier)
+          .verifyVerificationCode(
+            'signup',
+            _emailController.text.trim(),
+            _verificationCodeController.text.trim(),
+          );
+      if (!mounted) return;
+      setState(() {
+        _verificationToken = token;
+        _step = _RegisterStep.complete;
+      });
+      ToastUtils.showSuccess(
+        context,
+        ref.read(translationsProvider)('email_verified'),
+      );
+    } catch (error) {
+      if (mounted) ToastUtils.showServerErrors(context, error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
   }
 
   Future<void> _completeRegistration() async {
     if (!_completeFormKey.currentState!.validate()) return;
+    final verificationToken = _verificationToken;
+    if (verificationToken == null || verificationToken.isEmpty) {
+      setState(() {
+        _step = _RegisterStep.verify;
+      });
+      return;
+    }
 
     setState(() {
       _isRegistering = true;
@@ -374,7 +415,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     try {
       await ref
           .read(authNotifierProvider.notifier)
-          .register(_usernameController.text.trim(), _passwordController.text);
+          .register(
+            _usernameController.text.trim(),
+            _passwordController.text,
+            _emailController.text.trim(),
+            verificationToken,
+          );
 
       if (!mounted) return;
       ToastUtils.showSuccess(
@@ -399,6 +445,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     setState(() {
       _step = _RegisterStep.email;
       _verificationCodeController.clear();
+      _verificationToken = null;
       _resendCountdown = 0;
     });
   }

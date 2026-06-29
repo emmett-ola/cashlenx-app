@@ -206,6 +206,15 @@ Run tests:
 flutter test
 ```
 
+Run the disposable Flutter-to-server integration smoke flow on Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
+```
+
+This seeds signup and password-reset verification records directly in disposable
+MongoDB; it must not send real email.
+
 Run targeted tests:
 
 ```bash
@@ -223,7 +232,7 @@ Run the API server locally from the sibling repo when needed:
 
 ```bash
 cd ../cashlenx-server
-go run main.go server start -p 10063
+go run main.go open start -p 10063
 ```
 
 Run the design reference locally when needed:

@@ -78,11 +78,32 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
-  Future<void> register(String username, String password) async {
+  Future<void> register(
+    String username,
+    String password,
+    String email,
+    String verificationToken,
+  ) async {
     // Register doesn't automatically login usually, but we can make it so.
     // For now, just call repo and let UI handle success navigation to login.
     final repository = ref.read(authRepositoryProvider);
-    await repository.register(username, password);
+    await repository.register(username, password, email, verificationToken);
+  }
+
+  Future<void> sendVerificationCode(String purpose, String email) {
+    return ref
+        .read(authRepositoryProvider)
+        .sendVerificationCode(purpose, email);
+  }
+
+  Future<String> verifyVerificationCode(
+    String purpose,
+    String email,
+    String code,
+  ) {
+    return ref
+        .read(authRepositoryProvider)
+        .verifyVerificationCode(purpose, email, code);
   }
 
   Future<void> requestPasswordReset(String emailOrUsername) async {

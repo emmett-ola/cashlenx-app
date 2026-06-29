@@ -24,6 +24,8 @@ abstract class RegisterRequest with _$RegisterRequest {
   const factory RegisterRequest({
     required String username,
     required String password,
+    required String email,
+    required String verificationToken,
   }) = _RegisterRequest;
 
   factory RegisterRequest.fromJson(Map<String, dynamic> json) =>

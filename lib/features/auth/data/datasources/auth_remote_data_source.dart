@@ -43,7 +43,34 @@ class AuthRemoteDataSource {
     await _api.register(
       username: request.username,
       password: request.password,
+      email: request.email,
+      verificationToken: request.verificationToken,
     );
+  }
+
+  Future<void> sendVerificationCode(String purpose, String email) async {
+    await _api.sendVerificationCode(purpose: purpose, email: email);
+  }
+
+  Future<String> verifyVerificationCode(
+    String purpose,
+    String email,
+    String code,
+  ) async {
+    final response = await _api.verifyVerificationCode(
+      purpose: purpose,
+      email: email,
+      code: code,
+    );
+    final wrapper = ResponseWrapper<Map<String, dynamic>>.fromJson(
+      response,
+      (json) => Map<String, dynamic>.from(json as Map),
+    );
+    final token = wrapper.data?['token'];
+    if (token is! String || token.isEmpty) {
+      throw Exception(wrapper.message);
+    }
+    return token;
   }
 
   Future<void> requestPasswordReset(String emailOrUsername) async {
@@ -51,10 +78,7 @@ class AuthRemoteDataSource {
   }
 
   Future<void> confirmPasswordReset(String token, String password) async {
-    await _api.confirmPasswordReset(
-      token: token,
-      password: password,
-    );
+    await _api.confirmPasswordReset(token: token, password: password);
   }
 
   Future<void> logout({String? refreshToken}) async {

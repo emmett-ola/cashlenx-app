@@ -21,6 +21,7 @@ Implemented:
 - Docker-based Flutter web deployment using `Dockerfile`, `compose.yml`, and nginx route fallback.
 - GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
+- A disposable MongoDB-backed Flutter integration smoke test covers the active `/api/v0` client contract.
 
 Known gaps:
 
@@ -64,6 +65,9 @@ Goal: turn the current login flow into a complete auth module.
 - [x] Add forgot-password request/confirm flows if supported by the server.
 - [x] Add authenticated profile fetch/update if needed for account setup. Current profile fetch is used for token-backed startup state; profile update is deferred until profile/settings scope.
 - [x] Add silent refresh for 401 responses or define why startup-only refresh is enough for now.
+- [x] Replace simulated registration verification with the purpose-scoped verification API and pass the returned token to registration.
+- [x] Verify password-reset email codes before submitting the returned reset token.
+- [x] Add a live Flutter API smoke flow covering auth and core finance/admin APIs without sending email.
 - Improve auth provider tests around login success, login failure, remember-me startup, refresh failure, and logout.
 
 Exit criteria:

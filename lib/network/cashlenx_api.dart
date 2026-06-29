@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/config/app_config.dart';
 import 'api_client.dart';
 
 typedef ApiJson = Map<String, dynamic>;
@@ -97,9 +96,9 @@ class CashlenxApi {
 
   static String _path(String value) => Uri.encodeComponent(value);
 
-  static void _logRequest(String method, String path) {
+  void _logRequest(String method, String path) {
     if (kDebugMode) {
-      debugPrint('[CashlenxApi] $method ${AppConfig.apiBaseUrl}$path');
+      debugPrint('[CashlenxApi] $method ${_client.baseUrl}$path');
     }
   }
 
@@ -132,10 +131,40 @@ class CashlenxApi {
   Future<ApiJson> register({
     required String username,
     required String password,
+    required String email,
+    required String verificationToken,
   }) {
     return _post(
       '/open/auth/register',
-      data: {'username': username, 'password': password},
+      data: {
+        'username': username,
+        'password': password,
+        'email': email,
+        'verification_token': verificationToken,
+      },
+      options: _anonymousOptions,
+    );
+  }
+
+  Future<ApiJson> sendVerificationCode({
+    required String purpose,
+    required String email,
+  }) {
+    return _post(
+      '/open/verification/code',
+      data: {'purpose': purpose, 'email': email},
+      options: _anonymousOptions,
+    );
+  }
+
+  Future<ApiJson> verifyVerificationCode({
+    required String purpose,
+    required String email,
+    required String code,
+  }) {
+    return _post(
+      '/open/verification/verify',
+      data: {'purpose': purpose, 'email': email, 'code': code},
       options: _anonymousOptions,
     );
   }
@@ -546,7 +575,7 @@ class CashlenxApi {
   }) {
     return _client.get<List<int>>(
       '/statistic/export',
-      queryParameters: {'format': format, 'from': from, 'to': to},
+      queryParameters: {'format': format, 'from_date': from, 'to_date': to},
       options: _downloadOptions,
     );
   }

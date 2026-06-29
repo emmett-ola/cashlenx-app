@@ -127,7 +127,26 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> register(String username, String password) {
+  Future<void> register(
+    String username,
+    String password,
+    String email,
+    String verificationToken,
+  ) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> sendVerificationCode(String purpose, String email) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> verifyVerificationCode(
+    String purpose,
+    String email,
+    String code,
+  ) {
     throw UnimplementedError();
   }
 

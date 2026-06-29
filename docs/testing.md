@@ -9,6 +9,16 @@ flutter analyze
 flutter test
 ```
 
+Run the live Flutter-to-server smoke flow on Windows with Docker available:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
+```
+
+The script starts disposable MongoDB and API instances, seeds purpose-scoped
+signup/password-reset codes directly, and runs `integration_test/api_smoke_test.dart`
+without sending email or retaining test data.
+
 Both commands should pass before committing.
 
 ## What To Test
@@ -17,7 +27,9 @@ Both commands should pass before committing.
 - Infrastructure tests for HTTP error mapping, error-message resolution, request tracking, route redirect policy, and persistence adapters.
 - Provider tests for auth state: initial logged-out state, remember-me refresh success, refresh failure, login success, login failure, logout, password-reset request, and password-reset confirm.
 - Widget tests for routed auth flows: splash to login, login to register, login to forgot password, form validation, loading states, and success/error messages.
-- Integration tests later for server-backed flows: registration, login, refresh, logout, profile fetch, and core finance workflows.
+- Live integration coverage for registration, login, refresh, logout, profile,
+  cash flow, category, statistics, XLSX import, CSV/XLSX export, backup,
+  password reset, and admin APIs.
 
 ## Mocking Approach
 

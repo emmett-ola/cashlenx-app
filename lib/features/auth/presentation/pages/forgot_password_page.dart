@@ -40,6 +40,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   bool get _canRequest => _emailController.text.trim().isNotEmpty;
 
   bool get _canConfirm =>
+      _emailController.text.trim().isNotEmpty &&
       _tokenController.text.trim().isNotEmpty &&
       _passwordController.text.isNotEmpty &&
       _confirmPasswordController.text.isNotEmpty;
@@ -84,12 +85,16 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
 
     try {
+      final verificationToken = await ref
+          .read(authNotifierProvider.notifier)
+          .verifyVerificationCode(
+            'password_reset',
+            _emailController.text.trim(),
+            _tokenController.text.trim(),
+          );
       await ref
           .read(authNotifierProvider.notifier)
-          .confirmPasswordReset(
-            _tokenController.text.trim(),
-            _passwordController.text,
-          );
+          .confirmPasswordReset(verificationToken, _passwordController.text);
 
       if (!mounted) return;
       ToastUtils.showSuccess(
@@ -178,9 +183,29 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       child: Column(
         children: [
           CustomInput(
-            label: t('reset_token'),
+            label: t('email'),
+            controller: _emailController,
+            placeholder: 'email@example.com',
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+            onChanged: (_) => setState(() {}),
+            validator: (value) {
+              final email = value?.trim() ?? '';
+              if (email.isEmpty) {
+                return t('please_fill_all');
+              }
+              final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+              if (!emailRegex.hasMatch(email)) {
+                return t('please_enter_valid_email');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          CustomInput(
+            label: t('verification_code'),
             controller: _tokenController,
-            placeholder: t('enter_reset_token'),
+            placeholder: t('enter_code'),
             prefixIcon: Icon(Icons.key_outlined, color: Colors.grey[500]),
             onChanged: (_) => setState(() {}),
             validator: (value) {

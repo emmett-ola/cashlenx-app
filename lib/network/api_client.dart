@@ -20,6 +20,8 @@ class ApiClient implements RestClient {
     DioExceptionMapper exceptionMapper = const DioExceptionMapper(),
   }) : _exceptionMapper = exceptionMapper;
 
+  String get baseUrl => _dio.options.baseUrl;
+
   @override
   Future<T> get<T>(
     String path, {

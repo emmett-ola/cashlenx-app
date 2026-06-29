@@ -52,9 +52,33 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> register(String username, String password) async {
-    final request = RegisterRequest(username: username, password: password);
+  Future<void> register(
+    String username,
+    String password,
+    String email,
+    String verificationToken,
+  ) async {
+    final request = RegisterRequest(
+      username: username,
+      password: password,
+      email: email,
+      verificationToken: verificationToken,
+    );
     await _remoteDataSource.register(request);
+  }
+
+  @override
+  Future<void> sendVerificationCode(String purpose, String email) {
+    return _remoteDataSource.sendVerificationCode(purpose, email);
+  }
+
+  @override
+  Future<String> verifyVerificationCode(
+    String purpose,
+    String email,
+    String code,
+  ) {
+    return _remoteDataSource.verifyVerificationCode(purpose, email, code);
   }
 
   @override
