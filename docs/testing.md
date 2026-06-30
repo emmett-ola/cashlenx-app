@@ -15,9 +15,16 @@ Run the live Flutter-to-server smoke flow on Windows with Docker available:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
 ```
 
-The script starts disposable MongoDB and API instances, seeds purpose-scoped
+Select disposable MySQL 8 instead of MongoDB with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
+```
+
+The script starts disposable database and API instances, seeds purpose-scoped
 signup/password-reset codes directly, and runs `integration_test/api_smoke_test.dart`
-without sending email or retaining test data.
+without sending email or retaining test data. MongoDB is the default; pass
+`-Database mysql` for MySQL 8.
 
 Both commands should pass before committing.
 

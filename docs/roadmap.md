@@ -22,6 +22,7 @@ Implemented:
 - GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
 - A disposable MongoDB-backed Flutter integration smoke test covers the active `/api/v0` client contract.
+- The same Flutter integration contract passes against disposable MySQL 8 via `scripts/smoke-api.ps1 -Database mysql`.
 
 Known gaps:
 

@@ -212,8 +212,11 @@ Run the disposable Flutter-to-server integration smoke flow on Windows:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
 ```
 
-This seeds signup and password-reset verification records directly in disposable
-MongoDB; it must not send real email.
+Pass `-Database mysql` to run the same Flutter/API contract against disposable
+MySQL 8. MongoDB remains the default.
+
+This seeds signup and password-reset verification records directly in the
+disposable database; it must not send real email.
 
 Run targeted tests:
 
