@@ -8,7 +8,7 @@ Read it before making changes.
 - App: CashLenX, a cross-platform Flutter personal-finance app for expenses,
   income, budgets, categories, profile settings, and reports.
 - Current branch: `develop`.
-- Runtime: Flutter with Dart SDK `>=3.2.0 <4.0.0`.
+- Runtime: Flutter with Dart SDK `>=3.8.0 <4.0.0`.
 - Architecture: feature-first Clean Architecture with Riverpod for state.
 - Routing: GoRouter.
 - Networking: Dio through local API wrappers and interceptors.
@@ -34,7 +34,7 @@ is uncertain.
 
 - `pubspec.yaml`: dependencies, assets, launcher icon config.
 - `analysis_options.yaml`: lint rules.
-- `sample.env`: environment template.
+- `.env.sample`: environment template.
 - `.env`: required by `AppConfig.init()` and listed as a Flutter asset. Do not
   commit real secrets.
 - `lib/main.dart`: initializes config, provider scope, themes, i18n, and router.
@@ -115,7 +115,7 @@ growing global folders.
 
 - API base URL is built from `.env`:
   `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
-- `sample.env` points to `http://localhost:10063/api/v0`.
+- `.env.sample` points to `http://localhost:10063/api/v0`.
 - All HTTP should go through `ApiClient`, `dioProvider`, and `CashlenxApi`.
 - Keep API parsing aligned with `ResponseWrapper<T>` and the OpenAPI/server
   contract.
@@ -263,7 +263,7 @@ npm run dev
   comparatively heavy.
 - Running `flutter test` may rewrite `pubspec.lock` package hosts. Restore
   unrelated lockfile churn before committing.
-- Do not commit `.env` or local secrets. Use `sample.env` for documented
+- Do not commit `.env` or local secrets. Use `.env.sample` for documented
   variables.
 - Avoid unrelated platform-folder edits unless the task explicitly needs
   Android/iOS/web/desktop changes.

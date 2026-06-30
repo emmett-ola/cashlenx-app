@@ -2,13 +2,17 @@
 
 CashLenX is a modern, cross-platform finance application built with Flutter. It aims to provide a seamless experience for managing personal finances, tracking expenses, and planning budgets.
 
-## 🚀 Features (Planned)
-- **User Authentication**: Secure login and registration.
-- **Dashboard**: Overview of financial health.
-- **Transactions**: Add, edit, and categorize income and expenses.
-- **Budgeting**: Set limits and track progress.
-- **Reports**: Visual breakdown of spending habits.
-- **Cross-Platform**: Runs on Android, iOS, Web, and Desktop.
+## 🚀 Current Features
+- **Authentication**: Login, verified registration, password reset,
+  refresh-token sessions, logout, and editable profile.
+- **Dashboard**: Real summaries and recent transactions for authenticated
+  users, with an isolated editable demo mode.
+- **Transactions**: List, filter, create, edit, and delete income and expenses.
+- **Categories**: User-scoped hierarchical category management.
+- **Settings**: Theme color, currency, language, avatar preset, and profile.
+- **Cross-Platform**: Flutter targets Android, iOS, web, and desktop.
+
+Budget editing and the full reports/statistics experience remain roadmap work.
 
 ## 🛠 Tech Stack
 - **Framework**: [Flutter](https://flutter.dev/)
@@ -43,7 +47,7 @@ lib/
 ## 🏁 Getting Started
 
 ### Prerequisites
-- Flutter SDK (>=3.2.0)
+- Flutter/Dart SDK compatible with Dart `>=3.8.0 <4.0.0`
 - Dart SDK
 
 ### Installation
@@ -59,7 +63,12 @@ lib/
     flutter pub get
     ```
 
-3.  **Generate code (required):**
+3.  **Create local configuration:**
+    ```bash
+    cp .env.sample .env
+    ```
+
+4.  **Generate code (required):**
     ```bash
     dart run build_runner build --delete-conflicting-outputs
     ```
@@ -68,7 +77,7 @@ lib/
     dart run build_runner watch --delete-conflicting-outputs
     ```
 
-4.  **Run the app:**
+5.  **Run the app:**
     ```bash
     flutter run
     ```
@@ -149,7 +158,16 @@ flutter analyze
 flutter test
 ```
 
-See [Testing Strategy](docs/testing.md) for the current mocking and coverage plan.
+Run the disposable Flutter-to-server contract on Windows with MongoDB (default)
+or MySQL 8:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
+```
+
+The smoke flow covers registration and password reset without sending real
+email. See [Testing Strategy](docs/testing.md) for details.
 
 ## 📚 Documentation
 

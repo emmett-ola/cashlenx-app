@@ -17,7 +17,7 @@ Implemented:
 - Remember-me based startup login through refresh token.
 - Demo mode route into the authenticated home shell.
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
-- First `/home` app shell with fixed mock dashboard, stats, budget, add placeholder, settings, and bottom navigation.
+- Authenticated home shell with real summary/recent-transaction data, transaction CRUD, hierarchical category CRUD, budget preview, settings, and bottom navigation.
 - Docker-based Flutter web deployment using `Dockerfile`, `compose.yml`, and nginx route fallback.
 - GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
@@ -26,9 +26,10 @@ Implemented:
 
 Known gaps:
 
-- Dashboard/home uses fixed mock data and is not connected to real statistic/cash-flow APIs yet.
-- Transactions and add-transaction flows are still coming-soon placeholders.
-- Auth provider/repository test coverage is still lighter than the UI smoke path.
+- Budget creation/editing is still a coming-soon interaction and displayed budget values are placeholders.
+- The expanded statistics screen still uses test presentation data rather than the full statistic/chart API surface.
+- Auth provider/repository unit coverage is still lighter than the live integration path.
+- The home shell is concentrated in a large presentation file and should be split by feature as those areas mature.
 
 ## Guiding Principles
 
@@ -43,7 +44,7 @@ Known gaps:
 Goal: make the app easier to run, verify, and extend before adding larger finance features.
 
 - Finalize root documentation layout.
-- Keep `README.md` as the entry point and `AGENT.md` as the AI collaboration handoff.
+- Keep `README.md` as the entry point and `AGENTS.md` as the AI collaboration handoff.
 - Keep detailed docs in `docs/`.
 - [x] Verify `.env` setup and document local server assumptions.
 - [x] Add basic test/mocking strategy for config, routing, and auth state.
@@ -53,7 +54,7 @@ Goal: make the app easier to run, verify, and extend before adding larger financ
 
 Exit criteria:
 
-- A new developer or agent can read `README.md`, `AGENT.md`, and `docs/roadmap.md` and continue without rediscovery.
+- A new developer or agent can read `README.md`, `AGENTS.md`, and `docs/roadmap.md` and continue without rediscovery.
 - `flutter analyze` is clean or known issues are documented.
 
 ## Phase 2: Authentication Completion
@@ -79,19 +80,19 @@ Exit criteria:
 
 Goal: replace temporary `/home` with the real authenticated app frame.
 
-- Build the main app shell from the design reference.
-- Add bottom navigation or equivalent responsive navigation.
-- Define top-level routes for dashboard, transactions, add transaction, budgets/categories, stats, and settings/profile.
-- Preserve auth redirect behavior across web/mobile/deep links.
-- Add loading and empty states for authenticated pages.
+- [x] Build the main app shell from the design reference.
+- [x] Add bottom navigation.
+- [x] Wire dashboard, transactions, add transaction, categories, settings, and profile interactions into the shell.
+- [x] Preserve auth redirect behavior for the defined GoRouter routes.
+- [x] Add loading, error, retry, and empty states to connected authenticated pages.
 
 Progress:
 
 - [x] Replaced temporary `/home` welcome screen with a first authenticated shell.
-- [x] Added bottom navigation for Home, Stats, Add, Budget, and Settings.
-- [x] Added fixed mock dashboard data behind a mock request provider.
-- [x] Kept unwired interactions as coming-soon toasts.
-- [ ] Connect transactions/add/profile/category flows to real screens.
+- [x] Added bottom navigation for Home, Categories, Add, Budget, and Settings.
+- [x] Replaced mock dashboard summaries and recent activity with authenticated API data while retaining isolated demo data.
+- [x] Connected transaction list/add/edit/delete, profile, and category management to real APIs.
+- [x] Limited coming-soon interactions to unfinished areas such as budget mutation and secondary settings actions.
 - [ ] Decide whether shell tabs should become URL-addressable routes.
 
 Exit criteria:
@@ -103,11 +104,11 @@ Exit criteria:
 
 Goal: implement the first useful finance overview screen.
 
-- Define dashboard data models from server statistic/dashboard endpoints.
-- Add dashboard data source, repository, providers, and UI.
-- Show total balance/summary, income/expense overview, recent transactions, and useful empty state.
-- Add loading, error, and retry behavior.
-- Add basic widget/provider tests for dashboard states.
+- [x] Define dashboard presentation models from cash-summary and transaction endpoints.
+- [x] Add API/demo data adapters, provider, and UI.
+- [x] Show balance summaries, income/expense overview, recent transactions, category breakdown, and empty states.
+- [x] Add loading, error, and retry behavior.
+- [x] Add widget coverage for dashboard states and interactions.
 
 Exit criteria:
 
@@ -117,12 +118,13 @@ Exit criteria:
 
 Goal: allow users to view and manage cash flow records.
 
-- Implement transaction list with filters/date ranges.
-- Implement add income/expense flow.
-- Implement edit/delete flows.
-- Integrate categories.
-- Add validation and server error handling.
-- Add optimistic or explicit refresh behavior after mutations.
+- [x] Implement transaction list with type, category, and search filters.
+- [x] Implement add income/expense flow.
+- [x] Implement detail, edit, and delete flows.
+- [x] Integrate hierarchical categories.
+- [x] Add form validation and server error handling.
+- [x] Refresh dashboard/list state after mutations.
+- [ ] Add explicit date-range filtering to the transaction list.
 
 Exit criteria:
 
@@ -132,10 +134,10 @@ Exit criteria:
 
 Goal: provide the organization layer needed for useful finance tracking.
 
-- Implement category list/tree UI.
-- Add category create/edit/delete where supported.
-- Connect categories into transaction creation.
-- Implement budget screens after confirming backend support and design scope.
+- [x] Implement category list/tree UI.
+- [x] Add category create/edit/delete.
+- [x] Connect categories into transaction creation and editing.
+- [ ] Implement budget mutation after confirming backend support and design scope.
 
 Exit criteria:
 
@@ -163,7 +165,7 @@ Goal: make the app reliable across target platforms.
 - Review accessibility: labels, contrast, tap targets, keyboard navigation.
 - Add app-wide error boundaries and retry patterns.
 - Harden secure storage and token lifecycle behavior per platform.
-- Add integration tests for auth and key finance workflows.
+- [x] Add disposable live integration coverage for auth and key finance workflows against MongoDB and MySQL.
 - Review app icons, web manifest, metadata, and release build settings.
 - Keep Docker web deployment and GitHub Actions release docs aligned with workflow changes.
 

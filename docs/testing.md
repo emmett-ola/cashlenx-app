@@ -47,4 +47,4 @@ Both commands should pass before committing.
 
 ## Required Local Files
 
-`.env` is listed as a Flutter asset and is required for app startup. Use `sample.env` as the local template. Do not commit real secrets.
+`.env` is listed as a Flutter asset and is required for app startup. Use `.env.sample` as the local template. Do not commit real secrets.
