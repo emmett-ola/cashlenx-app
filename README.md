@@ -96,10 +96,10 @@ image without running `docker compose down`, then waits for the HTTP health
 check. Run `scripts/health.sh` independently to check the deployed container.
 
 Compose reads `compose.yml`. The container serves the built web app on internal
-port `8080`, and by default Compose exposes it on host port `8080`:
+port `8080`, and by default Compose exposes it on host port `11064`:
 
 ```text
-http://SERVER_IP:8080
+http://SERVER_IP:11064
 ```
 
 To use a different host port, set `WEB_PORT` in `.env`:
@@ -120,6 +120,8 @@ sample environment also exposes CPU, memory, PID, graceful-stop, health-check,
 and build-image settings. Each image records the source revision in the OCI
 `org.opencontainers.image.revision` label.
 
+The default container name is `cashlenx-app`.
+
 Then rebuild and restart the service:
 
 ```bash
@@ -135,7 +137,7 @@ For an external nginx reverse proxy, point the upstream to the exposed host
 port, for example:
 
 ```text
-127.0.0.1:8080
+127.0.0.1:11064
 ```
 
 The `.env` file is included in both the Docker build context and the running

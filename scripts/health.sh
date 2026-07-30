@@ -6,7 +6,7 @@ cd "$project_dir"
 
 command -v curl >/dev/null 2>&1 || { echo "curl is required." >&2; exit 1; }
 web_port="$(sed -n 's/^WEB_PORT=//p' .env 2>/dev/null | tail -n 1)"
-web_port="${web_port:-8080}"
+web_port="${web_port:-11064}"
 health_url="${APP_HEALTH_URL:-http://127.0.0.1:${web_port}/}"
 
 for attempt in $(seq 1 30); do

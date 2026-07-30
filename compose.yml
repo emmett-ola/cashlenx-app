@@ -8,7 +8,7 @@ services:
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
     image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
-    container_name: "${CONTAINER_NAME:-cashlenx-app-web}"
+    container_name: "${CONTAINER_NAME:-cashlenx-app}"
     env_file:
       - .env
     restart: unless-stopped
@@ -33,7 +33,7 @@ services:
       retries: ${WEB_HEALTHCHECK_RETRIES:-3}
       start_period: ${WEB_HEALTHCHECK_START_PERIOD:-15s}
     ports:
-      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-11064}:8080"
     networks:
       - cashlenx-network
 networks:
