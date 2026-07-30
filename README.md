@@ -84,11 +84,16 @@ lib/
 
 ## 🐳 Container Usage
 
-Build and run the Flutter web app with Docker Compose:
+Build and run the Flutter web app with the deployment scripts:
 
 ```bash
-docker compose up -d --build
+scripts/build.sh
+scripts/start.sh
 ```
+
+`build.sh` builds the image. `start.sh` replaces the running container from that
+image without running `docker compose down`, then waits for the HTTP health
+check. Run `scripts/health.sh` independently to check the deployed container.
 
 Compose reads `compose.yml`. The container serves the built web app on internal
 port `8080`, and by default Compose exposes it on host port `8080`:
@@ -110,10 +115,11 @@ IMAGE_NAME=cashlenx-web
 IMAGE_TAG=latest
 ```
 
-Then rebuild or restart the service:
+Then rebuild and restart the service:
 
 ```bash
-docker compose up -d --build
+scripts/build.sh
+scripts/start.sh
 ```
 
 The Docker image performs a release Flutter web build and serves `build/web`
