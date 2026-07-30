@@ -1,4 +1,7 @@
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+ARG FLUTTER_BUILD_IMAGE=ghcr.io/cirruslabs/flutter:stable
+ARG NGINX_IMAGE=nginx:alpine
+
+FROM ${FLUTTER_BUILD_IMAGE} AS build
 
 WORKDIR /app
 
@@ -8,7 +11,10 @@ RUN flutter pub get
 COPY . .
 RUN flutter build web --release
 
-FROM nginx:alpine
+FROM ${NGINX_IMAGE}
+
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 
 WORKDIR /app
 

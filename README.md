@@ -115,6 +115,11 @@ IMAGE_NAME=cashlenx-web
 IMAGE_TAG=latest
 ```
 
+Published ports bind to `127.0.0.1` by default for a host reverse proxy. The
+sample environment also exposes CPU, memory, PID, graceful-stop, health-check,
+and build-image settings. Each image records the source revision in the OCI
+`org.opencontainers.image.revision` label.
+
 Then rebuild and restart the service:
 
 ```bash

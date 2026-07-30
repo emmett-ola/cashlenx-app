@@ -1,13 +1,39 @@
 services:
   cashlenx-web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FLUTTER_BUILD_IMAGE: ${FLUTTER_BUILD_IMAGE:-ghcr.io/cirruslabs/flutter:stable}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
-    container_name: "${CONTAINER_NAME:-cashlenx-website}"
+    container_name: "${CONTAINER_NAME:-cashlenx-app-web}"
     env_file:
       - .env
     restart: unless-stopped
+    cpus: ${WEB_CPU_LIMIT:-1.0}
+    mem_limit: ${WEB_MEMORY_LIMIT:-1g}
+    mem_reservation: ${WEB_MEMORY_RESERVATION:-256m}
+    pids_limit: ${WEB_PIDS_LIMIT:-256}
+    stop_grace_period: ${WEB_STOP_GRACE_PERIOD:-15s}
+    deploy:
+      resources:
+        limits:
+          cpus: "${WEB_CPU_LIMIT:-1.0}"
+          memory: ${WEB_MEMORY_LIMIT:-1g}
+          pids: ${WEB_PIDS_LIMIT:-256}
+        reservations:
+          cpus: "${WEB_CPU_RESERVATION:-0.25}"
+          memory: ${WEB_MEMORY_RESERVATION:-256m}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider --timeout=3 http://127.0.0.1:8080/ || exit 1"]
+      interval: ${WEB_HEALTHCHECK_INTERVAL:-15s}
+      timeout: ${WEB_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${WEB_HEALTHCHECK_RETRIES:-3}
+      start_period: ${WEB_HEALTHCHECK_START_PERIOD:-15s}
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
     networks:
       - cashlenx-network
 networks:
