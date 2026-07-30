@@ -122,9 +122,6 @@ and build-image settings. Each image records the source revision in the OCI
 
 The default container name is `cashlenx-app`.
 
-After changing `.env.sample`, run `scripts/sync-env.sh`. It appends missing keys
-to the ignored local `.env` without replacing existing configured values.
-
 Then rebuild and restart the service:
 
 ```bash
