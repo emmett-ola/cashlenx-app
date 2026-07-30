@@ -55,6 +55,8 @@ app.*.map.json
 
 # Environment variables
 .env
+.env.testing
+.env.production
 .env.*
 !.env.sample
 env/
