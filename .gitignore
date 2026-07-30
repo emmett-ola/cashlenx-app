@@ -54,10 +54,7 @@ app.*.map.json
 **/generated_plugins.cmake
 
 # Environment variables
-.env
-.env.testing
-.env.production
-.env.*
+.env*
 !.env.sample
 env/
 
