@@ -567,6 +567,46 @@ class CashlenxApi {
     })!;
   }
 
+  // Budget
+  Future<ApiJson> createBudget({
+    required String categoryId,
+    required String period,
+    required num limitAmount,
+  }) {
+    return _post(
+      '/budget',
+      data: {
+        'category_id': categoryId,
+        'period': period,
+        'limit_amount': limitAmount,
+      },
+    );
+  }
+
+  Future<ApiJson> listBudgets({required String period}) {
+    return _get('/budget', queryParameters: {'period': period});
+  }
+
+  Future<ApiJson> updateBudget(
+    String id, {
+    required String categoryId,
+    required String period,
+    required num limitAmount,
+  }) {
+    return _put(
+      '/budget/${_path(id)}',
+      data: {
+        'category_id': categoryId,
+        'period': period,
+        'limit_amount': limitAmount,
+      },
+    );
+  }
+
+  Future<ApiJson> deleteBudget(String id) {
+    return _delete('/budget/${_path(id)}');
+  }
+
   // Statistic
   Future<List<int>> exportStatisticData({
     required String format,

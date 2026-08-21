@@ -14,8 +14,10 @@ import '../../../../shared/widgets/app_color_picker.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../budget/presentation/budget_tab.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../../profile/domain/user_profile.dart';
+import '../../../statistics/presentation/statistics_page.dart';
 import '../providers/currency_provider.dart';
 import '../utils/transaction_filter_utils.dart';
 
@@ -88,7 +90,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onTransactionTap: _openTransactionDetail,
               )
             : _showMoreStats
-            ? _MoreStatisticsScreen(onBack: _closeMoreStats)
+            ? StatisticsPage(onBack: _closeMoreStats)
             : IndexedStack(
                 index: _selectedTab.index,
                 children: [
@@ -103,7 +105,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   _CategoryTab(onAction: _showComingSoon),
                   const SizedBox.shrink(),
-                  _BudgetTab(onAction: _showComingSoon),
+                  _selectedTab == _HomeTab.budget
+                      ? const BudgetTab()
+                      : const SizedBox.shrink(),
                   _SettingsTab(
                     username: username,
                     email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
@@ -1515,58 +1519,6 @@ class _MoveCategoryOption extends StatelessWidget {
   }
 }
 
-class _BudgetTab extends ConsumerWidget {
-  const _BudgetTab({required this.onAction});
-
-  final ValueChanged<String> onAction;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dashboard = ref.watch(_dashboardProvider);
-    final themeColor = _themeColor(context);
-
-    return dashboard.when(
-      loading: () => _LoadingPage(title: appT(context, 'budgets')),
-      error: (error, stackTrace) => _ErrorPage(
-        onRetry: () {
-          ref.invalidate(_dashboardProvider);
-        },
-      ),
-      data: (data) => _PageScaffold(
-        title: appT(context, 'budgets'),
-        subtitle: appT(context, 'budget_subtitle'),
-        trailing: _RoundIconButton(
-          icon: Icons.add,
-          onPressed: () => onAction(appT(context, 'add_new_budget')),
-        ),
-        children: [
-          _TotalBudgetCard(budget: data.budget),
-          Text(
-            appT(context, 'category_budgets'),
-            style: _sectionTitle(context),
-          ),
-          ...data.categoryBudgets.map(_CategoryBudgetTile.new),
-          FilledButton.icon(
-            onPressed: () => onAction(appT(context, 'add_new_budget')),
-            icon: const Icon(Icons.add),
-            label: Text(appT(context, 'add_new_budget')),
-            style: FilledButton.styleFrom(
-              backgroundColor: themeColor,
-              foregroundColor: Colors.white,
-              elevation: 8,
-              shadowColor: themeColor.withValues(alpha: 0.28),
-              minimumSize: const Size.fromHeight(56),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TransactionsScreen extends ConsumerStatefulWidget {
   const _TransactionsScreen({
     required this.onBack,
@@ -2680,30 +2632,6 @@ class _DetailValue extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _MoreStatisticsScreen extends StatelessWidget {
-  const _MoreStatisticsScreen({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PageScaffold(
-      header: _NavigationHeader(
-        title: appT(context, 'more_statistics_title'),
-        onBack: onBack,
-      ),
-      children: [
-        _InfoCard(
-          icon: Icons.info_outline,
-          title: appT(context, 'test_data'),
-          message: appT(context, 'more_statistics_test_data_description'),
-        ),
-        const _WeeklyComparisonCard(),
-      ],
     );
   }
 }
@@ -3824,14 +3752,12 @@ class _PageScaffold extends StatelessWidget {
     this.title,
     this.subtitle,
     this.header,
-    this.trailing,
     required this.children,
   });
 
   final String? title;
   final String? subtitle;
   final Widget? header;
-  final Widget? trailing;
   final List<Widget> children;
 
   @override
@@ -3840,12 +3766,7 @@ class _PageScaffold extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child:
-              header ??
-              _StandardHeader(
-                title: title ?? '',
-                subtitle: subtitle,
-                trailing: trailing,
-              ),
+              header ?? _StandardHeader(title: title ?? '', subtitle: subtitle),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
@@ -3922,11 +3843,10 @@ class _DashboardHeader extends StatelessWidget {
 }
 
 class _StandardHeader extends StatelessWidget {
-  const _StandardHeader({required this.title, this.subtitle, this.trailing});
+  const _StandardHeader({required this.title, this.subtitle});
 
   final String title;
   final String? subtitle;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -3957,7 +3877,6 @@ class _StandardHeader extends StatelessWidget {
               ],
             ),
           ),
-          ...?trailing == null ? null : [trailing!],
         ],
       ),
     );
@@ -4451,181 +4370,6 @@ class _CategoryDonutPainter extends CustomPainter {
   }
 }
 
-class _TotalBudgetCard extends StatelessWidget {
-  const _TotalBudgetCard({required this.budget});
-
-  final _BudgetSummary budget;
-
-  @override
-  Widget build(BuildContext context) {
-    final themeColor = _themeColor(context);
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [themeColor, AppTheme.secondaryColor],
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: themeColor.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appT(context, 'total_monthly_budget'),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _money(budget.limit, decimals: 0),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${appT(context, 'spent')}: ${_money(budget.spent, decimals: 0)}',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    Text(
-                      '${appT(context, 'remaining')}: ${_money(budget.remaining, decimals: 0)}',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: budget.percentUsed / 100,
-                  minHeight: 9,
-                  borderRadius: BorderRadius.circular(999),
-                  backgroundColor: Colors.white.withValues(alpha: 0.3),
-                  valueColor: const AlwaysStoppedAnimation(Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryBudgetTile extends StatelessWidget {
-  const _CategoryBudgetTile(this.budget);
-
-  final _CategoryBudget budget;
-
-  @override
-  Widget build(BuildContext context) {
-    final percent = budget.percentUsed;
-    final isOverBudget = budget.spent > budget.limit;
-    final statusColor = isOverBudget
-        ? AppTheme.errorColor
-        : percent >= 80
-        ? const Color(0xFFF59E0B)
-        : AppTheme.successColor;
-
-    return _Card(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: budget.color.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    budget.icon,
-                    style: const TextStyle(fontSize: 22),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      budget.category,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${_money(budget.spent, decimals: 0)} of ${_money(budget.limit, decimals: 0)}',
-                      style: const TextStyle(color: _AppShellColors.mutedText),
-                    ),
-                  ],
-                ),
-              ),
-              if (isOverBudget)
-                const Icon(Icons.error_outline, color: AppTheme.errorColor),
-            ],
-          ),
-          const SizedBox(height: 14),
-          LinearProgressIndicator(
-            value: percent.clamp(0, 100) / 100,
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(999),
-            backgroundColor: _AppShellColors.softGray,
-            valueColor: AlwaysStoppedAnimation(statusColor),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                '${percent.round()}% ${appT(context, 'used')}',
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${_money(budget.remaining, decimals: 0)} ${appT(context, 'left')}',
-                style: const TextStyle(color: _AppShellColors.mutedText),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _NavigationHeader extends StatelessWidget {
   const _NavigationHeader({
     required this.title,
@@ -4997,203 +4741,6 @@ class _TransactionErrorCard extends StatelessWidget {
       message: appT(context, 'transaction_request_failed'),
       actionLabel: appT(context, 'retry'),
       onAction: onRetry,
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF2563EB)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF1E40AF),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(message, style: const TextStyle(color: Color(0xFF2563EB))),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyComparisonCard extends StatelessWidget {
-  const _WeeklyComparisonCard();
-
-  static const _data = [
-    ('Mon', 45.0, 32.0),
-    ('Tue', 52.0, 48.0),
-    ('Wed', 38.0, 55.0),
-    ('Thu', 65.0, 42.0),
-    ('Fri', 58.0, 68.0),
-    ('Sat', 72.0, 85.0),
-    ('Sun', 48.0, 52.0),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return _Card(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appT(context, 'weekly_comparison'),
-            style: _sectionTitle(context),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 200,
-            child: CustomPaint(
-              painter: _WeeklyComparisonPainter(
-                data: _data,
-                themeColor: _themeColor(context),
-              ),
-              child: const SizedBox.expand(),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 20,
-            runSpacing: 8,
-            children: [
-              _LegendDot(
-                color: const Color(0xFFD1D5DB),
-                label: appT(context, 'last_week'),
-              ),
-              _LegendDot(
-                color: _themeColor(context),
-                label: appT(context, 'this_week'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyComparisonPainter extends CustomPainter {
-  const _WeeklyComparisonPainter({
-    required this.data,
-    required this.themeColor,
-  });
-
-  final List<(String, double, double)> data;
-  final Color themeColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final maxValue = data
-        .expand((entry) => [entry.$2, entry.$3])
-        .fold<double>(0, (maxValue, value) => math.max(maxValue, value));
-    final chartHeight = size.height - 28;
-    final groupWidth = size.width / data.length;
-    final barWidth = math.min(14.0, groupWidth / 4);
-    final lastWeekPaint = Paint()..color = const Color(0xFFD1D5DB);
-    final thisWeekPaint = Paint()..color = themeColor;
-    final textPainter = TextPainter(
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-
-    for (final entry in data.indexed) {
-      final index = entry.$1;
-      final item = entry.$2;
-      final x = groupWidth * index + groupWidth / 2;
-      final lastHeight = maxValue == 0
-          ? 0.0
-          : (item.$2 / maxValue) * chartHeight;
-      final thisHeight = maxValue == 0
-          ? 0.0
-          : (item.$3 / maxValue) * chartHeight;
-      final baseY = chartHeight;
-
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            x - barWidth - 2,
-            baseY - lastHeight,
-            barWidth,
-            lastHeight,
-          ),
-          const Radius.circular(6),
-        ),
-        lastWeekPaint,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x + 2, baseY - thisHeight, barWidth, thisHeight),
-          const Radius.circular(6),
-        ),
-        thisWeekPaint,
-      );
-      textPainter.text = TextSpan(
-        text: item.$1,
-        style: const TextStyle(color: _AppShellColors.mutedText, fontSize: 11),
-      );
-      textPainter.layout(minWidth: groupWidth, maxWidth: groupWidth);
-      textPainter.paint(canvas, Offset(groupWidth * index, chartHeight + 8));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WeeklyComparisonPainter oldDelegate) {
-    return oldDelegate.themeColor != themeColor || oldDelegate.data != data;
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(color: _AppShellColors.mutedText)),
-      ],
     );
   }
 }
@@ -5935,7 +5482,7 @@ class _AboutVersionCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _AboutVersionRow(label: appT(context, 'version'), value: '0.4.0'),
+          _AboutVersionRow(label: appT(context, 'version'), value: '0.5.0'),
           const SizedBox(height: 10),
           _AboutVersionRow(
             label: appT(context, 'build_date'),
@@ -6635,17 +6182,13 @@ class _DashboardApi {
 class _DashboardResponse {
   const _DashboardResponse({
     required this.summary,
-    required this.budget,
     required this.recentTransactions,
     required this.categoryBreakdown,
-    required this.categoryBudgets,
   });
 
   final _Summary summary;
-  final _BudgetSummary budget;
   final List<_Transaction> recentTransactions;
   final List<_CategoryBreakdownItem> categoryBreakdown;
-  final List<_CategoryBudget> categoryBudgets;
 
   factory _DashboardResponse.mock({
     _Summary? summary,
@@ -6666,7 +6209,6 @@ class _DashboardResponse {
       totalIncome: 6380,
       totalExpense: 3485.70,
     );
-    const budget = _BudgetSummary(spent: 1215, limit: 2000);
     final resolvedCategoryBreakdown =
         categoryBreakdown ??
         const [
@@ -6704,39 +6246,8 @@ class _DashboardResponse {
 
     return _DashboardResponse(
       summary: summary,
-      budget: budget,
       recentTransactions: recentTransactions ?? const [],
       categoryBreakdown: resolvedCategoryBreakdown,
-      categoryBudgets: const [
-        _CategoryBudget(
-          category: 'Food & Dining',
-          spent: 450,
-          limit: 600,
-          color: Color(0xFFFF8A65),
-          icon: 'FD',
-        ),
-        _CategoryBudget(
-          category: 'Shopping',
-          spent: 820,
-          limit: 800,
-          color: AppTheme.secondaryColor,
-          icon: 'SH',
-        ),
-        _CategoryBudget(
-          category: 'Transportation',
-          spent: 180,
-          limit: 300,
-          color: Color(0xFFFFB74D),
-          icon: 'TR',
-        ),
-        _CategoryBudget(
-          category: 'Entertainment',
-          spent: 150,
-          limit: 200,
-          color: Color(0xFF9575CD),
-          icon: 'EN',
-        ),
-      ],
     );
   }
 }
@@ -6911,17 +6422,6 @@ class _CashSummary {
   }
 }
 
-class _BudgetSummary {
-  const _BudgetSummary({required this.spent, required this.limit});
-
-  final double spent;
-  final double limit;
-
-  double get remaining => limit - spent;
-
-  double get percentUsed => limit == 0 ? 0 : (spent / limit) * 100;
-}
-
 class _Transaction {
   const _Transaction({
     required this.id,
@@ -7034,26 +6534,6 @@ class _CategoryBreakdownItem {
   final double amount;
   final double percent;
   final Color color;
-}
-
-class _CategoryBudget {
-  const _CategoryBudget({
-    required this.category,
-    required this.spent,
-    required this.limit,
-    required this.color,
-    required this.icon,
-  });
-
-  final String category;
-  final double spent;
-  final double limit;
-  final Color color;
-  final String icon;
-
-  double get remaining => limit - spent;
-
-  double get percentUsed => limit == 0 ? 0 : (spent / limit) * 100;
 }
 
 class _AppShellColors {

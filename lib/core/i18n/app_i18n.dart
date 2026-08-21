@@ -150,6 +150,7 @@ const _zhCnExtra = {
   'budgets': '预算',
   'budget_subtitle': '管理您的支出限额',
   'add_new_budget': '添加新预算',
+  'no_budgets_yet': '这个月还没有预算',
   'transactions': '交易',
   'transaction_detail': '交易详情',
   'transaction_detail_failed': '交易详情加载失败',
@@ -181,6 +182,9 @@ const _zhCnExtra = {
   'transactions_empty_filtered': '请调整筛选条件，或清除筛选以查看全部交易。',
   'transactions_empty_message': '还没有交易。添加一笔交易后会显示在这里。',
   'more_statistics_title': '更多统计',
+  'monthly_comparison': '月度收支对比',
+  'top_expenses': '最高支出',
+  'no_statistics_data': '该时间段暂无数据',
   'more_statistics_test_data_description':
       '以下统计数据仅为示例数据，用于演示目的。真实的分析功能将在未来更新中实现。',
   'test_data': '测试数据',
@@ -365,6 +369,7 @@ const _zhTwExtra = {
   'budgets': '預算',
   'budget_subtitle': '管理您的支出限額',
   'add_new_budget': '新增預算',
+  'no_budgets_yet': '這個月還沒有預算',
   'transactions': '交易',
   'transaction_detail': '交易詳情',
   'transaction_detail_failed': '交易詳情載入失敗',
@@ -396,6 +401,9 @@ const _zhTwExtra = {
   'transactions_empty_filtered': '請調整篩選條件，或清除篩選以查看全部交易。',
   'transactions_empty_message': '還沒有交易。新增一筆交易後會顯示在這裡。',
   'more_statistics_title': '更多統計',
+  'monthly_comparison': '每月收支比較',
+  'top_expenses': '最高支出',
+  'no_statistics_data': '該時段暫無資料',
   'more_statistics_test_data_description':
       '以下統計資料僅為範例資料，用於展示目的。真實的分析功能將在未來更新中實作。',
   'test_data': '測試資料',
@@ -637,6 +645,7 @@ const _en = {
   'budgets': 'Budgets',
   'budget_subtitle': 'Manage your spending limits',
   'add_new_budget': 'Add New Budget',
+  'no_budgets_yet': 'No budgets for this month yet',
   'transactions': 'Transactions',
   'transaction_detail': 'Transaction Detail',
   'transaction_detail_failed': 'Transaction detail failed to load',
@@ -672,6 +681,9 @@ const _en = {
   'transactions_empty_message':
       'No transactions yet. Add one and it will appear here.',
   'more_statistics_title': 'More Statistics',
+  'monthly_comparison': 'Monthly Comparison',
+  'top_expenses': 'Top Expenses',
+  'no_statistics_data': 'No data for this period',
   'more_statistics_test_data_description':
       'These comparison charts use sample data until analytics endpoints are available.',
   'test_data': 'Test Data',

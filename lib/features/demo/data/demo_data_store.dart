@@ -27,14 +27,18 @@ class DemoDataStore {
 
   var _nextCategoryId = 100;
   var _nextTransactionId = 100;
+  var _nextBudgetId = 100;
   late List<ApiJson> _categories;
   late List<ApiJson> _transactions;
+  late List<ApiJson> _budgets;
 
   void reset() {
     _nextCategoryId = 100;
     _nextTransactionId = 100;
+    _nextBudgetId = 100;
     _categories = _initialCategories();
     _transactions = _initialTransactions();
+    _budgets = _initialBudgets();
   }
 
   Future<ApiJson> getDailySummary(String date) async {
@@ -284,6 +288,184 @@ class DemoDataStore {
     return _wrappedData({'deleted': true});
   }
 
+  Future<ApiJson> listBudgets({required String period}) async {
+    final spentByCategory = <String, double>{};
+    for (final transaction in _transactions) {
+      if (transaction['flow_type'] != 'expense') continue;
+      final date = _dateDigits(transaction['belongs_date']);
+      if (date.length < 6 ||
+          '${date.substring(0, 4)}-${date.substring(4, 6)}' != period) {
+        continue;
+      }
+      final categoryId = transaction['category_id']?.toString() ?? '';
+      spentByCategory[categoryId] =
+          (spentByCategory[categoryId] ?? 0) +
+          ((transaction['amount'] as num?)?.toDouble() ?? 0);
+    }
+    final data = _budgets
+        .where((budget) => budget['period'] == period)
+        .map((budget) {
+          final categoryId = budget['category_id'].toString();
+          final category = _categories.firstWhere(
+            (item) => item['Id'] == categoryId,
+            orElse: () => <String, dynamic>{},
+          );
+          final limit = (budget['limit_amount'] as num).toDouble();
+          final spent = spentByCategory[categoryId] ?? 0;
+          return <String, dynamic>{
+            ...budget,
+            'category_name': category['name'] ?? 'Category',
+            'spent_amount': spent,
+            'remaining': limit - spent,
+            'progress': limit == 0 ? 0 : spent / limit,
+          };
+        })
+        .toList(growable: false);
+    return _wrappedList(data);
+  }
+
+  Future<ApiJson> createBudget({
+    required String categoryId,
+    required String period,
+    required num limitAmount,
+  }) async {
+    if (_budgets.any(
+      (item) => item['category_id'] == categoryId && item['period'] == period,
+    )) {
+      throw StateError('Budget already exists for this category.');
+    }
+    final budget = <String, dynamic>{
+      'id': 'demo-budget-${_nextBudgetId++}',
+      'category_id': categoryId,
+      'period': period,
+      'limit_amount': limitAmount.toDouble(),
+    };
+    _budgets.add(budget);
+    return _wrappedData(budget);
+  }
+
+  Future<ApiJson> updateBudget(
+    String id, {
+    required String categoryId,
+    required String period,
+    required num limitAmount,
+  }) async {
+    final index = _budgets.indexWhere((item) => item['id'] == id);
+    if (index == -1) throw StateError('Demo budget not found.');
+    if (_budgets.indexed.any(
+      (entry) =>
+          entry.$1 != index &&
+          entry.$2['category_id'] == categoryId &&
+          entry.$2['period'] == period,
+    )) {
+      throw StateError('Budget already exists for this category.');
+    }
+    _budgets[index] = <String, dynamic>{
+      'id': id,
+      'category_id': categoryId,
+      'period': period,
+      'limit_amount': limitAmount.toDouble(),
+    };
+    return _wrappedData(_budgets[index]);
+  }
+
+  Future<ApiJson> deleteBudget(String id) async {
+    final before = _budgets.length;
+    _budgets.removeWhere((item) => item['id'] == id);
+    if (before == _budgets.length) throw StateError('Demo budget not found.');
+    return _wrappedData({'deleted': true});
+  }
+
+  Future<ApiJson> getStatisticYearlySummary(String year) async {
+    var income = 0.0;
+    var expense = 0.0;
+    var count = 0;
+    for (final item in _transactions) {
+      if (!item['belongs_date'].toString().startsWith(year)) continue;
+      final amount = (item['amount'] as num?)?.toDouble() ?? 0;
+      if (item['flow_type'] == 'income') {
+        income += amount;
+      } else {
+        expense += amount;
+      }
+      count++;
+    }
+    return _wrappedData({
+      'period': year,
+      'period_type': 'yearly',
+      'income': income,
+      'expense': expense,
+      'balance': income - expense,
+      'transaction_count': count,
+    });
+  }
+
+  Future<ApiJson> getMonthlyComparisonChart(String year) async {
+    final income = List<double>.filled(12, 0);
+    final expense = List<double>.filled(12, 0);
+    for (final item in _transactions) {
+      final date = _dateDigits(item['belongs_date']);
+      if (date.length < 6 || !date.startsWith(year)) continue;
+      final month = int.parse(date.substring(4, 6)) - 1;
+      final amount = (item['amount'] as num?)?.toDouble() ?? 0;
+      if (item['flow_type'] == 'income') {
+        income[month] += amount;
+      } else {
+        expense[month] += amount;
+      }
+    }
+    return _wrappedData({
+      'year': year,
+      'months': List.generate(
+        12,
+        (index) => (index + 1).toString().padLeft(2, '0'),
+      ),
+      'income': income,
+      'expense': expense,
+      'balance': List.generate(12, (index) => income[index] - expense[index]),
+    });
+  }
+
+  Future<ApiJson> getStatisticYearlyTop({
+    required String year,
+    int? limit,
+  }) async {
+    final expenses =
+        _transactions
+            .where(
+              (item) =>
+                  item['flow_type'] == 'expense' &&
+                  item['belongs_date'].toString().startsWith(year),
+            )
+            .toList()
+          ..sort(
+            (a, b) => ((b['amount'] as num?) ?? 0).compareTo(
+              (a['amount'] as num?) ?? 0,
+            ),
+          );
+    final result = expenses
+        .take(limit ?? 5)
+        .map(
+          (item) => <String, dynamic>{
+            'id': item['id'],
+            'date': item['belongs_date'],
+            'category': item['category_name'],
+            'amount': item['amount'],
+            'description': item['description'] ?? '',
+          },
+        )
+        .toList(growable: false);
+    return _wrappedData({
+      'period': year,
+      'limit': limit ?? 5,
+      'total_expense': expenses.fold<double>(
+        0,
+        (sum, item) => sum + ((item['amount'] as num?)?.toDouble() ?? 0),
+      ),
+      'expenses': result,
+    });
+  }
+
   ApiJson _wrappedSummary({
     required double balance,
     required double totalIncome,
@@ -371,10 +553,12 @@ class DemoDataStore {
   }
 
   List<ApiJson> _initialTransactions() {
+    final now = DateTime.now();
+    final previous = now.subtract(const Duration(days: 1));
     return [
       {
         'id': 'demo-transaction-coffee',
-        'belongs_date': '20260517',
+        'belongs_date': _compactDate(now),
         'category_id': 'demo-category-food',
         'category_name': 'Food',
         'flow_type': 'expense',
@@ -384,7 +568,7 @@ class DemoDataStore {
       },
       {
         'id': 'demo-transaction-salary',
-        'belongs_date': '2026-05-16',
+        'belongs_date': _dashDate(previous),
         'category_id': 'demo-category-salary',
         'category_name': 'Salary',
         'flow_type': 'income',
@@ -395,6 +579,34 @@ class DemoDataStore {
       },
     ];
   }
+
+  List<ApiJson> _initialBudgets() {
+    final now = DateTime.now();
+    final period = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    return [
+      {
+        'id': 'demo-budget-food',
+        'category_id': 'demo-category-food',
+        'period': period,
+        'limit_amount': 600.0,
+      },
+      {
+        'id': 'demo-budget-transport',
+        'category_id': 'demo-category-transportation',
+        'period': period,
+        'limit_amount': 300.0,
+      },
+    ];
+  }
+
+  static String _dateDigits(Object? value) =>
+      value?.toString().replaceAll(RegExp('[^0-9]'), '') ?? '';
+
+  static String _compactDate(DateTime date) =>
+      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+
+  static String _dashDate(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   ApiJson _categoryData({
     required String id,

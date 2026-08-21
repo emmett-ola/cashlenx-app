@@ -123,7 +123,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('More Statistics'), findsOneWidget);
-    expect(find.text('Weekly Comparison'), findsOneWidget);
+    expect(find.text('Monthly Comparison'), findsOneWidget);
+    expect(find.text('Top Expenses'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
