@@ -135,6 +135,110 @@ void main() {
     expect(find.text('Amount'), findsOneWidget);
     expect(find.text('Category'), findsAtLeastNWidgets(1));
   });
+
+  testWidgets('transaction filters expose feedback and empty recovery', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    await tester.tap(find.text('See All'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 transactions'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    expect(find.text('Date Range'), findsOneWidget);
+    expect(find.byKey(const ValueKey('transaction-date-from')), findsOneWidget);
+    expect(find.byKey(const ValueKey('transaction-date-to')), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Income'));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InputChip), findsOneWidget);
+    expect(find.text('1 transaction (filtered)'), findsOneWidget);
+    expect(find.text('Salary'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(InputChip),
+        matching: find.byIcon(Icons.close),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('2 transactions'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'not-found');
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+
+    expect(find.text('“not-found”'), findsOneWidget);
+    expect(find.text('No transactions found (filtered)'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Clear Filters'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Clear Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Coffee beans'), findsOneWidget);
+    expect(find.text('2 transactions'), findsOneWidget);
+    expect(find.byType(InputChip), findsNothing);
+  });
+
+  testWidgets('authenticated date filters use the server range endpoint', (
+    tester,
+  ) async {
+    final api = _FakeCashlenxApi();
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    await tester.tap(find.text('See All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('transaction-date-from')));
+    await tester.pumpAndSettle();
+
+    final today = DateTime.now();
+    await tester.tap(find.text(today.day.toString()).last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastRangeFrom, isNotNull);
+    expect(api.lastRangeFrom, matches(RegExp(r'^\d{8}$')));
+    expect(api.lastRangeTo, '21001231');
+  });
 }
 
 class _TestAuthNotifier extends AuthNotifier {
@@ -152,8 +256,41 @@ class _TestAuthNotifier extends AuthNotifier {
   }
 }
 
+class _UserAuthNotifier extends AuthNotifier {
+  @override
+  Future<User?> build() async {
+    final now = DateTime(2026);
+    return User(
+      id: 'user-1',
+      username: 'User',
+      isActive: true,
+      role: 'user',
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+}
+
 class _FakeCashlenxApi extends CashlenxApi {
   _FakeCashlenxApi() : super(ApiClient(Dio()));
+
+  String? lastRangeFrom;
+  String? lastRangeTo;
+
+  @override
+  Future<ApiJson> getUserProfile() async {
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': {
+        'id': 'user-1',
+        'username': 'User',
+        'role': 'user',
+        'nickname': 'User',
+      },
+      'errors': <dynamic>[],
+    };
+  }
 
   @override
   Future<ApiJson> getDailySummary(String date) async {
@@ -202,12 +339,6 @@ class _FakeCashlenxApi extends CashlenxApi {
     String? categoryId,
     String? description,
   }) async {
-    expect(limit, 5);
-    expect(offset, isNull);
-    expect(type, isNull);
-    expect(categoryId, isNull);
-    expect(description, isNull);
-
     return {
       'code': 'OK',
       'message': '',
@@ -236,6 +367,16 @@ class _FakeCashlenxApi extends CashlenxApi {
       'errors': <dynamic>[],
       'extra': <String, dynamic>{},
     };
+  }
+
+  @override
+  Future<ApiJson> getTransactionsByDateRange({
+    required String from,
+    required String to,
+  }) async {
+    lastRangeFrom = from;
+    lastRangeTo = to;
+    return listAllTransactions();
   }
 
   @override

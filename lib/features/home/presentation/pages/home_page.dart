@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -16,6 +17,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../providers/currency_provider.dart';
+import '../utils/transaction_filter_utils.dart';
 
 const _defaultAvatarAsset =
     'assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png';
@@ -1582,6 +1584,8 @@ class _TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   var _selectedType = _TransactionFilterType.all;
   String? _selectedCategoryId;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
   final _searchController = TextEditingController();
   var _showFilters = false;
   var _isLoading = true;
@@ -1601,6 +1605,13 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
           }
           if (_selectedCategoryId != null &&
               transaction.categoryId != _selectedCategoryId) {
+            return false;
+          }
+          if (!isWithinInclusiveDateRange(
+            transaction.dateSort,
+            from: _dateFrom,
+            to: _dateTo,
+          )) {
             return false;
           }
           if (query.isNotEmpty &&
@@ -1629,6 +1640,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
     var count = 0;
     if (_selectedType != _TransactionFilterType.all) count++;
     if (_selectedCategoryId != null) count++;
+    if (_dateFrom != null || _dateTo != null) count++;
     if (_searchController.text.trim().isNotEmpty) count++;
     return count;
   }
@@ -1682,6 +1694,8 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
               child: _TransactionFiltersCard(
                 selectedType: _selectedType,
                 selectedCategoryId: _selectedCategoryId,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
                 categories: _categoryOptions,
                 searchController: _searchController,
                 onTypeChanged: (type) {
@@ -1693,7 +1707,48 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                 onCategoryChanged: (categoryId) {
                   setState(() => _selectedCategoryId = categoryId);
                 },
+                onDateFromPressed: () => _selectFilterDate(isFrom: true),
+                onDateToPressed: () => _selectFilterDate(isFrom: false),
                 onClear: _clearFilters,
+              ),
+            ),
+          ),
+        if (_activeFilterCount > 0 && !_showFilters)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: _ActiveTransactionFilters(
+                selectedType: _selectedType,
+                selectedCategory: _selectedCategory,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
+                searchQuery: _searchController.text.trim(),
+                onTypeRemoved: () {
+                  setState(() => _selectedType = _TransactionFilterType.all);
+                },
+                onCategoryRemoved: () {
+                  setState(() => _selectedCategoryId = null);
+                },
+                onDateRemoved: () => unawaited(_removeDateFilter()),
+                onSearchRemoved: _searchController.clear,
+              ),
+            ),
+          ),
+        if (!_isLoading && _error == null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Text(
+                _transactionResultSummary(
+                  context,
+                  filteredTransactions.length,
+                  filtered: _activeFilterCount > 0,
+                ),
+                key: const ValueKey('transaction-result-summary'),
+                style: const TextStyle(
+                  color: _AppShellColors.mutedText,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -1710,9 +1765,14 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                   child: _EmptyStateCard(
                     icon: Icons.receipt_long_outlined,
                     title: appT(context, 'no_transactions_found'),
-                    message: appT(context, 'adjust_filters'),
+                    message: appT(
+                      context,
+                      _activeFilterCount > 0
+                          ? 'transactions_empty_filtered'
+                          : 'transactions_empty_message',
+                    ),
                     actionLabel: appT(context, 'clear_filters'),
-                    onAction: null,
+                    onAction: _activeFilterCount > 0 ? _clearFilters : null,
                   ),
                 )
               : SliverList.separated(
@@ -1797,11 +1857,91 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   }
 
   void _clearFilters() {
+    final shouldReload = !_isDemo && (_dateFrom != null || _dateTo != null);
     setState(() {
       _selectedType = _TransactionFilterType.all;
       _selectedCategoryId = null;
+      _dateFrom = null;
+      _dateTo = null;
       _searchController.clear();
     });
+    if (shouldReload) unawaited(_reloadTransactionsForDateRange());
+  }
+
+  _CategoryItem? get _selectedCategory {
+    for (final category in _categories) {
+      if (category.id == _selectedCategoryId) return category;
+    }
+    return null;
+  }
+
+  Future<void> _selectFilterDate({required bool isFrom}) async {
+    final earliest = DateTime(2000);
+    final latest = DateTime(2100, 12, 31);
+    final current = isFrom ? _dateFrom : _dateTo;
+    final firstDate = isFrom ? earliest : (_dateFrom ?? earliest);
+    final lastDate = isFrom ? (_dateTo ?? latest) : latest;
+    var initialDate = current ?? calendarDate(DateTime.now());
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      if (isFrom) {
+        _dateFrom = calendarDate(selected);
+      } else {
+        _dateTo = calendarDate(selected);
+      }
+    });
+    await _reloadTransactionsForDateRange();
+  }
+
+  Future<void> _removeDateFilter() async {
+    setState(() {
+      _dateFrom = null;
+      _dateTo = null;
+    });
+    await _reloadTransactionsForDateRange();
+  }
+
+  Future<void> _reloadTransactionsForDateRange() async {
+    if (_isDemo) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = _dateFrom == null && _dateTo == null
+          ? await ref.read(cashlenxApiProvider).listAllTransactions()
+          : await ref
+                .read(cashlenxApiProvider)
+                .getTransactionsByDateRange(
+                  from: _dateToken(_dateFrom ?? DateTime(2000)),
+                  to: _dateToken(_dateTo ?? DateTime(2100, 12, 31)),
+                );
+      if (!mounted) return;
+      setState(() {
+        _transactions = _Transaction.listFromResponse(response)
+          ..sort(_compareTransactionsNewestFirst);
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _isLoading = false;
+      });
+      ToastUtils.showServerErrors(context, error);
+    }
   }
 }
 
@@ -4552,19 +4692,27 @@ class _TransactionFiltersCard extends StatelessWidget {
   const _TransactionFiltersCard({
     required this.selectedType,
     required this.selectedCategoryId,
+    required this.dateFrom,
+    required this.dateTo,
     required this.categories,
     required this.searchController,
     required this.onTypeChanged,
     required this.onCategoryChanged,
+    required this.onDateFromPressed,
+    required this.onDateToPressed,
     required this.onClear,
   });
 
   final _TransactionFilterType selectedType;
   final String? selectedCategoryId;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
   final List<_CategoryItem> categories;
   final TextEditingController searchController;
   final ValueChanged<_TransactionFilterType> onTypeChanged;
   final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onDateFromPressed;
+  final VoidCallback onDateToPressed;
   final VoidCallback onClear;
 
   @override
@@ -4583,6 +4731,17 @@ class _TransactionFiltersCard extends StatelessWidget {
                 selected: selected,
                 label: Text(appT(context, type.labelKey)),
                 onSelected: (_) => onTypeChanged(type),
+                showCheckmark: false,
+                selectedColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: AppDesignTokens.softFill,
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                labelStyle: TextStyle(
+                  color: selected ? Colors.white : AppDesignTokens.mutedText,
+                  fontWeight: FontWeight.w600,
+                ),
               );
             }).toList(),
           ),
@@ -4614,6 +4773,30 @@ class _TransactionFiltersCard extends StatelessWidget {
             onChanged: onCategoryChanged,
           ),
           const SizedBox(height: 16),
+          Text(appT(context, 'date_range'), style: _fieldLabelStyle),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _DateFilterButton(
+                  key: const ValueKey('transaction-date-from'),
+                  label: appT(context, 'date_from'),
+                  date: dateFrom,
+                  onPressed: onDateFromPressed,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _DateFilterButton(
+                  key: const ValueKey('transaction-date-to'),
+                  label: appT(context, 'date_to'),
+                  date: dateTo,
+                  onPressed: onDateToPressed,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(appT(context, 'search'), style: _fieldLabelStyle),
           const SizedBox(height: 8),
           TextField(
@@ -4641,6 +4824,148 @@ class _TransactionFiltersCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DateFilterButton extends StatelessWidget {
+  const _DateFilterButton({
+    super.key,
+    required this.label,
+    required this.date,
+    required this.onPressed,
+  });
+
+  final String label;
+  final DateTime? date;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppDesignTokens.text,
+        backgroundColor: AppDesignTokens.softFill,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        side: const BorderSide(color: AppDesignTokens.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_today_outlined, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              date == null
+                  ? label
+                  : MaterialLocalizations.of(context).formatCompactDate(date!),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveTransactionFilters extends StatelessWidget {
+  const _ActiveTransactionFilters({
+    required this.selectedType,
+    required this.selectedCategory,
+    required this.dateFrom,
+    required this.dateTo,
+    required this.searchQuery,
+    required this.onTypeRemoved,
+    required this.onCategoryRemoved,
+    required this.onDateRemoved,
+    required this.onSearchRemoved,
+  });
+
+  final _TransactionFilterType selectedType;
+  final _CategoryItem? selectedCategory;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final String searchQuery;
+  final VoidCallback onTypeRemoved;
+  final VoidCallback onCategoryRemoved;
+  final VoidCallback onDateRemoved;
+  final VoidCallback onSearchRemoved;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final dateLabel = switch ((dateFrom, dateTo)) {
+      (final from?, final to?) =>
+        '${localizations.formatCompactDate(from)} – ${localizations.formatCompactDate(to)}',
+      (final from?, null) =>
+        '${appT(context, 'date_from')}: ${localizations.formatCompactDate(from)}',
+      (null, final to?) =>
+        '${appT(context, 'date_to')}: ${localizations.formatCompactDate(to)}',
+      _ => null,
+    };
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (selectedType != _TransactionFilterType.all)
+          _RemovableFilterChip(
+            label: appT(context, selectedType.labelKey),
+            onDeleted: onTypeRemoved,
+          ),
+        if (selectedCategory != null)
+          _RemovableFilterChip(
+            label: selectedCategory!.name,
+            onDeleted: onCategoryRemoved,
+          ),
+        if (dateLabel != null)
+          _RemovableFilterChip(label: dateLabel, onDeleted: onDateRemoved),
+        if (searchQuery.isNotEmpty)
+          _RemovableFilterChip(
+            label: '“$searchQuery”',
+            onDeleted: onSearchRemoved,
+          ),
+      ],
+    );
+  }
+}
+
+class _RemovableFilterChip extends StatelessWidget {
+  const _RemovableFilterChip({required this.label, required this.onDeleted});
+
+  final String label;
+  final VoidCallback onDeleted;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputChip(
+      label: Text(label),
+      onDeleted: onDeleted,
+      deleteIcon: const Icon(Icons.close, size: 16),
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: AppDesignTokens.border),
+      shape: const StadiumBorder(),
+      labelStyle: const TextStyle(
+        color: AppDesignTokens.text,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+String _transactionResultSummary(
+  BuildContext context,
+  int count, {
+  required bool filtered,
+}) {
+  final base = switch (count) {
+    0 => appT(context, 'no_transactions_found'),
+    1 => '1 ${appT(context, 'transaction')}',
+    _ => '$count ${appT(context, 'transactions_count')}',
+  };
+  return filtered ? '$base (${appT(context, 'filtered')})' : base;
 }
 
 class _TransactionLoadingCard extends StatelessWidget {
@@ -5610,7 +5935,7 @@ class _AboutVersionCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _AboutVersionRow(label: appT(context, 'version'), value: '0.3.0'),
+          _AboutVersionRow(label: appT(context, 'version'), value: '0.4.0'),
           const SizedBox(height: 10),
           _AboutVersionRow(
             label: appT(context, 'build_date'),
