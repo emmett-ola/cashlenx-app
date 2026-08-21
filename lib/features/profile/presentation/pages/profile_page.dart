@@ -8,7 +8,9 @@ import '../../../../network/cashlenx_api.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../demo/data/demo_data_store.dart';
 import '../../../home/presentation/providers/currency_provider.dart';
+import '../../../settings/data/user_configuration_sync.dart';
 import '../../domain/user_profile.dart';
 
 const _avatarPresets = [
@@ -170,7 +172,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       }
 
       final profile = user.role == 'demo'
-          ? UserProfile.demo(user)
+          ? UserProfile.fromResponse(
+              await ref.read(demoDataStoreProvider).getProfile(),
+              fallback: UserProfile.demo(user),
+            )
           : UserProfile.fromResponse(
               await ref.read(cashlenxApiProvider).getUserProfile(),
               fallback: UserProfile.fromUser(user),
@@ -200,20 +205,44 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     setState(() => _isSaving = true);
     final nickname = _nameController.text.trim();
     final avatarUrl = _avatarValue.trim();
+    final phoneNumber = _phoneController.text.trim();
+    final location = _locationController.text.trim();
+    final birthDate = _birthDateController.text.trim();
 
     try {
       await ref.read(currencyProvider.notifier).setCurrency(_selectedCurrency);
+      await ref.read(persistUserConfigurationProvider)();
 
       final profileDraft = profile.copyWith(
         nickname: nickname,
         avatarUrl: avatarUrl,
+        phoneNumber: phoneNumber,
+        location: location,
+        birthDate: birthDate,
       );
       final updated = _isDemo
-          ? profileDraft
+          ? UserProfile.fromResponse(
+              await ref
+                  .read(demoDataStoreProvider)
+                  .updateProfile(
+                    nickname: nickname,
+                    avatarUrl: avatarUrl,
+                    phoneNumber: phoneNumber,
+                    location: location,
+                    birthDate: birthDate,
+                  ),
+              fallback: profileDraft,
+            )
           : UserProfile.fromResponse(
               await ref
                   .read(cashlenxApiProvider)
-                  .updateUserProfile(nickname: nickname, avatarUrl: avatarUrl),
+                  .updateUserProfile(
+                    nickname: nickname,
+                    avatarUrl: avatarUrl,
+                    phoneNumber: phoneNumber,
+                    location: location,
+                    birthDate: birthDate,
+                  ),
               fallback: profileDraft,
             );
 
@@ -234,6 +263,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   void _applyProfile(UserProfile profile) {
     _nameController.text = profile.displayName;
+    _phoneController.text = profile.phoneNumber ?? '';
+    _locationController.text = profile.location ?? '';
+    _birthDateController.text = profile.birthDate ?? '';
     _avatarValue = profile.avatarUrl ?? '';
     _selectedCurrency = ref.read(currencyProvider);
   }

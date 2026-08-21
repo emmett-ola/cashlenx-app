@@ -208,6 +208,9 @@ class CashlenxApi {
     String? nickname,
     String? avatarUrl,
     String? gender,
+    String? phoneNumber,
+    String? location,
+    String? birthDate,
   }) {
     return _put(
       '/user/profile',
@@ -215,7 +218,29 @@ class CashlenxApi {
         'nickname': nickname,
         'avatar_url': avatarUrl,
         'gender': gender,
+        'phone_number': phoneNumber,
+        'location': location,
+        'birth_date': birthDate,
       }),
+    );
+  }
+
+  Future<ApiJson> getUserConfiguration() {
+    return _get('/user/configuration');
+  }
+
+  Future<ApiJson> updateUserConfiguration({
+    required String displayLanguage,
+    required String currencyCode,
+    required String activeThemeColor,
+  }) {
+    return _put(
+      '/user/configuration',
+      data: {
+        'display_language': displayLanguage,
+        'currency_code': currencyCode,
+        'active_theme_color': activeThemeColor,
+      },
     );
   }
 

@@ -31,6 +31,8 @@ class DemoDataStore {
   late List<ApiJson> _categories;
   late List<ApiJson> _transactions;
   late List<ApiJson> _budgets;
+  late ApiJson _profile;
+  late ApiJson _configuration;
 
   void reset() {
     _nextCategoryId = 100;
@@ -39,6 +41,62 @@ class DemoDataStore {
     _categories = _initialCategories();
     _transactions = _initialTransactions();
     _budgets = _initialBudgets();
+    _profile = {
+      'id': 'demo-user',
+      'username': 'Demo User',
+      'role': 'demo',
+      'is_active': true,
+      'nickname': 'Demo User',
+      'email_address': 'demo@cashlenx.com',
+      'gender': 'others',
+      'phone_number': '+65 6123 4567',
+      'location': 'Singapore',
+      'birth_date': '1995-03-15',
+    };
+    _configuration = {
+      'display_language': 'en',
+      'currency_code': 'USD',
+      'active_theme_color': '#008080',
+    };
+  }
+
+  Future<ApiJson> getProfile() async {
+    return _wrappedData(Map<String, dynamic>.from(_profile));
+  }
+
+  Future<ApiJson> updateProfile({
+    required String nickname,
+    required String avatarUrl,
+    required String phoneNumber,
+    required String location,
+    required String birthDate,
+  }) async {
+    _profile = {
+      ..._profile,
+      'nickname': nickname,
+      'avatar_url': avatarUrl,
+      'phone_number': phoneNumber,
+      'location': location,
+      'birth_date': birthDate,
+    };
+    return _wrappedData(Map<String, dynamic>.from(_profile));
+  }
+
+  Future<ApiJson> getConfiguration() async {
+    return _wrappedData(Map<String, dynamic>.from(_configuration));
+  }
+
+  Future<ApiJson> updateConfiguration({
+    required String displayLanguage,
+    required String currencyCode,
+    required String activeThemeColor,
+  }) async {
+    _configuration = {
+      'display_language': displayLanguage,
+      'currency_code': currencyCode,
+      'active_theme_color': activeThemeColor,
+    };
+    return _wrappedData(Map<String, dynamic>.from(_configuration));
   }
 
   Future<ApiJson> getDailySummary(String date) async {

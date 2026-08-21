@@ -5,6 +5,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/network/response_wrapper.dart';
@@ -17,6 +18,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../budget/presentation/budget_tab.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../../profile/domain/user_profile.dart';
+import '../../../settings/data/user_configuration_sync.dart';
 import '../../../statistics/presentation/statistics_page.dart';
 import '../providers/currency_provider.dart';
 import '../utils/transaction_filter_utils.dart';
@@ -28,13 +30,20 @@ final _userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   final user = await ref.watch(authNotifierProvider.future);
   if (user == null) return null;
   if (user.role == 'demo') {
-    return UserProfile.demo(user);
+    return UserProfile.fromResponse(
+      await ref.watch(demoDataStoreProvider).getProfile(),
+      fallback: UserProfile.demo(user),
+    );
   }
 
   return UserProfile.fromResponse(
     await ref.watch(cashlenxApiProvider).getUserProfile(),
     fallback: UserProfile.fromUser(user),
   );
+});
+
+final _packageInfoProvider = FutureProvider<PackageInfo>((ref) {
+  return PackageInfo.fromPlatform();
 });
 
 final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
@@ -65,6 +74,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     ref.watch(i18nProvider);
+    ref.watch(userConfigurationSyncProvider);
     final user = ref.watch(authNotifierProvider).value;
     final profile = ref
         .watch(_userProfileProvider)
@@ -3546,11 +3556,20 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: FilledButton(
-                              onPressed: () {
-                                ref
+                              onPressed: () async {
+                                await ref
                                     .read(themeColorProvider.notifier)
                                     .setColor(draftColor);
-                                Navigator.pop(context);
+                                try {
+                                  await ref.read(
+                                    persistUserConfigurationProvider,
+                                  )();
+                                } catch (error) {
+                                  if (context.mounted) {
+                                    ToastUtils.showServerErrors(context, error);
+                                  }
+                                }
+                                if (context.mounted) Navigator.pop(context);
                               },
                               style: FilledButton.styleFrom(
                                 backgroundColor: draftColor,
@@ -3602,6 +3621,13 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
           ],
           onSelected: (currency) async {
             await ref.read(currencyProvider.notifier).setCurrency(currency);
+            try {
+              await ref.read(persistUserConfigurationProvider)();
+            } catch (error) {
+              if (context.mounted) {
+                ToastUtils.showServerErrors(context, error);
+              }
+            }
             if (!context.mounted) return;
             Navigator.pop(context);
             ToastUtils.showSuccess(
@@ -3635,6 +3661,13 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
           ],
           onSelected: (language) async {
             await ref.read(i18nProvider.notifier).setLanguage(language);
+            try {
+              await ref.read(persistUserConfigurationProvider)();
+            } catch (error) {
+              if (context.mounted) {
+                ToastUtils.showServerErrors(context, error);
+              }
+            }
             if (!context.mounted) return;
             Navigator.pop(context);
           },
@@ -5469,11 +5502,12 @@ class _SelectionOptionTile<T> extends StatelessWidget {
   }
 }
 
-class _AboutVersionCard extends StatelessWidget {
+class _AboutVersionCard extends ConsumerWidget {
   const _AboutVersionCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final packageInfo = ref.watch(_packageInfoProvider);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -5481,14 +5515,23 @@ class _AboutVersionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        children: [
-          _AboutVersionRow(label: appT(context, 'version'), value: '0.5.0'),
-          const SizedBox(height: 10),
-          _AboutVersionRow(
-            label: appT(context, 'build_date'),
-            value: '2026-08-21',
-          ),
-        ],
+        children: packageInfo.when(
+          loading: () => const [Center(child: CircularProgressIndicator())],
+          error: (_, _) => [
+            _AboutVersionRow(label: appT(context, 'version'), value: '—'),
+          ],
+          data: (info) => [
+            _AboutVersionRow(
+              label: appT(context, 'version'),
+              value: info.version,
+            ),
+            const SizedBox(height: 10),
+            _AboutVersionRow(
+              label: appT(context, 'build_number'),
+              value: info.buildNumber,
+            ),
+          ],
+        ),
       ),
     );
   }

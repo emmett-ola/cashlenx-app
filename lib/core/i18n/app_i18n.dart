@@ -22,11 +22,22 @@ enum AppLanguage {
   final Locale locale;
 
   static AppLanguage fromCode(String? code) {
+    final normalized = switch (code) {
+      'zh-Hans' => 'zh-CN',
+      'zh-Hant' => 'zh-TW',
+      _ => code,
+    };
     return AppLanguage.values.firstWhere(
-      (language) => language.code == code,
+      (language) => language.code == normalized,
       orElse: () => AppLanguage.english,
     );
   }
+
+  String get serverCode => switch (this) {
+    AppLanguage.english => 'en',
+    AppLanguage.simplifiedChinese => 'zh-Hans',
+    AppLanguage.traditionalChinese => 'zh-Hant',
+  };
 }
 
 final i18nProvider = NotifierProvider<I18nNotifier, AppLanguage>(
@@ -226,6 +237,7 @@ const _zhCnExtra = {
   'app_tagline': '您值得信赖的个人财务管理伙伴，轻松自信地管理财务。',
   'version': '版本',
   'build_date': '构建日期',
+  'build_number': '构建号',
   'check_update': '检查更新',
   'latest_version': '您正在使用最新版本！',
   'copyright': '© 2026 CashLenX. 保留所有权利。',
@@ -445,6 +457,7 @@ const _zhTwExtra = {
   'app_tagline': '您值得信賴的個人財務管理夥伴，輕鬆自信地管理財務。',
   'version': '版本',
   'build_date': '建置日期',
+  'build_number': '建置編號',
   'check_update': '檢查更新',
   'latest_version': '您正在使用最新版本！',
   'copyright': '© 2026 CashLenX. 保留所有權利。',
@@ -727,6 +740,7 @@ const _en = {
       'Your trusted companion for managing personal finances with ease and confidence.',
   'version': 'Version',
   'build_date': 'Build Date',
+  'build_number': 'Build Number',
   'check_update': 'Check Update',
   'latest_version': 'You are on the latest version.',
   'copyright': '© 2026 CashLenX. All rights reserved.',

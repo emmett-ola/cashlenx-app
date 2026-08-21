@@ -10,6 +10,9 @@ class UserProfile {
     this.avatarUrl,
     this.emailAddress,
     this.gender,
+    this.phoneNumber,
+    this.location,
+    this.birthDate,
     this.createdAt,
     this.updatedAt,
   });
@@ -22,6 +25,9 @@ class UserProfile {
   final String? avatarUrl;
   final String? emailAddress;
   final String? gender;
+  final String? phoneNumber;
+  final String? location;
+  final String? birthDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -42,7 +48,14 @@ class UserProfile {
     return 'Not set';
   }
 
-  UserProfile copyWith({String? nickname, String? avatarUrl, String? gender}) {
+  UserProfile copyWith({
+    String? nickname,
+    String? avatarUrl,
+    String? gender,
+    String? phoneNumber,
+    String? location,
+    String? birthDate,
+  }) {
     return UserProfile(
       id: id,
       username: username,
@@ -52,6 +65,9 @@ class UserProfile {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       emailAddress: emailAddress,
       gender: gender ?? this.gender,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      location: location ?? this.location,
+      birthDate: birthDate ?? this.birthDate,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -66,6 +82,9 @@ class UserProfile {
       nickname: 'Demo User',
       emailAddress: 'demo@cashlenx.com',
       gender: 'others',
+      phoneNumber: '+65 6123 4567',
+      location: 'Singapore',
+      birthDate: '1995-03-15',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     );
@@ -107,6 +126,10 @@ class UserProfile {
           _nullableString(json['email']) ??
           fallback?.emailAddress,
       gender: _nullableString(json['gender']) ?? fallback?.gender,
+      phoneNumber:
+          _nullableString(json['phone_number']) ?? fallback?.phoneNumber,
+      location: _nullableString(json['location']) ?? fallback?.location,
+      birthDate: _nullableString(json['birth_date']) ?? fallback?.birthDate,
       createdAt: _nullableDate(json['created_at']) ?? fallback?.createdAt,
       updatedAt: _nullableDate(json['updated_at']) ?? fallback?.updatedAt,
     );

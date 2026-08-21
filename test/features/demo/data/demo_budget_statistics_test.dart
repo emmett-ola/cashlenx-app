@@ -64,6 +64,42 @@ void main() {
       expect(top['expenses'], hasLength(1));
     },
   );
+
+  test('demo profile and configuration persist until reset', () async {
+    final store = DemoDataStore();
+
+    await store.updateProfile(
+      nickname: 'Demo Saver',
+      avatarUrl: 'avatar-2',
+      phoneNumber: '+65 6999 0000',
+      location: 'Tampines',
+      birthDate: '1990-01-02',
+    );
+    await store.updateConfiguration(
+      displayLanguage: 'zh-Hans',
+      currencyCode: 'SGD',
+      activeThemeColor: '#004D40',
+    );
+
+    expect(
+      _dataMap(await store.getProfile()),
+      containsPair('location', 'Tampines'),
+    );
+    expect(
+      _dataMap(await store.getConfiguration()),
+      containsPair('currency_code', 'SGD'),
+    );
+
+    store.reset();
+    expect(
+      _dataMap(await store.getProfile()),
+      containsPair('nickname', 'Demo User'),
+    );
+    expect(
+      _dataMap(await store.getConfiguration()),
+      containsPair('currency_code', 'USD'),
+    );
+  });
 }
 
 List<Map<String, dynamic>> _dataList(Map<String, dynamic> response) {
