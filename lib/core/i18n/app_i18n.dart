@@ -577,12 +577,12 @@ const _en = {
   'onboarding_slide1_title': 'Track Your Expenses',
   'onboarding_slide1_desc':
       'Monitor every transaction effortlessly and stay on top of your spending habits.',
-  'onboarding_slide2_title': 'Gain Insights',
+  'onboarding_slide2_title': 'Plan Your Budgets',
   'onboarding_slide2_desc':
-      'Visualize your financial health with clear charts and actionable insights.',
-  'onboarding_slide3_title': 'Plan Your Budgets',
+      "Set smart budgets and get notified when you're close to your limits.",
+  'onboarding_slide3_title': 'Gain Insights',
   'onboarding_slide3_desc':
-      'Set smart budgets and get notified when you are close to your limits.',
+      'Visualize your financial health with beautiful charts and actionable insights.',
   'reset_password_title': 'Reset your password',
   'send_reset_token': 'Send Reset Token',
   'already_have_token': 'Already have a token?',

@@ -5610,7 +5610,7 @@ class _AboutVersionCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _AboutVersionRow(label: appT(context, 'version'), value: '0.2.0'),
+          _AboutVersionRow(label: appT(context, 'version'), value: '0.3.0'),
           const SizedBox(height: 10),
           _AboutVersionRow(
             label: appT(context, 'build_date'),

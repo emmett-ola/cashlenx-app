@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
@@ -48,7 +49,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
         .toList(growable: false);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppDesignTokens.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -56,7 +57,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 28, 16, 18),
                 child: widget.firstLoginSetup
-                    ? _WelcomeHeader()
+                    ? const _WelcomeHeader()
                     : _SimpleHeader(onBack: () => context.pop()),
               ),
             ),
@@ -64,6 +65,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: AppCard(
+                  borderRadius: AppDesignTokens.radiusCard,
                   padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,9 +98,11 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                           prefixIcon: const Icon(Icons.search),
                           hintText: appT(context, 'setup_search_placeholder'),
                           filled: true,
-                          fillColor: const Color(0xFFF3F4F6),
+                          fillColor: AppDesignTokens.softFill,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppDesignTokens.radiusField,
+                            ),
                             borderSide: BorderSide.none,
                           ),
                         ),
@@ -116,6 +120,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                             return _CurrencySetupTile(
                               currency: currency,
                               selected: currency == _selectedCurrency,
+                              emphasizeSymbol: widget.firstLoginSetup,
                               onTap: () {
                                 setState(() => _selectedCurrency = currency);
                               },
@@ -194,13 +199,16 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
 }
 
 class _WelcomeHeader extends StatelessWidget {
+  const _WelcomeHeader();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Container(
-          width: 88,
-          height: 88,
+          width: 96,
+          height: 96,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -212,15 +220,9 @@ class _WelcomeHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: const Center(
-            child: Text(
-              'CX',
-              style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w900,
-                fontSize: 28,
-              ),
-            ),
+          child: SvgPicture.asset(
+            'assets/images/logo_teal.svg',
+            key: const ValueKey('setup-official-logo'),
           ),
         ),
         const SizedBox(height: 18),
@@ -249,19 +251,27 @@ class _SimpleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            appT(context, 'currency_setup_title'),
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.white,
+        elevation: 1,
+        shadowColor: Colors.black12,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onBack,
+          child: const SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              Icons.arrow_back,
+              color: AppDesignTokens.mutedText,
+              size: 20,
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -270,11 +280,13 @@ class _CurrencySetupTile extends StatelessWidget {
   const _CurrencySetupTile({
     required this.currency,
     required this.selected,
+    required this.emphasizeSymbol,
     required this.onTap,
   });
 
   final CurrencyOption currency;
   final bool selected;
+  final bool emphasizeSymbol;
   final VoidCallback onTap;
 
   @override
@@ -283,8 +295,12 @@ class _CurrencySetupTile extends StatelessWidget {
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: emphasizeSymbol
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        foregroundColor: emphasizeSymbol
+            ? Colors.white
+            : Theme.of(context).colorScheme.primary,
         child: Text(
           currency.symbol,
           style: const TextStyle(fontWeight: FontWeight.w800),

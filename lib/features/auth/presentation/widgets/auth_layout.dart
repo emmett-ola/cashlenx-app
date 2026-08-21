@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class AuthLayout extends StatelessWidget {
+import '../../../../core/i18n/app_i18n.dart';
+import '../../../../theme/app_theme.dart';
+
+class AuthLayout extends ConsumerWidget {
   const AuthLayout({
     super.key,
     required this.child,
-    this.title = 'CashLenX',
-    this.subtitle = 'Your Financial Companion',
+    this.title,
+    this.subtitle,
     this.onBack,
   });
 
   final Widget child;
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
   final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(translationsProvider);
+    final displayTitle = title ?? t('app_name');
+    final displaySubtitle = subtitle ?? t('auth_subtitle');
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppDesignTokens.background,
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF9FAFB), Colors.white],
+            colors: [AppDesignTokens.background, Colors.white],
           ),
         ),
         child: SafeArea(
@@ -92,7 +100,7 @@ class AuthLayout extends StatelessWidget {
                             ),
                             const SizedBox(height: 18),
                             Text(
-                              title,
+                              displayTitle,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 36,
@@ -102,7 +110,7 @@ class AuthLayout extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              subtitle,
+                              displaySubtitle,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,

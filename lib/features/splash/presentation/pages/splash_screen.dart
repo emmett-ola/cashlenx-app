@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class SplashScreen extends StatefulWidget {
+import '../../../../core/i18n/app_i18n.dart';
+import '../../../../theme/app_theme.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final Animation<double> _scaleAnimation;
@@ -57,6 +61,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(i18nProvider);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -65,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF008080), Color(0xFF4DB6AC)],
+            colors: [AppDesignTokens.primary, AppDesignTokens.primaryLight],
           ),
         ),
         child: Center(
@@ -85,21 +91,26 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'CashLenX',
-                    style: TextStyle(
+                  Text(
+                    appT(context, 'app_name'),
+                    style: const TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Your Financial Companion',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white70,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      appT(context, 'app_tagline'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                 ],
