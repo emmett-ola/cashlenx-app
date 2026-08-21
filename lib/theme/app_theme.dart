@@ -39,12 +39,48 @@ class ThemeColorNotifier extends Notifier<Color> {
   }
 }
 
+class AppDesignTokens {
+  const AppDesignTokens._();
+
+  // Brand and semantic colors from the live Figma Make source.
+  static const primary = Color(0xFF008080);
+  static const primaryLight = Color(0xFF4DB6AC);
+  static const primaryDark = Color(0xFF004D40);
+  static const secondary = Color(0xFF4A6363);
+  static const accent = Color(0xFFFF8A65);
+  static const error = Color(0xFFEF4444);
+  static const success = Color(0xFF10B981);
+  static const warning = Color(0xFFF59E0B);
+  static const background = Color(0xFFF9FAFB);
+  static const surface = Colors.white;
+  static const border = Color(0xFFE5E7EB);
+  static const softFill = Color(0xFFF3F4F6);
+  static const text = Color(0xFF111827);
+  static const mutedText = Color(0xFF6B7280);
+
+  // The design follows a 4 px spacing grid.
+  static const space1 = 4.0;
+  static const space2 = 8.0;
+  static const space3 = 12.0;
+  static const space4 = 16.0;
+  static const space5 = 20.0;
+  static const space6 = 24.0;
+  static const space8 = 32.0;
+  static const space12 = 48.0;
+
+  static const radiusControl = 8.0;
+  static const radiusField = 8.0;
+  static const radiusCard = 16.0;
+  static const radiusHero = 24.0;
+}
+
 class AppTheme {
-  // Colors
-  static const primaryColor = Color(0xFF008080); // Teal (THEME_PRIMARY)
-  static const secondaryColor = Color(0xFF4DB6AC); // Light Teal
-  static const errorColor = Color(0xFFD32F2F);
-  static const successColor = Color(0xFF388E3C);
+  static const primaryColor = AppDesignTokens.primary;
+  static const secondaryColor = AppDesignTokens.primaryLight;
+  static const accentColor = AppDesignTokens.accent;
+  static const errorColor = AppDesignTokens.error;
+  static const successColor = AppDesignTokens.success;
+  static const warningColor = AppDesignTokens.warning;
 
   static ThemeData lightTheme(Color themeColor) {
     final colorScheme = ColorScheme.fromSeed(
@@ -58,13 +94,41 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: colorScheme,
-      dialogTheme: const DialogThemeData(
-        backgroundColor: Colors.white,
+      scaffoldBackgroundColor: AppDesignTokens.background,
+      cardTheme: const CardThemeData(
+        color: AppDesignTokens.surface,
         surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDesignTokens.radiusCard),
+          ),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: AppDesignTokens.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDesignTokens.radiusCard),
+          ),
+        ),
       ),
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDesignTokens.radiusControl),
+            ),
+          ),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDesignTokens.radiusField),
+          ),
+        ),
         filled: true,
       ),
     );
@@ -82,10 +146,31 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
-      dialogTheme: const DialogThemeData(surfaceTintColor: Colors.transparent),
+      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+      dialogTheme: const DialogThemeData(
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDesignTokens.radiusCard),
+          ),
+        ),
+      ),
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDesignTokens.radiusControl),
+            ),
+          ),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDesignTokens.radiusField),
+          ),
+        ),
         filled: true,
       ),
     );

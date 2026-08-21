@@ -205,7 +205,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: _canSubmit ? _handleLogin : null,
                 isLoading: isLoading,
                 height: 48,
-                borderRadius: 28,
+                borderRadius: AppDesignTokens.radiusControl,
               ),
             ),
             const SizedBox(height: 16),

@@ -5,6 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('design tokens match the live Figma Make foundation', () {
+    expect(AppDesignTokens.primary, const Color(0xFF008080));
+    expect(AppDesignTokens.primaryLight, const Color(0xFF4DB6AC));
+    expect(AppDesignTokens.accent, const Color(0xFFFF8A65));
+    expect(AppDesignTokens.error, const Color(0xFFEF4444));
+    expect(AppDesignTokens.success, const Color(0xFF10B981));
+    expect(AppDesignTokens.background, const Color(0xFFF9FAFB));
+    expect(AppDesignTokens.radiusControl, 8);
+    expect(AppDesignTokens.radiusCard, 16);
+    expect(AppDesignTokens.radiusHero, 24);
+  });
+
   test('theme color notifier loads and persists selected color', () async {
     SharedPreferences.setMockInitialValues({'theme-color': '#42A5F5'});
 

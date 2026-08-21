@@ -26,7 +26,7 @@ class AuthLanguageButton extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusControl),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
@@ -132,7 +132,7 @@ class AuthOutlinedActionButton extends StatelessWidget {
           isOutlined: true,
           onPressed: onPressed,
           height: 48,
-          borderRadius: 28,
+          borderRadius: AppDesignTokens.radiusControl,
         ),
       );
     }
@@ -151,7 +151,7 @@ class AuthOutlinedActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusControl),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),

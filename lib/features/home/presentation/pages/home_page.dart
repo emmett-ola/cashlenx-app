@@ -4159,7 +4159,7 @@ class _TransactionTile extends StatelessWidget {
               Text(
                 '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
                 style: TextStyle(
-                  color: isIncome ? AppTheme.errorColor : AppTheme.successColor,
+                  color: isIncome ? AppTheme.successColor : AppTheme.errorColor,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -5610,11 +5610,11 @@ class _AboutVersionCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _AboutVersionRow(label: appT(context, 'version'), value: '1.0.0'),
+          _AboutVersionRow(label: appT(context, 'version'), value: '0.2.0'),
           const SizedBox(height: 10),
           _AboutVersionRow(
             label: appT(context, 'build_date'),
-            value: '2026-05-21',
+            value: '2026-08-21',
           ),
         ],
       ),

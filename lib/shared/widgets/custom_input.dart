@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart';
+
 class CustomInput extends StatelessWidget {
   final String label;
   final String? placeholder;
@@ -55,27 +57,29 @@ class CustomInput extends StatelessWidget {
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 15,
+              horizontal: AppDesignTokens.space4,
+              vertical: AppDesignTokens.space3,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(28),
-              borderSide: BorderSide(color: themeColor, width: 2),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(28),
-              borderSide: BorderSide(color: themeColor, width: 2),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
               borderSide: BorderSide(color: themeColor, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(28),
-              borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
+              borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: enabled ? Colors.transparent : Colors.grey[100],
+            fillColor: enabled
+                ? AppDesignTokens.softFill
+                : AppDesignTokens.softFill.withValues(alpha: 0.7),
           ),
         ),
       ],

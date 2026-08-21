@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart';
+
 class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -21,7 +23,7 @@ class CustomButton extends StatelessWidget {
     this.textColor,
     this.height = 48,
     this.fontSize = 16,
-    this.borderRadius = 28,
+    this.borderRadius = AppDesignTokens.radiusControl,
   });
 
   @override
@@ -51,7 +53,7 @@ class CustomButton extends StatelessWidget {
             : Text(
                 text,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   fontSize: fontSize,
                 ),
               ),
@@ -87,7 +89,7 @@ class CustomButton extends StatelessWidget {
             )
           : Text(
               text,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: fontSize),
             ),
     );
   }

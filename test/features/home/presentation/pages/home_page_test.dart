@@ -41,8 +41,8 @@ void main() {
 
     final expenseAmount = tester.widget<Text>(find.text('-\$12.50'));
     final incomeAmount = tester.widget<Text>(find.text('+\$3,500.00'));
-    expect(expenseAmount.style?.color, AppTheme.successColor);
-    expect(incomeAmount.style?.color, AppTheme.errorColor);
+    expect(expenseAmount.style?.color, AppTheme.errorColor);
+    expect(incomeAmount.style?.color, AppTheme.successColor);
 
     await tester.tap(find.text('See All'));
     await tester.pumpAndSettle();
