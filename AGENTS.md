@@ -255,8 +255,9 @@ npm run dev
   comparatively heavy.
 - Running `flutter test` may rewrite `pubspec.lock` package hosts. Restore
   unrelated lockfile churn before committing.
-- Do not commit `.env` or local secrets. Use `.env.example` for documented
-  variables.
+- Do not commit `.env` or local secrets. `.env.example` keeps every documented
+  assignment active so operators change values directly rather than uncommenting
+  configuration lines.
 - Avoid unrelated platform-folder edits unless the task explicitly needs
   Android/iOS/web/desktop changes.
 - If a generated file changes, mention the source file that caused it.

@@ -68,6 +68,9 @@ lib/
     cp .env.example .env
     ```
 
+    Every assignment in `.env.example` is active. Change values directly; no
+    configuration is enabled by uncommenting a line.
+
 4.  **Generate code (required):**
     ```bash
     dart run build_runner build --delete-conflicting-outputs
