@@ -3,6 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
+compose_file="$project_dir/docker/compose.yml"
 
 resolve_env_file() {
   local requested="${ENV_FILE:-.env}"
@@ -41,5 +42,5 @@ if [[ "$git_commit" == "unknown" ]] && command -v git >/dev/null 2>&1; then
   git_commit="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 fi
 
-APP_ENV_FILE="$env_relative" RUNTIME_ENV_FILE="$env_relative" GIT_COMMIT="$git_commit" \
-  docker compose --env-file "$env_file" build cashlenx-web
+APP_ENV_FILE="$env_relative" RUNTIME_ENV_FILE="../$env_relative" GIT_COMMIT="$git_commit" \
+  docker compose --env-file "$env_file" -f "$compose_file" build cashlenx-web

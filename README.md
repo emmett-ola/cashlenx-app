@@ -97,8 +97,9 @@ scripts/stop.sh
 
 `build.sh` compiles the Flutter web app and builds its image. `start.sh` starts
 or updates the container from that existing image without rebuilding and waits
-for the Compose healthcheck. `stop.sh` removes the project container and network
-while preserving built images and persistent volumes.
+for the Compose healthcheck. `stop.sh` removes the project container while
+preserving built images and persistent volumes. It removes the shared network
+only when no CashLenX container remains attached.
 
 All three scripts use `.env` by default. Select another repository-local file
 consistently across the lifecycle with, for example,
@@ -106,8 +107,9 @@ consistently across the lifecycle with, for example,
 and `stop.sh`. Missing files and paths outside this repository are rejected;
 `start.sh` also rejects active `CHANGE_ME` or known legacy weak values.
 
-Compose reads `compose.yml`. The container serves the built web app on internal
-port `8080`, and by default Compose exposes it on host port `11064`:
+Compose reads `docker/compose.yml` and builds from `docker/Dockerfile`. The
+container serves the built web app on internal port `8080`, and by default
+Compose exposes it on host port `11064`:
 
 ```text
 http://SERVER_IP:11064
@@ -131,7 +133,11 @@ sample environment also exposes CPU, memory, PID, graceful-stop, health-check,
 and build-image settings. Each image records the source revision in the OCI
 `org.opencontainers.image.revision` label.
 
-The default container name is `cashlenx-app`.
+The default project, container, and shared-network names are `cashlenx-app`,
+`cashlenx-app`, and `cashlenx-network`. Configure them explicitly with
+`APP_PROJECT_NAME`, `CONTAINER_NAME`, and `DOCKER_NETWORK_NAME`. `start.sh`
+creates the external network when needed; keep its absolute name identical in
+every CashLenX environment file.
 
 Then rebuild and restart the service:
 

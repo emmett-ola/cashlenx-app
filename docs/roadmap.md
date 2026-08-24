@@ -18,7 +18,7 @@ Implemented:
 - Demo mode route into the authenticated home shell.
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
 - Authenticated home shell with real summary/recent-transaction data, transaction CRUD, hierarchical category CRUD, budget preview, settings, and bottom navigation.
-- Docker-based Flutter web deployment using `Dockerfile`, `compose.yml`, and nginx route fallback.
+- Docker-based Flutter web deployment using `docker/Dockerfile`, `docker/compose.yml`, a shared external network, and nginx route fallback.
 - GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
 
