@@ -7,10 +7,11 @@ services:
         FLUTTER_BUILD_IMAGE: ${FLUTTER_BUILD_IMAGE:-ghcr.io/cirruslabs/flutter:stable}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        APP_ENV_FILE: ${APP_ENV_FILE:-.env}
     image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
     container_name: "${CONTAINER_NAME:-cashlenx-app}"
     env_file:
-      - .env
+      - ${RUNTIME_ENV_FILE:-.env}
     restart: unless-stopped
     cpus: ${WEB_CPU_LIMIT:-1.0}
     mem_limit: ${WEB_MEMORY_LIMIT:-1g}

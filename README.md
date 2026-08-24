@@ -65,7 +65,7 @@ lib/
 
 3.  **Create local configuration:**
     ```bash
-    cp .env.sample .env
+    cp .env.example .env
     ```
 
 4.  **Generate code (required):**
@@ -96,6 +96,12 @@ scripts/stop.sh
 or updates the container from that existing image without rebuilding and waits
 for the Compose healthcheck. `stop.sh` removes the project container and network
 while preserving built images and persistent volumes.
+
+All three scripts use `.env` by default. Select another repository-local file
+consistently across the lifecycle with, for example,
+`ENV_FILE=.env.testing scripts/build.sh`. The same prefix applies to `start.sh`
+and `stop.sh`. Missing files and paths outside this repository are rejected;
+`start.sh` also rejects active `CHANGE_ME` or known legacy weak values.
 
 Compose reads `compose.yml`. The container serves the built web app on internal
 port `8080`, and by default Compose exposes it on host port `11064`:

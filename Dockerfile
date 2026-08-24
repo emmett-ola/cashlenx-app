@@ -3,12 +3,15 @@ ARG NGINX_IMAGE=nginx:alpine
 
 FROM ${FLUTTER_BUILD_IMAGE} AS build
 
+ARG APP_ENV_FILE=.env
+
 WORKDIR /app
 
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
 
 COPY . .
+COPY ${APP_ENV_FILE} .env
 RUN flutter build web --release
 
 FROM ${NGINX_IMAGE}
