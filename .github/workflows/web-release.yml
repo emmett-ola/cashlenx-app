@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - test
+      - testing
       - develop
   workflow_dispatch:
 
@@ -27,15 +27,15 @@ jobs:
         run: |
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
             app_env="prod"
-          elif [ "${GITHUB_REF_NAME}" = "test" ]; then
-            app_env="test"
+          elif [ "${GITHUB_REF_NAME}" = "testing" ]; then
+            app_env="staging"
           else
             app_env="dev"
           fi
 
           if [ "$app_env" = "prod" ]; then
             api_domain="${{ vars.PROD_API_DOMAIN }}"
-          elif [ "$app_env" = "test" ]; then
+          elif [ "$app_env" = "staging" ]; then
             api_domain="${{ vars.TEST_API_DOMAIN }}"
           else
             api_domain="${{ vars.DEV_API_DOMAIN }}"
@@ -74,8 +74,8 @@ jobs:
         run: |
           if [ "${{ steps.app-env.outputs.app_env }}" = "prod" ]; then
             echo "branch=main" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.app-env.outputs.app_env }}" = "test" ]; then
-            echo "branch=test" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.app-env.outputs.app_env }}" = "staging" ]; then
+            echo "branch=testing" >> "$GITHUB_OUTPUT"
           else
             echo "branch=develop" >> "$GITHUB_OUTPUT"
           fi
