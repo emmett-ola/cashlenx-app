@@ -9,24 +9,11 @@ flutter analyze
 flutter test
 ```
 
-Run the live Flutter-to-server smoke flow on Windows with Docker available:
+There is currently no maintained live Flutter-to-server harness in this
+repository. Run the server repository's focused API smoke checks when backend
+integration changes, and validate complete app journeys in the test environment.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
-```
-
-Select disposable MySQL 8 instead of MongoDB with:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
-```
-
-The script starts disposable database and API instances, seeds purpose-scoped
-signup/password-reset codes directly, and runs `integration_test/api_smoke_test.dart`
-without sending email or retaining test data. MongoDB is the default; pass
-`-Database mysql` for MySQL 8.
-
-Both commands should pass before committing.
+Both package commands should pass before committing.
 
 ## What To Test
 

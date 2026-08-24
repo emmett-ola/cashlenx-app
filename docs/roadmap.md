@@ -21,8 +21,6 @@ Implemented:
 - Docker-based Flutter web deployment using `Dockerfile`, `compose.yml`, and nginx route fallback.
 - GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
 - `flutter analyze` and `flutter test` are clean.
-- A disposable MongoDB-backed Flutter integration smoke test covers the active `/api/v0` client contract.
-- The same Flutter integration contract passes against disposable MySQL 8 via `scripts/smoke-api.ps1 -Database mysql`.
 
 Known gaps:
 
@@ -30,6 +28,7 @@ Known gaps:
 - The expanded statistics screen still uses test presentation data rather than the full statistic/chart API surface.
 - Auth provider/repository unit coverage is still lighter than the live integration path.
 - The home shell is concentrated in a large presentation file and should be split by feature as those areas mature.
+- A maintained live Flutter-to-server integration harness is not currently present.
 
 ## Guiding Principles
 
@@ -69,7 +68,7 @@ Goal: turn the current login flow into a complete auth module.
 - [x] Add silent refresh for 401 responses or define why startup-only refresh is enough for now.
 - [x] Replace simulated registration verification with the purpose-scoped verification API and pass the returned token to registration.
 - [x] Verify password-reset email codes before submitting the returned reset token.
-- [x] Add a live Flutter API smoke flow covering auth and core finance/admin APIs without sending email.
+- [ ] Add a maintained live Flutter API smoke flow covering auth and core finance/admin APIs without sending email.
 - Improve auth provider tests around login success, login failure, remember-me startup, refresh failure, and logout.
 
 Exit criteria:
@@ -165,7 +164,7 @@ Goal: make the app reliable across target platforms.
 - Review accessibility: labels, contrast, tap targets, keyboard navigation.
 - Add app-wide error boundaries and retry patterns.
 - Harden secure storage and token lifecycle behavior per platform.
-- [x] Add disposable live integration coverage for auth and key finance workflows against MongoDB and MySQL.
+- [ ] Add disposable live integration coverage for auth and key finance workflows against MongoDB and MySQL.
 - Review app icons, web manifest, metadata, and release build settings.
 - Keep Docker web deployment and GitHub Actions release docs aligned with workflow changes.
 

@@ -206,17 +206,9 @@ Run tests:
 flutter test
 ```
 
-Run the disposable Flutter-to-server integration smoke flow on Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
-```
-
-Pass `-Database mysql` to run the same Flutter/API contract against disposable
-MySQL 8. MongoDB remains the default.
-
-This seeds signup and password-reset verification records directly in the
-disposable database; it must not send real email.
+This repository currently has no maintained live Flutter-to-server integration
+harness. Use the server repository's focused API smoke checks for backend
+integration and validate complete journeys in the test environment.
 
 Run targeted tests:
 

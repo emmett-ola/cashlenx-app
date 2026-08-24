@@ -89,11 +89,13 @@ Build and run the Flutter web app with the deployment scripts:
 ```bash
 scripts/build.sh
 scripts/start.sh
+scripts/stop.sh
 ```
 
-`build.sh` builds the image. `start.sh` replaces the running container from that
-image without running `docker compose down`, then waits for the HTTP health
-check. Run `scripts/health.sh` independently to check the deployed container.
+`build.sh` compiles the Flutter web app and builds its image. `start.sh` starts
+or updates the container from that existing image without rebuilding and waits
+for the Compose healthcheck. `stop.sh` removes the project container and network
+while preserving built images and persistent volumes.
 
 Compose reads `compose.yml`. The container serves the built web app on internal
 port `8080`, and by default Compose exposes it on host port `11064`:
@@ -171,16 +173,10 @@ flutter analyze
 flutter test
 ```
 
-Run the disposable Flutter-to-server contract on Windows with MongoDB (default)
-or MySQL 8:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
-```
-
-The smoke flow covers registration and password reset without sending real
-email. See [Testing Strategy](docs/testing.md) for details.
+The repository currently has no maintained live Flutter-to-server harness.
+Use package tests for app changes and the server repository's focused API smoke
+checks for backend integration. See [Testing Strategy](docs/testing.md) for the
+current boundary.
 
 ## 📚 Documentation
 
