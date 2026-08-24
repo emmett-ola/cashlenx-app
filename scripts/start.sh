@@ -3,6 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
+compose_file="$project_dir/docker/compose.yml"
 
 resolve_env_file() {
   local requested="${ENV_FILE:-.env}"
@@ -28,6 +29,42 @@ resolve_env_file() {
     "$project_dir"/*) printf '%s\n' "$resolved" ;;
     *) echo "ENV_FILE must stay inside $project_dir: $requested" >&2; return 1 ;;
   esac
+}
+
+read_env_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '
+    $0 ~ "^[[:space:]]*(export[[:space:]]+)?" wanted "[[:space:]]*=" {
+      value = substr($0, index($0, "=") + 1)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") ||
+          (substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047")) {
+        value = substr(value, 2, length(value) - 2)
+      }
+      result = value
+    }
+    END { print result }
+  ' "$env_file"
+}
+
+resolve_network_name() {
+  local name
+  name="$(read_env_value DOCKER_NETWORK_NAME)"
+  name="${name:-cashlenx-network}"
+  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    echo "Invalid Docker network setting: DOCKER_NETWORK_NAME" >&2
+    return 1
+  fi
+  printf '%s\n' "$name"
+}
+
+ensure_network() {
+  local name="$1"
+  if docker network inspect "$name" >/dev/null 2>&1; then
+    return 0
+  fi
+  docker network create --driver bridge "$name" >/dev/null 2>&1 ||
+    docker network inspect "$name" >/dev/null 2>&1
 }
 
 validate_no_unsafe_values() {
@@ -68,6 +105,7 @@ docker compose version >/dev/null 2>&1 || { echo "Docker Compose is required." >
 env_file="$(resolve_env_file)"
 env_relative="${env_file#"$project_dir"/}"
 validate_no_unsafe_values
+network_name="$(resolve_network_name)"
 
 container_name="$(sed -n 's/^CONTAINER_NAME=//p' "$env_file" | tail -n 1)"
 if [[ "$container_name" == "cashlenx-website" ]]; then
@@ -76,5 +114,6 @@ if [[ "$container_name" == "cashlenx-website" ]]; then
   exit 1
 fi
 
-RUNTIME_ENV_FILE="$env_relative" \
-  docker compose --env-file "$env_file" up -d --no-build --remove-orphans --wait cashlenx-web
+ensure_network "$network_name"
+RUNTIME_ENV_FILE="../$env_relative" \
+  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans --wait cashlenx-web

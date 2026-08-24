@@ -1,8 +1,8 @@
 services:
   cashlenx-web:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         FLUTTER_BUILD_IMAGE: ${FLUTTER_BUILD_IMAGE:-ghcr.io/cirruslabs/flutter:stable}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
@@ -11,7 +11,7 @@ services:
     image: "${IMAGE_NAME:-cashlenx-web}:${IMAGE_TAG:-latest}"
     container_name: "${CONTAINER_NAME:-cashlenx-app}"
     env_file:
-      - ${RUNTIME_ENV_FILE:-.env}
+      - ${RUNTIME_ENV_FILE:-../.env}
     restart: unless-stopped
     cpus: ${WEB_CPU_LIMIT:-1.0}
     mem_limit: ${WEB_MEMORY_LIMIT:-1g}
@@ -37,6 +37,8 @@ services:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-11064}:8080"
     networks:
       - cashlenx-network
+
 networks:
   cashlenx-network:
-    driver: bridge
+    name: ${DOCKER_NETWORK_NAME:-cashlenx-network}
+    external: true

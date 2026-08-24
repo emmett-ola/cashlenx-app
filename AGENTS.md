@@ -266,14 +266,19 @@ npm run dev
 
 ## Web Build and Release
 
-- Local/server container deployment uses `compose.yml`:
+- Local/server container deployment uses `docker/compose.yml` through the
+  lifecycle scripts:
 
 ```bash
-docker compose up -d --build
+scripts/build.sh
+scripts/start.sh
 ```
 
-- The Compose service is `cashlenx-web`, builds from `Dockerfile`, and exposes
-  container port `8080` as `${WEB_PORT:-8080}` on the host.
+- The Compose service is `cashlenx-web`, builds from `docker/Dockerfile`, and
+  exposes container port `8080` as `${WEB_PORT:-11064}` on the host.
+- Application and dependency services attach to the external network named by
+  `DOCKER_NETWORK_NAME`. Start creates it when absent; stop removes it only when
+  no container remains connected.
 - `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` for Flutter web
   history fallback.
 - `.github/workflows/web-release.yml` runs analyze, tests, and a web release
