@@ -115,7 +115,7 @@ growing global folders.
 
 - API base URL is built from `.env`:
   `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
-- `.env.example` points to `http://localhost:11063/api/v0`.
+- `.env.example` points to `http://127.0.0.1:10063/api/v0`.
 - All HTTP should go through `ApiClient`, `dioProvider`, and `CashlenxApi`.
 - Keep API parsing aligned with `ResponseWrapper<T>` and the OpenAPI/server
   contract.
@@ -275,7 +275,7 @@ scripts/start.sh
 ```
 
 - The Compose service is `cashlenx-web`, builds from `docker/Dockerfile`, and
-  exposes container port `8080` as `${WEB_PORT:-11064}` on the host.
+  exposes container port `8080` as `${WEB_PORT:-10064}` on the host.
 - Compose project, container, and external-network names are explicit
   environment values with defaults. App uses `APP_PROJECT_NAME` and
   `CONTAINER_NAME`; every repository uses the same absolute

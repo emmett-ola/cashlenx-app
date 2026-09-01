@@ -109,10 +109,10 @@ and `stop.sh`. Missing files and paths outside this repository are rejected;
 
 Compose reads `docker/compose.yml` and builds from `docker/Dockerfile`. The
 container serves the built web app on internal port `8080`, and by default
-Compose exposes it on host port `11064`:
+Compose exposes it on host port `10064`:
 
 ```text
-http://SERVER_IP:11064
+http://SERVER_IP:10064
 ```
 
 To use a different host port, set `WEB_PORT` in `.env`:
@@ -154,7 +154,7 @@ For an external nginx reverse proxy, point the upstream to the exposed host
 port, for example:
 
 ```text
-127.0.0.1:11064
+127.0.0.1:10064
 ```
 
 The `.env` file is included in both the Docker build context and the running
