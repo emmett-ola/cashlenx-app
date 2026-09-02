@@ -97,7 +97,8 @@ scripts/stop.sh
 
 `build.sh` compiles the Flutter web app and builds its image. `start.sh` starts
 or updates the container from that existing image without rebuilding and waits
-for the Compose healthcheck. `stop.sh` removes the project container while
+on an in-container HTTP readiness probe. It does not require Compose `up --wait`
+or Compose-managed health status. `stop.sh` removes the project container while
 preserving built images and persistent volumes. It removes the shared network
 only when no CashLenX container remains attached.
 

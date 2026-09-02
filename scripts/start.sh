@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/compose.yml"
+. "$project_dir/scripts/lib/container_readiness.sh"
 
 resolve_env_file() {
   local requested="${ENV_FILE:-.env}"
@@ -115,5 +116,9 @@ if [[ "$container_name" == "cashlenx-website" ]]; then
 fi
 
 ensure_network "$network_name"
+container_name="$(read_env_value CONTAINER_NAME)"
+container_name="${container_name:-cashlenx-app}"
 RUNTIME_ENV_FILE="../$env_relative" \
-  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans --wait cashlenx-web
+  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans cashlenx-web
+wait_for_container_command "$container_name" sh -ec \
+  'wget --quiet --spider --timeout=3 http://127.0.0.1:8080/'
