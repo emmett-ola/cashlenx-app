@@ -106,7 +106,9 @@ All three scripts use `.env` by default. Select another repository-local file
 consistently across the lifecycle with, for example,
 `ENV_FILE=.env.testing scripts/build.sh`. The same prefix applies to `start.sh`
 and `stop.sh`. Missing files and paths outside this repository are rejected;
-`start.sh` also rejects active `CHANGE_ME` or known legacy weak values.
+`.env` may also be a symbolic link to a repository-local `.env.local`,
+`.env.testing`, or `.env.production`. Links resolving outside the repository are
+rejected. `start.sh` also rejects active `CHANGE_ME` or known legacy weak values.
 
 Compose reads `docker/compose.yml` and builds from `docker/Dockerfile`. The
 container serves the built web app on internal port `8080`, and by default
