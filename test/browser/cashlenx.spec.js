@@ -50,12 +50,31 @@ async function enableFlutterSemantics(page, timeout = 2_500) {
   });
   try {
     await enableButton.waitFor({ state: 'attached', timeout });
-    await enableButton.focus();
-    await enableButton.press('Enter');
-    await page.waitForTimeout(300);
   } catch {
     // Semantics remains enabled across ordinary navigation and reloads.
+    return;
   }
+  const activations = [
+    () => enableButton.click({ force: true }),
+    async () => {
+      await enableButton.focus();
+      await enableButton.press('Enter');
+    },
+    () => enableButton.evaluate((element) => element.click()),
+  ];
+
+  for (const activate of activations) {
+    try {
+      await activate();
+      await expect(enableButton).toHaveCount(0, { timeout: 3_000 });
+      await page.waitForTimeout(300);
+      return;
+    } catch {
+      // Headless Chromium can require a different activation path.
+    }
+  }
+
+  throw new Error('Flutter accessibility semantics did not activate.');
 }
 
 async function openLogin(page) {
