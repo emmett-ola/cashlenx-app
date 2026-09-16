@@ -68,8 +68,15 @@ async function openLogin(page) {
 }
 
 async function enterText(page, index, value) {
-  const textbox = page.getByRole('textbox').nth(index);
-  await textbox.fill(value);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const textbox = page.getByRole('textbox').nth(index);
+    await textbox.focus();
+    await textbox.fill(value);
+    await page.waitForTimeout(200);
+    if (await page.getByRole('textbox').nth(index).inputValue() === value) return;
+  }
+
+  throw new Error(`Textbox ${index} did not retain its value.`);
 }
 
 async function expectSemanticText(page, text) {
@@ -104,10 +111,12 @@ async function finishFirstLoginSetup(page) {
 }
 
 async function loginBrowser(page, identifier) {
+  await page.getByRole('checkbox').click();
   await enterText(page, 0, identifier);
   await enterText(page, 1, testUser.password);
-  await page.getByRole('checkbox').click();
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  const signIn = page.getByRole('button', { name: 'Sign In' });
+  await expect(signIn).toBeEnabled({ timeout: 10_000 });
+  await signIn.click();
   await expect.poll(() => page.evaluate(() => window.isSecureContext)).toBe(true);
   await page.waitForURL(/#\/setup$/, { timeout: 15_000 });
   await page.getByRole('button', { name: '$ USD US Dollar' }).click();
