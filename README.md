@@ -197,7 +197,9 @@ Branch routing:
 
 Required GitHub configuration:
 
-- Variables: `APP_ENV`, `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
+- Variables: `DEV_API_DOMAIN`, `TEST_API_DOMAIN`, and `PROD_API_DOMAIN`.
+  `develop` defaults to `http://127.0.0.1:10063/api/v0`; `testing` and `main`
+  use HTTPS with no explicit port and select their configured API domain.
 - Secret: `RELEASE_REPO_TOKEN` with permission to push to the release repo.
 
 ## 🧪 Testing

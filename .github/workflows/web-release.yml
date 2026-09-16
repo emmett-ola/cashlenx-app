@@ -11,14 +11,20 @@ on:
 jobs:
   build-and-publish-web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: web-release-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.1'
           channel: stable
           cache: true
 
@@ -35,30 +41,36 @@ jobs:
 
           if [ "$app_env" = "prod" ]; then
             api_domain="${{ vars.PROD_API_DOMAIN }}"
+            api_scheme="https"
+            api_port=""
           elif [ "$app_env" = "staging" ]; then
             api_domain="${{ vars.TEST_API_DOMAIN }}"
+            api_scheme="https"
+            api_port=""
           else
-            api_domain="${{ vars.DEV_API_DOMAIN }}"
+            api_domain="${{ vars.DEV_API_DOMAIN || '127.0.0.1' }}"
+            api_scheme="http"
+            api_port="10063"
           fi
 
-          echo "app_env=$app_env" >> "$GITHUB_OUTPUT"
-          echo "api_domain=$api_domain" >> "$GITHUB_OUTPUT"
+          if [ -z "$api_domain" ]; then
+            echo "Missing API domain for ${GITHUB_REF_NAME}. Configure the matching DEV_API_DOMAIN, TEST_API_DOMAIN, or PROD_API_DOMAIN repository variable." >&2
+            exit 1
+          fi
 
-      - name: Create production env file
-        run: |
           {
-            echo "APP_ENV=${{ steps.app-env.outputs.app_env }}"
-            echo "API_SCHEME=${{ vars.API_SCHEME }}"
-            echo "API_DOMAIN=${{ steps.app-env.outputs.api_domain }}"
-            echo "API_PORT=${{ vars.API_PORT }}"
-            echo "API_VERSION=${{ vars.API_VERSION }}"
-          } > .env
+            echo "app_env=$app_env"
+            echo "api_scheme=$api_scheme"
+            echo "api_domain=$api_domain"
+            echo "api_port=$api_port"
+            echo "api_version=api/v0"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build
 
       - name: Analyze
         run: flutter analyze
@@ -67,7 +79,13 @@ jobs:
         run: flutter test
 
       - name: Build web
-        run: flutter build web --release
+        run: |
+          flutter build web --release \
+            --dart-define=APP_ENV=${{ steps.app-env.outputs.app_env }} \
+            --dart-define=API_SCHEME=${{ steps.app-env.outputs.api_scheme }} \
+            --dart-define=API_DOMAIN=${{ steps.app-env.outputs.api_domain }} \
+            --dart-define=API_PORT=${{ steps.app-env.outputs.api_port }} \
+            --dart-define=API_VERSION=${{ steps.app-env.outputs.api_version }}
 
       - name: Select release branch
         id: release-branch
