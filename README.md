@@ -2,6 +2,24 @@
 
 CashLenX is a modern, cross-platform finance application built with Flutter. It aims to provide a seamless experience for managing personal finances, tracking expenses, and planning budgets.
 
+## CashLenX Project
+
+CashLenX is developed as a set of independently buildable repositories with
+explicit ownership boundaries:
+
+| Repository | Responsibility |
+| --- | --- |
+| [cashlenx-app](https://github.com/emmett-ola/cashlenx-app) | Cross-platform Flutter client and user experience. |
+| [cashlenx-server](https://github.com/emmett-ola/cashlenx-server) | Go REST API, Cobra CLI, authentication, finance services, and MongoDB/MySQL persistence. |
+| [cashlenx-design](https://github.com/emmett-ola/cashlenx-design) | Figma-exported React/Vite visual and interaction reference. |
+| [cashlenx-website](https://github.com/emmett-ola/cashlenx-website) | Public product and developer-information website. |
+| [cashlenx-spec](https://github.com/emmett-ola/cashlenx-spec) | Product and system facts, delivery workflow, decisions, and retained evidence. |
+
+This repository owns the user-facing application. Cross-repository contracts
+are coordinated through OpenAPI and the CashLenX Spec workflow. Runtime
+repositories remain independently buildable and do not depend on the spec or
+design reference at build time or runtime.
+
 ## 🚀 Current Features
 - **Authentication**: Login, verified registration, password reset,
   refresh-token sessions, logout, and editable profile.
@@ -204,4 +222,7 @@ current boundary.
 - [Testing Strategy](docs/testing.md)
 
 ## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+This project is licensed under the [MIT License](LICENSE). Commercial use,
+modification, and redistribution are permitted when the copyright and license
+notices are retained.
