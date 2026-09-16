@@ -4,6 +4,14 @@ All notable changes to the CashLenX client are recorded here. Entries use
 semantic product versions and describe shipped client behavior, not deployment
 state.
 
+## [Unreleased]
+
+### Changed
+
+- Made build, start, stop, verification, and image packaging portable across
+  Docker Compose and nerdctl 2.2 with pre-mutation capability checks and
+  configured image identity, value-safe start output, and bounded readiness.
+
 ## [1.0.0-rc.1] - 2026-09-16
 
 ### Added

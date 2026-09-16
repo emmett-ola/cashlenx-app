@@ -3,6 +3,10 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
+. "$project_dir/scripts/lib/container_lifecycle.sh"
+ENV_FILE="${ENV_FILE:-.env.example}"
+env_file="$(resolve_env_file)"
+container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto "$env_file")"
 
 output_dir="${1:?output directory is required}"
 if command -v cygpath >/dev/null 2>&1; then
@@ -26,11 +30,11 @@ image_name="cashlenx-app-candidate"
 image_tag="${expected_version}-${short_revision}"
 image_ref="${image_name}:${image_tag}"
 
-BUILDX_NO_DEFAULT_ATTESTATIONS=1 ENV_FILE="${ENV_FILE:-.env.example}" IMAGE_NAME="$image_name" IMAGE_TAG="$image_tag" \
+BUILDX_NO_DEFAULT_ATTESTATIONS=1 ENV_FILE="$ENV_FILE" IMAGE_NAME="$image_name" IMAGE_TAG="$image_tag" \
   PRODUCT_VERSION="$expected_version" GIT_COMMIT="$revision" "$project_dir/scripts/build.sh"
 
-image_id="$(docker image inspect "$image_ref" --format '{{.Id}}')"
-docker image save --output "$output_dir/$artifact" "$image_ref"
+image_id="$(container image inspect "$image_ref" --format '{{.Id}}')"
+save_image "$output_dir/$artifact" "$image_ref"
 artifact_sha="$(sha256sum "$output_dir/$artifact" | awk '{print $1}')"
 input_sha="$(sha256sum pubspec.lock docker/Dockerfile docker/images.env | sha256sum | awk '{print $1}')"
 

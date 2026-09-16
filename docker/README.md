@@ -13,3 +13,7 @@ private configuration to those values.
 Run `scripts/build.sh` to validate public configuration, build from the lockfile,
 and verify required runtime files, OCI version/revision labels, and prohibited
 file absence.
+
+The repository-local lifecycle helper supports Docker Compose v2 and nerdctl
+2.2+, performs capability checks before mutation, and derives the image
+reference from `IMAGE_NAME` plus `IMAGE_TAG` without `config --images`.

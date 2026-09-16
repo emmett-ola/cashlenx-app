@@ -120,6 +120,17 @@ or Compose-managed health status. `stop.sh` removes the project container while
 preserving built images and persistent volumes. It removes the shared network
 only when no CashLenX container remains attached.
 
+The lifecycle supports Docker Compose v2 and nerdctl 2.2 or newer. Set
+`CONTAINER_FRONTEND=auto` (the default), `docker`, or `nerdctl`; auto mode
+inspects the command's reported implementation, so a command named `docker`
+that wraps nerdctl is handled as nerdctl. Set `CONTAINER_CLI` in the invoking
+shell only when the executable has a nonstandard name or path. Every entry point
+validates the runtime and Compose configuration before mutation. Image identity
+comes directly from the validated `IMAGE_NAME` and `IMAGE_TAG` values; scripts
+must not depend on frontend-specific `compose config --images` output. Start
+commands suppress frontend command traces so environment values cannot leak
+through nerdctl's informational output.
+
 All three scripts use `.env` by default. Select another repository-local file
 consistently across the lifecycle with, for example,
 `ENV_FILE=.env.testing scripts/build.sh`. The same prefix applies to `start.sh`
@@ -181,6 +192,10 @@ port, for example:
 The build script reads only public compile-time settings from the selected
 repository-local environment file. Environment files are excluded from the
 Docker context and runtime image.
+
+Run `test/scripts/container-lifecycle-smoke.sh` to exercise Docker and nerdctl
+2.2 command shapes, wrapper detection, symlink selection, and pre-mutation
+failure paths without changing containers.
 
 ## 🚢 Web Candidate Workflow
 

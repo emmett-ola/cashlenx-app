@@ -292,6 +292,12 @@ scripts/start.sh
   `CONTAINER_NAME`; every repository uses the same absolute
   `DOCKER_NETWORK_NAME`. Start creates the network when absent; stop removes it
   only when no container remains connected.
+- `scripts/lib/container_lifecycle.sh` is the repository-local portability
+  boundary for environment selection, Docker Compose/nerdctl 2.2 detection,
+  pre-mutation validation, configured image identity, network handling, and
+  readiness diagnostics. Keep lifecycle entry points independent of sibling
+  repositories, suppress Compose start traces that may contain environment
+  values, and do not reintroduce `compose config --images` or `up --wait`.
 - `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` for Flutter web
   history fallback.
 - `.github/workflows/ci.yml` runs analyze, tests, and the canonical `/api/v1`
