@@ -79,19 +79,39 @@ async function expectSemanticText(page, text) {
   ).toBeVisible();
 }
 
+async function finishFirstLoginSetup(page) {
+  const finishSetup = page.getByRole('button', { name: 'Finish Setup' });
+  const attempts = [
+    () => finishSetup.click(),
+    async () => {
+      await finishSetup.focus();
+      await finishSetup.press('Enter');
+    },
+    () => finishSetup.evaluate((element) => element.click()),
+  ];
+
+  for (const activate of attempts) {
+    await activate();
+    try {
+      await page.waitForURL(/#\/home$/, { timeout: 5_000 });
+      return;
+    } catch {
+      // Flutter's semantics bridge can require a second activation in headless Chromium.
+    }
+  }
+
+  throw new Error('First-login setup did not complete after semantic activation retries.');
+}
+
 async function loginBrowser(page, identifier) {
   await enterText(page, 0, identifier);
   await enterText(page, 1, testUser.password);
   await page.getByRole('checkbox').click();
   await page.getByRole('button', { name: 'Sign In' }).click();
   await expect.poll(() => page.evaluate(() => window.isSecureContext)).toBe(true);
-  await page.waitForURL(/#\/(setup|home)$/, { timeout: 15_000 });
-  if (page.url().endsWith('#/setup')) {
-    await page.getByRole('button', { name: '$ USD US Dollar' }).click();
-    const finishSetup = page.getByRole('button', { name: 'Finish Setup' });
-    await finishSetup.focus();
-    await finishSetup.press('Enter');
-  }
+  await page.waitForURL(/#\/setup$/, { timeout: 15_000 });
+  await page.getByRole('button', { name: '$ USD US Dollar' }).click();
+  await finishFirstLoginSetup(page);
   await expect(page).toHaveURL(/#\/home$/);
   await expectSemanticText(page, 'Total Balance');
 }
