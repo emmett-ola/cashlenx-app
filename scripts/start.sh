@@ -117,6 +117,6 @@ ensure_network "$network_name"
 container_name="$(read_env_value CONTAINER_NAME)"
 container_name="${container_name:-cashlenx-app}"
 RUNTIME_ENV_FILE="../$env_relative" \
-  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans cashlenx-web
+  docker compose --env-file "$project_dir/docker/images.env" --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans cashlenx-web
 wait_for_container_command "$container_name" sh -ec \
   'wget --quiet --spider --timeout=3 http://127.0.0.1:8080/'

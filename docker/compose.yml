@@ -8,8 +8,8 @@ services:
       args:
         FLUTTER_BUILD_IMAGE: ${FLUTTER_BUILD_IMAGE:?FLUTTER_BUILD_IMAGE is required from docker/images.env}
         NGINX_IMAGE: ${NGINX_IMAGE:?NGINX_IMAGE is required from docker/images.env}
-        GIT_COMMIT: ${GIT_COMMIT:?GIT_COMMIT is required}
-        PRODUCT_VERSION: ${PRODUCT_VERSION:?PRODUCT_VERSION is required}
+        GIT_COMMIT: ${GIT_COMMIT:-0000000000000000000000000000000000000000}
+        PRODUCT_VERSION: ${PRODUCT_VERSION:-0.0.0}
         APP_ENV: ${APP_ENV:-dev}
         API_SCHEME: ${API_SCHEME:-http}
         API_DOMAIN: ${API_DOMAIN:-127.0.0.1}

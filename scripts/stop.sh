@@ -76,5 +76,5 @@ env_relative="${env_file#"$project_dir"/}"
 network_name="$(resolve_network_name)"
 
 # Keep the built image and any current or future persistent volumes.
-RUNTIME_ENV_FILE="../$env_relative" docker compose --env-file "$env_file" -f "$compose_file" down --remove-orphans
+RUNTIME_ENV_FILE="../$env_relative" docker compose --env-file "$project_dir/docker/images.env" --env-file "$env_file" -f "$compose_file" down --remove-orphans
 remove_network_if_unused "$network_name"
