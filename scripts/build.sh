@@ -8,7 +8,7 @@ compose_file="$project_dir/docker/compose.yml"
 
 env_file="$(resolve_env_file)"
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" FLUTTER_BUILD_IMAGE NGINX_IMAGE
+load_env_defaults "$project_dir/docker/images.env" FLUTTER_BUILD_IMAGE FLUTTER_VERSION DART_VERSION NGINX_IMAGE
 
 git_commit="${GIT_COMMIT:-$(git rev-parse HEAD)}"
 [[ "$git_commit" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "GIT_COMMIT must be a full 40-character Git revision." >&2; exit 1; }

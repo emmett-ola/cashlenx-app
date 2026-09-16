@@ -34,7 +34,7 @@ validate_no_unsafe_values() {
 env_file="$(resolve_env_file)"
 validate_no_unsafe_values
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" FLUTTER_BUILD_IMAGE NGINX_IMAGE
+load_env_defaults "$project_dir/docker/images.env" FLUTTER_BUILD_IMAGE FLUTTER_VERSION DART_VERSION NGINX_IMAGE
 network_name="$(resolve_network_name)"
 container_name="$(read_config_value CONTAINER_NAME cashlenx-app)"
 if [[ "$container_name" == "cashlenx-website" ]]; then

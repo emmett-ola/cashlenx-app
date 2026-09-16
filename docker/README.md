@@ -4,6 +4,8 @@
 pinned by digest so clean and warm builds use the same inputs. Update one pin in
 an isolated change, build and verify the candidate image, and roll back by
 reverting that change.
+The same file pins Flutter 3.44.0 and Dart 3.12.0; the Dockerfile verifies both
+versions before dependency resolution, and CI uses the identical versions.
 
 The root build context is allowlisted by `.dockerignore`. Environment files are
 read by Compose only and are never sent to the builder. Flutter receives only

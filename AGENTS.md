@@ -298,6 +298,9 @@ scripts/start.sh
   readiness diagnostics. Keep lifecycle entry points independent of sibling
   repositories, suppress Compose start traces that may contain environment
   values, and do not reintroduce `compose config --images` or `up --wait`.
+- `docker/images.env` owns both the digest-pinned builder image and the exact
+  Flutter/Dart versions. CI must use those same versions, enforce
+  `pubspec.lock`, and validate deployable images through `scripts/build.sh`.
 - Use `scripts/status.sh` for automation and readiness decisions,
   `scripts/doctor.sh` for a non-secret incident snapshot, and `scripts/logs.sh`
   for bounded log retrieval. Treat a nonzero status/doctor result as degraded.

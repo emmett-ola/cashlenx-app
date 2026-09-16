@@ -3,6 +3,11 @@ ARG NGINX_IMAGE=nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6
 
 FROM ${FLUTTER_BUILD_IMAGE} AS build
 
+ARG FLUTTER_VERSION
+ARG DART_VERSION
+RUN flutter --version --machine | grep -F '"frameworkVersion": "'"${FLUTTER_VERSION}"'"' >/dev/null \
+ && dart --version 2>&1 | grep -F "Dart SDK version: ${DART_VERSION}" >/dev/null
+
 ARG APP_ENV=dev
 ARG API_SCHEME=http
 ARG API_DOMAIN=127.0.0.1
