@@ -220,6 +220,10 @@ current boundary.
 - [Infrastructure Foundation](docs/infrastructure.md)
 - [Development Roadmap](docs/roadmap.md)
 - [Testing Strategy](docs/testing.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Shared Governance](https://github.com/emmett-ola/cashlenx-spec/blob/main/GOVERNANCE.md)
+- [Shared Delivery Workflow](https://github.com/emmett-ola/cashlenx-spec/blob/main/WORKFLOW.md)
 
 ## 📄 License
 
