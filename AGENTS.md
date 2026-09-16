@@ -298,6 +298,11 @@ scripts/start.sh
   readiness diagnostics. Keep lifecycle entry points independent of sibling
   repositories, suppress Compose start traces that may contain environment
   values, and do not reintroduce `compose config --images` or `up --wait`.
+- Use `scripts/status.sh` for automation and readiness decisions,
+  `scripts/doctor.sh` for a non-secret incident snapshot, and `scripts/logs.sh`
+  for bounded log retrieval. Treat a nonzero status/doctor result as degraded.
+  `scripts/stop.sh` must retain bounded graceful-stop observation, report forced
+  termination as failure, and remain idempotent.
 - `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` for Flutter web
   history fallback.
 - `.github/workflows/ci.yml` runs analyze, tests, and the canonical `/api/v1`

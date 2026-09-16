@@ -110,6 +110,9 @@ Build and run the Flutter web app with the deployment scripts:
 ```bash
 scripts/build.sh
 scripts/start.sh
+scripts/status.sh
+scripts/doctor.sh
+scripts/logs.sh 100
 scripts/stop.sh
 ```
 
@@ -119,6 +122,15 @@ on an in-container HTTP readiness probe. It does not require Compose `up --wait`
 or Compose-managed health status. `stop.sh` removes the project container while
 preserving built images and persistent volumes. It removes the shared network
 only when no CashLenX container remains attached.
+
+`status.sh` is the one-shot monitoring probe: it reports non-secret frontend
+capabilities, requested and effective image identity, network/container state,
+and live in-container health, and exits nonzero for any degraded condition.
+`doctor.sh` returns the same facts with an explicit diagnostic marker for
+incident capture. `logs.sh [lines]` tails 1 to 99999 lines (100 by default).
+`stop.sh` converts the configured grace period into a bounded engine timeout,
+reports `graceful`, `already-stopped`, or a failing `forced`/`failed` result,
+and remains safe to repeat.
 
 The lifecycle supports Docker Compose v2 and nerdctl 2.2 or newer. Set
 `CONTAINER_FRONTEND=auto` (the default), `docker`, or `nerdctl`; auto mode
@@ -131,7 +143,7 @@ must not depend on frontend-specific `compose config --images` output. Start
 commands suppress frontend command traces so environment values cannot leak
 through nerdctl's informational output.
 
-All three scripts use `.env` by default. Select another repository-local file
+All lifecycle scripts use `.env` by default. Select another repository-local file
 consistently across the lifecycle with, for example,
 `ENV_FILE=.env.testing scripts/build.sh`. The same prefix applies to `start.sh`
 and `stop.sh`. Missing files and paths outside this repository are rejected;

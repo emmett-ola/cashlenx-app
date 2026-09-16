@@ -14,6 +14,8 @@ state.
 - Made build, start, stop, verification, and image packaging portable across
   Docker Compose and nerdctl 2.2 with pre-mutation capability checks and
   configured image identity, value-safe start output, and bounded readiness.
+- Added one-shot status/doctor diagnostics, bounded logs, verified effective
+  image identity, and observable graceful, forced, and repeated-stop outcomes.
 
 ## [1.0.0-rc.1] - 2026-09-16
 
