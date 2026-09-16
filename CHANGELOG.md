@@ -8,6 +8,9 @@ state.
 
 ### Changed
 
+- Bound candidate image tags and metadata to the normalized public web
+  configuration profile and SHA-256 fingerprint, and made runtime start use
+  only an already present image without pulling.
 - Made build, start, stop, verification, and image packaging portable across
   Docker Compose and nerdctl 2.2 with pre-mutation capability checks and
   configured image identity, value-safe start output, and bounded readiness.

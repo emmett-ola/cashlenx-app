@@ -45,5 +45,5 @@ fi
 compose_args=(--env-file "$env_file" -f "$compose_file")
 compose_preflight "${compose_args[@]}"
 ensure_network "$network_name"
-compose_up_quiet "${compose_args[@]}" up -d --no-build --remove-orphans cashlenx-web
+compose_up_quiet "${compose_args[@]}" up -d --no-build --pull never --remove-orphans cashlenx-web
 wait_for_container_command "$container_name" sh -ec 'wget --quiet --spider --timeout=3 http://127.0.0.1:8080/'

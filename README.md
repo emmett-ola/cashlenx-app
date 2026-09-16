@@ -208,6 +208,13 @@ does not need a secret and does not publish externally, promote a branch, or
 deploy. Release publication consumes an already accepted candidate under the
 coordinated release gate rather than rebuilding it.
 
+The candidate tag and metadata also include the App configuration profile and
+the normalized SHA-256 fingerprint of `APP_ENV`, `API_SCHEME`, `API_DOMAIN`,
+`API_PORT`, and `API_VERSION`. This makes two builds from the same source but
+different public API configuration distinct artifacts. `start.sh` uses
+`--pull never`, so an absent exact image fails instead of resolving a mutable
+registry tag.
+
 The repository-local packaging entry point is:
 
 ```bash
