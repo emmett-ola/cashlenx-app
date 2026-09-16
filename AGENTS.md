@@ -294,8 +294,9 @@ scripts/start.sh
   only when no container remains connected.
 - `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` for Flutter web
   history fallback.
-- `.github/workflows/web-release.yml` runs analyze, tests, and a web release
-  build, then publishes output to `emmett-ola/cashlenx-app-release`.
+- `.github/workflows/ci.yml` runs analyze, tests, and the canonical `/api/v1`
+  web build. Manual dispatch also packages an untagged, secret-free candidate
+  image; publication and deployment remain separate release-gate actions.
 
 ## Known Gaps
 

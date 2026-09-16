@@ -1,0 +1,73 @@
+name: App CI
+
+on:
+  push:
+    branches: [main, testing, develop, 'dev/**']
+  pull_request:
+    branches: [main, testing, develop, 'dev/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-web:
+    name: Validate Flutter Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: stable
+          cache: true
+
+      - name: Install locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate code
+        run: dart run build_runner build
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build canonical web client
+        run: |
+          flutter build web --release \
+            --dart-define=APP_ENV=dev \
+            --dart-define=API_SCHEME=http \
+            --dart-define=API_DOMAIN=127.0.0.1 \
+            --dart-define=API_PORT=10063 \
+            --dart-define=API_VERSION=api/v1
+
+  package-candidate:
+    name: Package untagged candidate
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate-web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Build and package verified image
+        run: scripts/package-image.sh "$RUNNER_TEMP/candidate"
+
+      - name: Upload candidate artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: cashlenx-app-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/candidate
+          if-no-files-found: error
+          retention-days: 14

@@ -178,29 +178,26 @@ port, for example:
 127.0.0.1:10064
 ```
 
-The `.env` file is included in both the Docker build context and the running
-container via Compose `env_file`.
+The build script reads only public compile-time settings from the selected
+repository-local environment file. Environment files are excluded from the
+Docker context and runtime image.
 
-## 🚢 Web Release Workflow
+## 🚢 Web Candidate Workflow
 
-`.github/workflows/web-release.yml` publishes static web builds to the external
-release repository `emmett-ola/cashlenx-app-release`.
+`.github/workflows/ci.yml` installs locked dependencies, regenerates code, runs
+analysis and tests, and builds Flutter Web against canonical `/api/v1`.
 
-The workflow runs on pushes to `main`, pushes to `dev/**`, and manual dispatch.
-It creates `.env` from repository variables, installs dependencies, regenerates
-code, runs analysis and tests, builds Flutter web, and publishes `build/web`.
+Manual dispatch adds a verified, untagged container-image artifact with exact
+version, revision, image identity, build-input digest, and SHA-256 sidecars. It
+does not need a secret and does not publish externally, promote a branch, or
+deploy. Release publication consumes an already accepted candidate under the
+coordinated release gate rather than rebuilding it.
 
-Branch routing:
+The repository-local packaging entry point is:
 
-- Source branch `main` publishes to release branch `main`.
-- Source branches under `dev/**` publish to release branch `develop`.
-
-Required GitHub configuration:
-
-- Variables: `DEV_API_DOMAIN`, `TEST_API_DOMAIN`, and `PROD_API_DOMAIN`.
-  `develop` defaults to `http://127.0.0.1:10063/api/v1`; `testing` and `main`
-  use HTTPS with no explicit port and select their configured API domain.
-- Secret: `RELEASE_REPO_TOKEN` with permission to push to the release repo.
+```bash
+scripts/package-image.sh /absolute/output/directory
+```
 
 ## 🧪 Testing
 
