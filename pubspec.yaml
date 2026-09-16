@@ -38,7 +38,6 @@ dependencies:
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.0.9
-  flutter_dotenv: ^6.0.0
   emoji_picker_flutter: ^4.4.0
   package_info_plus: ^10.2.1
 
@@ -64,7 +63,6 @@ flutter:
   assets:
     - assets/images/
     - assets/images/avatars/
-    - .env
 
 flutter_launcher_icons:
   android: "launcher_icon"

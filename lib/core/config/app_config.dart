@@ -1,5 +1,4 @@
 import 'package:logger/logger.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../infrastructure/logging/app_logger.dart';
 import '../infrastructure/logging/logger_app_logger.dart';
 
@@ -11,12 +10,9 @@ class AppConfig {
   static late String _apiBaseUrl;
 
   static Future<void> init() async {
-    // Load `.env` file from assets
-    await dotenv.load(fileName: ".env");
-
-    final envStr = dotenv.env['APP_ENV']?.toLowerCase() ?? 'dev';
+    const envStr = String.fromEnvironment('APP_ENV', defaultValue: 'dev');
     _environment = Environment.values.firstWhere(
-      (e) => e.name == envStr,
+      (e) => e.name == envStr.toLowerCase(),
       orElse: () => Environment.dev,
     );
 
@@ -37,12 +33,18 @@ class AppConfig {
   }
 
   static String _getBaseUrl() {
-    final scheme = dotenv.env['API_SCHEME'] ?? 'https';
-    final domain = dotenv.env['API_DOMAIN'] ?? 'api.cashlenx.com';
-    final port = dotenv.env['API_PORT'];
-    final version = dotenv.env['API_VERSION'] ?? 'v1';
+    const scheme = String.fromEnvironment('API_SCHEME', defaultValue: 'http');
+    const domain = String.fromEnvironment(
+      'API_DOMAIN',
+      defaultValue: '127.0.0.1',
+    );
+    const port = String.fromEnvironment('API_PORT', defaultValue: '10063');
+    const version = String.fromEnvironment(
+      'API_VERSION',
+      defaultValue: 'api/v0',
+    );
 
-    if (port != null && port.isNotEmpty) {
+    if (port.isNotEmpty) {
       return '$scheme://$domain:$port/$version';
     }
     return '$scheme://$domain/$version';

@@ -35,7 +35,8 @@ is uncertain.
 - `pubspec.yaml`: dependencies, assets, launcher icon config.
 - `analysis_options.yaml`: lint rules.
 - `.env.example`: environment template.
-- `.env`: required by `AppConfig.init()` and listed as a Flutter asset. Do not
+- `.env`: selected by lifecycle scripts for local public build and Docker
+  settings. It is never a Flutter asset or image-build context input. Do not
   commit real secrets.
 - `lib/main.dart`: initializes config, provider scope, themes, i18n, and router.
 - `lib/routing/app_router.dart`: GoRouter setup and auth redirects.
@@ -113,7 +114,8 @@ growing global folders.
 
 ## Backend/API Integration
 
-- API base URL is built from `.env`:
+- API base URL is built from compile-time definitions populated by the
+  container build script from the selected environment file:
   `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
 - `.env.example` points to `http://127.0.0.1:10063/api/v0`.
 - All HTTP should go through `ApiClient`, `dioProvider`, and `CashlenxApi`.
@@ -258,6 +260,9 @@ npm run dev
 - Do not commit `.env` or local secrets. `.env.example` keeps every documented
   assignment active so operators change values directly rather than uncommenting
   configuration lines.
+- Flutter Web configuration is public. Keep it limited to `APP_ENV`,
+  `API_SCHEME`, `API_DOMAIN`, `API_PORT`, and `API_VERSION`; never compile a
+  credential into the client.
 - Avoid unrelated platform-folder edits unless the task explicitly needs
   Android/iOS/web/desktop changes.
 - If a generated file changes, mention the source file that caused it.
