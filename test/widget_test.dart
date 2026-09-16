@@ -11,13 +11,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cashlenx/main.dart';
+import 'package:cashlenx/core/infrastructure/persistence/memory_key_value_store.dart';
+import 'package:cashlenx/core/services/secure_storage_service.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({'has_seen_onboarding': true});
 
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: CashLenXApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(
+            SecureStorageService(MemoryKeyValueStore()),
+          ),
+        ],
+        child: const CashLenXApp(),
+      ),
+    );
 
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();

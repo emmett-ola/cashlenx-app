@@ -13,14 +13,18 @@ void main() {
     'demo logout clears local auth state without calling repository',
     () async {
       final repository = _FakeAuthRepository();
+      final storage = SecureStorageService(MemoryKeyValueStore());
       final container = ProviderContainer(
-        overrides: [authRepositoryProvider.overrideWithValue(repository)],
+        overrides: [
+          authRepositoryProvider.overrideWithValue(repository),
+          secureStorageServiceProvider.overrideWithValue(storage),
+        ],
       );
       addTearDown(container.dispose);
 
       final notifier = container.read(authNotifierProvider.notifier);
 
-      notifier.continueAsDemo();
+      await notifier.continueAsDemo();
       await notifier.logout();
 
       expect(container.read(authNotifierProvider).value, isNull);
@@ -29,13 +33,16 @@ void main() {
   );
 
   test('entering demo mode resets local demo data', () async {
-    final container = ProviderContainer();
+    final storage = SecureStorageService(MemoryKeyValueStore());
+    final container = ProviderContainer(
+      overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(authNotifierProvider.notifier);
     final demoStore = container.read(demoDataStoreProvider);
 
-    notifier.continueAsDemo();
+    await notifier.continueAsDemo();
     await demoStore.createCategory(name: 'Custom', type: 'expense');
     await demoStore.createTransaction(
       type: 'expense',
@@ -60,7 +67,7 @@ void main() {
       isTrue,
     );
 
-    notifier.continueAsDemo();
+    await notifier.continueAsDemo();
 
     final resetCategories = await demoStore.listAllCategories();
     expect(

@@ -31,8 +31,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _remoteDataSource.login(request);
 
     // Save tokens and preference
-    await _secureStorage.saveToken(response.accessToken);
-    await _secureStorage.saveRefreshToken(response.refreshToken);
+    await _secureStorage.saveSession(
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    );
     await _secureStorage.saveRememberMe(rememberMe);
 
     // Return user
@@ -45,8 +47,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _remoteDataSource.login(request);
 
     // Save tokens
-    await _secureStorage.saveToken(response.accessToken);
-    await _secureStorage.saveRefreshToken(response.refreshToken);
+    await _secureStorage.saveSession(
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    );
 
     return response.user;
   }
@@ -93,14 +97,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    final refreshToken = await _secureStorage.getRefreshToken();
+    // Invalidate local authority before the network call so an in-flight
+    // refresh cannot restore a session after explicit logout.
+    await _secureStorage.clearSession();
     try {
-      final refreshToken = await _secureStorage.getRefreshToken();
       await _remoteDataSource.logout(refreshToken: refreshToken);
     } catch (_) {
       // Local logout should still complete if the server session is already gone.
-    } finally {
-      // Only clear session tokens, keep the rememberMe preference.
-      await _secureStorage.clearSession();
     }
   }
 

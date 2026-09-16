@@ -64,8 +64,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
 
-  void _handleDemoMode() {
-    ref.read(authNotifierProvider.notifier).continueAsDemo();
+  Future<void> _handleDemoMode() async {
+    await ref.read(authNotifierProvider.notifier).continueAsDemo();
+    if (!mounted) return;
     context.go('/home');
   }
 

@@ -163,7 +163,7 @@ Goal: make the app reliable across target platforms.
 - Improve responsive layouts for mobile, web, and desktop.
 - Review accessibility: labels, contrast, tap targets, keyboard navigation.
 - Add app-wide error boundaries and retry patterns.
-- Harden secure storage and token lifecycle behavior per platform.
+- [x] Harden secure storage and token lifecycle behavior across supported Flutter platforms.
 - [ ] Add disposable live integration coverage for auth and key finance workflows against MongoDB and MySQL.
 - Review app icons, web manifest, metadata, and release build settings.
 - Keep Docker web deployment and GitHub Actions release docs aligned with workflow changes.
@@ -176,8 +176,8 @@ Exit criteria:
 
 - Should login accept username only, email only, or both?
 - What should the final splash subtitle be: `Your Financial Companion` or `Your Money, Simplified`?
-- What should remember-me mean exactly: refresh for 30 days, server refresh-token expiry, or another period?
-- Should logout revoke only the current device's refresh token or all sessions by default?
+- Remember-me restores the session through the server-owned refresh-token lifetime; without it, persisted session tokens are cleared on the next app start.
+- App logout revokes the current device refresh token by default. The authenticated server contract retains explicit all-session revocation when logout is called with only a valid access token.
 - Should demo mode use local seeded data, a server demo account, or be removed until later?
 - Which target platform should drive UI decisions first: mobile, web, or equal priority?
 

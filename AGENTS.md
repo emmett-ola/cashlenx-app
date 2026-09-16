@@ -79,11 +79,17 @@ growing global folders.
   mode.
 - Auth persistence uses `SecureStorageService` for access token, refresh token,
   and remember-me state.
-- `AuthInterceptor` injects bearer tokens and attempts one silent refresh on
-  eligible 401 responses.
+- Session writes persist the rotating refresh credential before the access
+  token and clear both values if a partial write fails. Remembered startup
+  restores only a complete refresh-backed session; malformed or partial state
+  fails signed out.
+- `AuthInterceptor` injects bearer tokens, serializes concurrent eligible 401
+  refreshes, retries stale requests with an already-rotated access token, and
+  never restores a session cleared during logout. Rejected refresh credentials
+  expire the session; transient transport failures keep it for a later retry.
 - Demo mode resets `DemoDataStore` every time the user chooses demo mode from
-  login. After entry, demo categories and transactions are editable during that
-  session.
+  login and clears real session credentials first. After entry, demo categories
+  and transactions are editable during that session.
 - Home shell has Home, Category, Add, Budget, and Settings tabs.
 - Dashboard data uses the real API for normal users and `DemoDataStore` for demo
   users.

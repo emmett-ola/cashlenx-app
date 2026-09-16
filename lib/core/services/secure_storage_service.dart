@@ -37,6 +37,27 @@ class SecureStorageService {
     await _store.write(_refreshTokenKey, token);
   }
 
+  Future<void> saveSession({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    if (accessToken.isEmpty || refreshToken.isEmpty) {
+      await clearSession();
+      throw ArgumentError('Session tokens must not be empty.');
+    }
+
+    try {
+      // Persist the rotating credential first. An interrupted write may leave
+      // an older access token, but never a new access token paired with the
+      // already-revoked refresh token.
+      await _store.write(_refreshTokenKey, refreshToken);
+      await _store.write(_tokenKey, accessToken);
+    } catch (_) {
+      await clearSession();
+      rethrow;
+    }
+  }
+
   Future<String?> getRefreshToken() async {
     return await _store.read(_refreshTokenKey);
   }

@@ -23,15 +23,12 @@ class AuthNotifier extends _$AuthNotifier {
 
       final rememberMe = await secureStorage.getRememberMe();
       if (!rememberMe) {
-        // If not remember me, we still want to check if there is a session for this app run,
-        // but if it's a fresh start, we clear.
-        // Actually, your requirement: "once user close the app, tokens lost"
-        await secureStorage.clearAll();
+        await secureStorage.clearSession();
         return null;
       }
 
       final refreshToken = await secureStorage.getRefreshToken();
-      if (refreshToken != null) {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
         // Try auto-login with refresh token
         try {
           return await repository.loginWithRefreshToken(refreshToken);
@@ -42,9 +39,17 @@ class AuthNotifier extends _$AuthNotifier {
         }
       }
 
-      return await repository.getCurrentUser();
-    } catch (e) {
-      // If error (e.g. token expired), assume not authenticated
+      // A persisted access token without its rotating refresh credential is a
+      // partial session and must not be restored.
+      await secureStorage.clearSession();
+      return null;
+    } catch (_) {
+      try {
+        await ref.read(secureStorageServiceProvider).clearSession();
+      } catch (_) {
+        // The caller still receives a signed-out state if secure storage is
+        // temporarily unavailable.
+      }
       return null;
     }
   }
@@ -61,7 +66,8 @@ class AuthNotifier extends _$AuthNotifier {
     });
   }
 
-  void continueAsDemo() {
+  Future<void> continueAsDemo() async {
+    await ref.read(secureStorageServiceProvider).clearSession();
     ref.read(demoDataStoreProvider).reset();
     ref.read(demoDataRevisionProvider.notifier).bump();
 

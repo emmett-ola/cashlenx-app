@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/config/app_config.dart';
 import '../core/infrastructure/http/request_tracking_interceptor.dart';
+import '../core/services/secure_storage_service.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
 import 'interceptors/auth_interceptor.dart';
 
 part 'dio_provider.g.dart';
@@ -22,7 +24,11 @@ Dio dio(Ref ref) {
 
   dio.interceptors.addAll([
     RequestTrackingInterceptor(AppConfig.logger),
-    AuthInterceptor(ref),
+    AuthInterceptor(
+      storage: ref.read(secureStorageServiceProvider),
+      expireSession: () =>
+          ref.read(authNotifierProvider.notifier).expireSession(),
+    ),
   ]);
 
   return dio;
