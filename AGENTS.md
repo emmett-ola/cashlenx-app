@@ -123,7 +123,7 @@ growing global folders.
 - API base URL is built from compile-time definitions populated by the
   container build script from the selected environment file:
   `API_SCHEME`, `API_DOMAIN`, `API_PORT`, `API_VERSION`.
-- `.env.example` points to `http://127.0.0.1:10063/api/v0`.
+- `.env.example` points to the canonical `http://127.0.0.1:10063/api/v1`; the Server owns the temporary `/api/v0` previous-client alias.
 - All HTTP should go through `ApiClient`, `dioProvider`, and `CashlenxApi`.
 - Keep API parsing aligned with `ResponseWrapper<T>` and the OpenAPI/server
   contract.

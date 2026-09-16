@@ -52,7 +52,7 @@ app_env="$(read_env_value APP_ENV dev)"
 api_scheme="$(read_env_value API_SCHEME http)"
 api_domain="$(read_env_value API_DOMAIN 127.0.0.1)"
 api_port="$(read_env_value API_PORT 10063)"
-api_version="$(read_env_value API_VERSION api/v0)"
+api_version="$(read_env_value API_VERSION api/v1)"
 
 [[ "$app_env" =~ ^(dev|staging|prod)$ ]] || { echo "APP_ENV must be dev, staging, or prod." >&2; exit 1; }
 [[ "$api_scheme" =~ ^https?$ ]] || { echo "API_SCHEME must be http or https." >&2; exit 1; }

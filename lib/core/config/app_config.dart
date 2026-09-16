@@ -41,7 +41,7 @@ class AppConfig {
     const port = String.fromEnvironment('API_PORT', defaultValue: '10063');
     const version = String.fromEnvironment(
       'API_VERSION',
-      defaultValue: 'api/v0',
+      defaultValue: 'api/v1',
     );
 
     if (port.isNotEmpty) {
