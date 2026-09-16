@@ -105,11 +105,7 @@ void main() {
     expect(find.text('Currency'), findsOneWidget);
     expect(find.text('Support'), findsOneWidget);
     expect(find.text('About'), findsOneWidget);
-
-    await tester.tap(find.text('More Setting'));
-    await tester.pump();
-
-    expect(find.text('More Setting coming soon!'), findsOneWidget);
+    expect(find.text('More Setting'), findsNothing);
 
     await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();
@@ -135,6 +131,71 @@ void main() {
     expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
     expect(find.text('Amount'), findsOneWidget);
     expect(find.text('Category'), findsAtLeastNWidgets(1));
+  });
+
+  for (final scenario in <(HomeSection, String)>[
+    (HomeSection.dashboard, 'Total Balance'),
+    (HomeSection.categories, 'Manage your categories'),
+    (HomeSection.budget, 'Manage your spending limits'),
+    (HomeSection.settings, 'Preferences'),
+    (HomeSection.transactions, 'Transactions'),
+    (HomeSection.statistics, 'More Statistics'),
+  ]) {
+    testWidgets('renders ${scenario.$1.name} as a direct web destination', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+            cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+          ],
+          child: MaterialApp(home: HomePage(section: scenario.$1)),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      expect(find.text(scenario.$2), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('core navigation remains semantic at compact scaled text', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: Size(320, 568),
+              textScaler: TextScaler.linear(1.6),
+            ),
+            child: HomePage(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    for (final label in ['Home', 'Category', 'Add', 'Budget', 'Settings']) {
+      expect(find.bySemanticsLabel(label), findsOneWidget);
+    }
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('transaction filters expose feedback and empty recovery', (

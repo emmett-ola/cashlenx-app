@@ -58,8 +58,23 @@ final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
   return _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
 });
 
+enum HomeSection {
+  dashboard('/home'),
+  categories('/categories'),
+  budget('/budgets'),
+  settings('/settings'),
+  transactions('/transactions'),
+  statistics('/statistics');
+
+  const HomeSection(this.path);
+
+  final String path;
+}
+
 class HomePage extends ConsumerStatefulWidget {
-  const HomePage({super.key});
+  const HomePage({this.section = HomeSection.dashboard, super.key});
+
+  final HomeSection section;
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -70,6 +85,32 @@ class _HomePageState extends ConsumerState<HomePage> {
   var _showTransactions = false;
   var _showMoreStats = false;
   String? _selectedTransactionId;
+
+  @override
+  void initState() {
+    super.initState();
+    _applySection(widget.section);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.section != widget.section) {
+      setState(() => _applySection(widget.section));
+    }
+  }
+
+  void _applySection(HomeSection section) {
+    _selectedTab = switch (section) {
+      HomeSection.categories => _HomeTab.stats,
+      HomeSection.budget => _HomeTab.budget,
+      HomeSection.settings => _HomeTab.settings,
+      _ => _HomeTab.home,
+    };
+    _showTransactions = section == HomeSection.transactions;
+    _showMoreStats = section == HomeSection.statistics;
+    _selectedTransactionId = null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,13 +148,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _DashboardTab(
                     username: username,
                     avatarUrl: avatarUrl,
-                    onAction: _showComingSoon,
                     onTransactionTap: _openTransactionDetail,
                     onProfileTap: _openProfile,
                     onSeeAllTransactions: _openTransactions,
                     onMoreStats: _openMoreStats,
                   ),
-                  _CategoryTab(onAction: _showComingSoon),
+                  const _CategoryTab(),
                   const SizedBox.shrink(),
                   _selectedTab == _HomeTab.budget
                       ? const BudgetTab()
@@ -122,7 +162,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     username: username,
                     email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
                     avatarUrl: avatarUrl,
-                    onAction: _showComingSoon,
                     onProfileTap: _openProfile,
                   ),
                 ],
@@ -138,7 +177,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   _showAddTransactionSheet();
                   return;
                 }
-                setState(() => _selectedTab = tab);
+                final section = switch (tab) {
+                  _HomeTab.home => HomeSection.dashboard,
+                  _HomeTab.stats => HomeSection.categories,
+                  _HomeTab.budget => HomeSection.budget,
+                  _HomeTab.settings => HomeSection.settings,
+                  _HomeTab.add => HomeSection.dashboard,
+                };
+                _navigate(section);
                 if (tab == _HomeTab.home || tab == _HomeTab.budget) {
                   ref.invalidate(_dashboardProvider);
                 }
@@ -147,8 +193,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _showComingSoon(String feature) {
-    ToastUtils.showInfo(context, '$feature ${appT(context, 'coming_soon')}');
+  void _navigate(HomeSection section) {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      router.go(section.path);
+      return;
+    }
+    setState(() => _applySection(section));
   }
 
   Future<void> _openProfile() async {
@@ -157,20 +208,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _openTransactions() {
-    setState(() => _showTransactions = true);
+    _navigate(HomeSection.transactions);
   }
 
   void _closeTransactions() {
-    setState(() => _showTransactions = false);
+    _navigate(HomeSection.dashboard);
     ref.invalidate(_dashboardProvider);
   }
 
   void _openMoreStats() {
-    setState(() => _showMoreStats = true);
+    _navigate(HomeSection.statistics);
   }
 
   void _closeMoreStats() {
-    setState(() => _showMoreStats = false);
+    _navigate(HomeSection.dashboard);
   }
 
   void _openTransactionDetail(_Transaction transaction) {
@@ -209,7 +260,6 @@ class _DashboardTab extends ConsumerWidget {
   const _DashboardTab({
     required this.username,
     required this.avatarUrl,
-    required this.onAction,
     required this.onTransactionTap,
     required this.onProfileTap,
     required this.onSeeAllTransactions,
@@ -218,7 +268,6 @@ class _DashboardTab extends ConsumerWidget {
 
   final String username;
   final String? avatarUrl;
-  final ValueChanged<String> onAction;
   final ValueChanged<_Transaction> onTransactionTap;
   final VoidCallback onProfileTap;
   final VoidCallback onSeeAllTransactions;
@@ -259,9 +308,7 @@ class _DashboardTab extends ConsumerWidget {
 }
 
 class _CategoryTab extends ConsumerStatefulWidget {
-  const _CategoryTab({required this.onAction});
-
-  final ValueChanged<String> onAction;
+  const _CategoryTab();
 
   @override
   ConsumerState<_CategoryTab> createState() => _CategoryTabState();
@@ -295,7 +342,9 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadCategories();
+    });
   }
 
   @override
@@ -3338,14 +3387,12 @@ class _SettingsTab extends ConsumerStatefulWidget {
     required this.username,
     required this.email,
     required this.avatarUrl,
-    required this.onAction,
     required this.onProfileTap,
   });
 
   final String username;
   final String email;
   final String? avatarUrl;
-  final ValueChanged<String> onAction;
   final VoidCallback onProfileTap;
 
   @override
@@ -3404,12 +3451,6 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                 ),
               ),
               onTap: _showLanguageDialog,
-            ),
-            _SettingsTile(
-              icon: Icons.settings_outlined,
-              color: _AppShellColors.mutedText,
-              label: appT(context, 'more_setting'),
-              onTap: () => widget.onAction(appT(context, 'more_setting')),
             ),
           ],
         ),
@@ -3953,27 +3994,46 @@ class _SummaryCardState extends State<_SummaryCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  appT(context, _summaryBalanceKey(_selectedRange)),
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w600,
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact =
+                  MediaQuery.sizeOf(context).width <= 340 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+              final label = Text(
+                appT(context, _summaryBalanceKey(_selectedRange)),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              const SizedBox(width: 8),
-              _SummaryRangeSwitcher(
+              );
+              final switcher = _SummaryRangeSwitcher(
                 selectedRange: _selectedRange,
                 onChanged: (range) {
                   setState(() => _selectedRange = range);
                 },
-              ),
-            ],
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    label,
+                    const SizedBox(height: 10),
+                    FittedBox(fit: BoxFit.scaleDown, child: switcher),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: label),
+                  const SizedBox(width: 8),
+                  switcher,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 8),
           FittedBox(
@@ -4248,11 +4308,20 @@ class _TransactionTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
-                style: TextStyle(
-                  color: isIncome ? AppTheme.successColor : AppTheme.errorColor,
-                  fontWeight: FontWeight.w800,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 112),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
+                    style: TextStyle(
+                      color: isIncome
+                          ? AppTheme.successColor
+                          : AppTheme.errorColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -5690,6 +5759,7 @@ class _BottomNav extends StatelessWidget {
               child: Semantics(
                 button: true,
                 label: label,
+                excludeSemantics: true,
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => onSelect(tab),
@@ -5729,33 +5799,41 @@ class _BottomNav extends StatelessWidget {
           }
 
           return Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => onSelect(tab),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      tab.icon,
-                      color: isSelected ? themeColor : _AppShellColors.navMuted,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+            child: Semantics(
+              button: true,
+              selected: isSelected,
+              label: label,
+              excludeSemantics: true,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onSelect(tab),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab.icon,
                         color: isSelected
                             ? themeColor
                             : _AppShellColors.navMuted,
-                        fontSize: 11,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isSelected
+                              ? themeColor
+                              : _AppShellColors.navMuted,
+                          fontSize: 11,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
