@@ -34,6 +34,7 @@ migrate_working_dir/
 /build/
 /coverage/
 /test/visual/failures/
+/test/browser/artifacts/
 
 # Symbolication related
 app.*.symbols

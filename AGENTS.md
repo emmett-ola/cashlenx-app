@@ -214,9 +214,21 @@ Run tests:
 flutter test
 ```
 
-This repository currently has no maintained live Flutter-to-server integration
-harness. Use the server repository's focused API smoke checks for backend
-integration and validate complete journeys in the test environment.
+Run the containerized browser acceptance against an already running local App
+and Server with administrative credentials supplied through the environment:
+
+```bash
+ADMIN_USERNAME=... ADMIN_PASSWORD=... scripts/browser-acceptance.sh
+```
+
+The Playwright runner shares the App container network namespace so its
+loopback origin remains a browser secure context for encrypted web session
+storage. It creates and removes a disposable real user, checks first-login
+setup, remembered-session reload, stable routes, seeded API data, unknown-route
+recovery, and an editable Demo journey that must make no authenticated API
+requests. Failure traces, screenshots, video, and JSON results are written only
+to the ignored `test/browser/artifacts/` path unless an evidence directory is
+provided.
 
 Run targeted tests:
 
@@ -311,6 +323,10 @@ scripts/start.sh
 - `.github/workflows/ci.yml` runs analyze, tests, and the canonical `/api/v1`
   web build. Manual dispatch also packages an untagged, secret-free candidate
   image; publication and deployment remain separate release-gate actions.
+- `scripts/browser-acceptance.sh` is the repository-local built-client journey
+  gate. The workspace-level `cashlenx-spec/scripts/whole-product-acceptance.sh`
+  owns its disposable user, isolated App container, Server dependency, and
+  checksummed evidence lifecycle.
 
 ## Known Gaps
 

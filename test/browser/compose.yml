@@ -1,0 +1,18 @@
+name: ${BROWSER_PROJECT_NAME:-cashlenx-browser-acceptance}
+
+services:
+  browser-acceptance:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cashlenx-browser-acceptance:1.55.0
+    environment:
+      APP_URL: ${APP_URL:-http://127.0.0.1:8080}
+      API_URL: ${API_URL:-http://cashlenx-server:10063/api/v1}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?ADMIN_USERNAME is required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+    init: true
+    ipc: host
+    network_mode: container:${APP_CONTAINER_NAME:-cashlenx-app-acceptance}
+    volumes:
+      - ${BROWSER_EVIDENCE_DIR:-./artifacts}:/tests/artifacts

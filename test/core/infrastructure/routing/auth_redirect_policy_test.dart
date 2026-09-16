@@ -11,7 +11,7 @@ void main() {
     publicAuthPaths: {'/login', '/register', '/forgot-password'},
   );
 
-  test('does not redirect while auth is loading', () {
+  test('keeps loading sessions on splash and redirects deep links', () {
     expect(
       policy.redirect(
         authStatus: AuthStatus.loading,
@@ -20,6 +20,15 @@ void main() {
         hasCompletedSetup: false,
       ),
       isNull,
+    );
+    expect(
+      policy.redirect(
+        authStatus: AuthStatus.loading,
+        location: '/login',
+        hasSeenOnboarding: true,
+        hasCompletedSetup: false,
+      ),
+      '/',
     );
   });
 
@@ -95,17 +104,20 @@ void main() {
     );
   });
 
-  test('sends authenticated users to setup until first-login setup completes', () {
-    expect(
-      policy.redirect(
-        authStatus: AuthStatus.authenticated,
-        location: '/home',
-        hasSeenOnboarding: true,
-        hasCompletedSetup: false,
-      ),
-      '/setup',
-    );
-  });
+  test(
+    'sends authenticated users to setup until first-login setup completes',
+    () {
+      expect(
+        policy.redirect(
+          authStatus: AuthStatus.authenticated,
+          location: '/home',
+          hasSeenOnboarding: true,
+          hasCompletedSetup: false,
+        ),
+        '/setup',
+      );
+    },
+  );
 
   test('allows authenticated users to stay on setup before completion', () {
     expect(

@@ -46,16 +46,16 @@ final _packageInfoProvider = FutureProvider<PackageInfo>((ref) {
   return PackageInfo.fromPlatform();
 });
 
-final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) {
-  final user = ref.watch(authNotifierProvider).value;
+final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) async {
+  final user = await ref.watch(authNotifierProvider.future);
   if (user?.role == 'demo') {
     ref.watch(demoDataRevisionProvider);
-    return _DashboardApi.demo(
+    return await _DashboardApi.demo(
       ref.watch(demoDataStoreProvider),
     ).fetchDashboard();
   }
 
-  return _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
+  return await _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
 });
 
 enum HomeSection {

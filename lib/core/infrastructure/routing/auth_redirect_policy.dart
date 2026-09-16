@@ -23,7 +23,9 @@ class AuthRedirectPolicy {
     required bool hasSeenOnboarding,
     required bool hasCompletedSetup,
   }) {
-    if (authStatus == AuthStatus.loading) return null;
+    if (authStatus == AuthStatus.loading) {
+      return location == splashPath ? null : splashPath;
+    }
 
     final isSplash = location == splashPath;
     final isOnboarding = location == onboardingPath;
