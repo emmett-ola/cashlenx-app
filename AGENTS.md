@@ -44,7 +44,12 @@ is uncertain.
 - `lib/core/config/app_config.dart`: loads `.env` and builds API base URL.
 - `lib/network/cashlenx_api.dart`: ready-to-use API adapter methods.
 - `lib/features/home/presentation/pages/home_page.dart`: authenticated shell,
-  dashboard, settings, add/edit transaction UI, category and date selectors.
+  route-section coordination, and the owning library for the Home presentation
+  parts.
+- `lib/features/home/presentation/pages/home/`: dashboard, category,
+  transaction, settings, shared-widget, and model presentation parts. These
+  files share Home-private types through `part of` and are not imported
+  independently.
 - `lib/features/profile/presentation/pages/profile_page.dart`: profile page and
   avatar/currency controls.
 - `lib/features/demo/data/demo_data_store.dart`: editable demo-mode data store.
@@ -338,3 +343,4 @@ scripts/start.sh
   and deeper tests.
 - Some README/architecture text may still be aspirational; prefer current code,
   server implementation, and OpenAPI when they disagree.
+
