@@ -343,4 +343,3 @@ scripts/start.sh
   and deeper tests.
 - Some README/architecture text may still be aspirational; prefer current code,
   server implementation, and OpenAPI when they disagree.
-
