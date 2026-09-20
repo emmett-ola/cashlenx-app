@@ -209,16 +209,29 @@ Run `test/scripts/container-lifecycle-smoke.sh` to exercise Docker and nerdctl
 2.2 command shapes, wrapper detection, symlink selection, and pre-mutation
 failure paths without changing containers.
 
-## 🚢 Web Candidate Workflow
+## 🚢 Web Release and Candidate Workflow
 
 `.github/workflows/ci.yml` installs locked dependencies, regenerates code, runs
 analysis and tests, and builds Flutter Web against canonical `/api/v1`.
 
+After both the web and deployable-image validation jobs succeed on a push to
+`develop`, `testing`, or `main`, CI performs a branch-configured Flutter build
+and publishes `build/web` to the matching branch in
+`emmett-ola/cashlenx-app-release`. The tracked public profiles are:
+
+- `develop`: local development API at `http://127.0.0.1:10063/api/v1`
+- `testing`: test API at `https://test-api.cashlenx.com/api/v1`
+- `main`: production API at `https://api.cashlenx.com/api/v1`
+
+The release repository contains prebuilt static files. Its Vercel projects use
+the `Other` framework preset and skip build and install commands; Vercel does
+not install Flutter or inject the client API configuration.
+
 Manual dispatch adds a verified, untagged container-image artifact with exact
 version, revision, image identity, build-input digest, and SHA-256 sidecars. It
-does not need a secret and does not publish externally, promote a branch, or
-deploy. Release publication consumes an already accepted candidate under the
-coordinated release gate rather than rebuilding it.
+does not publish or promote the container image. Container release publication
+consumes an accepted candidate under the coordinated release gate rather than
+rebuilding it.
 
 The candidate tag and metadata also include the App configuration profile and
 the normalized SHA-256 fingerprint of `APP_ENV`, `API_SCHEME`, `API_DOMAIN`,

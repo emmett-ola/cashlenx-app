@@ -326,8 +326,12 @@ scripts/start.sh
 - `docker/nginx.conf` uses `try_files $uri $uri/ /index.html` for Flutter web
   history fallback.
 - `.github/workflows/ci.yml` runs analyze, tests, and the canonical `/api/v1`
-  web build. Manual dispatch also packages an untagged, secret-free candidate
-  image; publication and deployment remain separate release-gate actions.
+  web build. After both web and image validation succeed on a push to
+  `develop`, `testing`, or `main`, it builds the branch-specific public client
+  configuration and publishes the static output to the matching branch in
+  `emmett-ola/cashlenx-app-release`; Vercel serves that repository without a
+  build step. Manual dispatch separately packages an untagged, secret-free
+  candidate image for the coordinated release gate.
 - `scripts/browser-acceptance.sh` is the repository-local built-client journey
   gate. The workspace-level `cashlenx-spec/scripts/whole-product-acceptance.sh`
   owns its disposable user, isolated App container, Server dependency, and

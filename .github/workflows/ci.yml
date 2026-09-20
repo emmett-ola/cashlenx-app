@@ -68,6 +68,90 @@ jobs:
       - name: Build through the canonical repository entry point
         run: ENV_FILE=.env.example scripts/build.sh
 
+  publish-static-web:
+    name: Publish static web release
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref_name == 'develop' || github.ref_name == 'testing' || github.ref_name == 'main')
+    needs: [validate-web, validate-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      - name: Install locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate code
+        run: dart run build_runner build
+
+      - name: Resolve branch release configuration
+        id: release-config
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            main)
+              app_env=prod
+              api_scheme=https
+              api_domain=api.cashlenx.com
+              api_port=
+              ;;
+            testing)
+              app_env=staging
+              api_scheme=https
+              api_domain=test-api.cashlenx.com
+              api_port=
+              ;;
+            develop)
+              app_env=dev
+              api_scheme=http
+              api_domain=127.0.0.1
+              api_port=10063
+              ;;
+            *)
+              echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "app_env=$app_env"
+            echo "api_scheme=$api_scheme"
+            echo "api_domain=$api_domain"
+            echo "api_port=$api_port"
+            echo "api_version=api/v1"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build branch-configured web release
+        run: |
+          flutter build web --release \
+            --dart-define=APP_ENV="${{ steps.release-config.outputs.app_env }}" \
+            --dart-define=API_SCHEME="${{ steps.release-config.outputs.api_scheme }}" \
+            --dart-define=API_DOMAIN="${{ steps.release-config.outputs.api_domain }}" \
+            --dart-define=API_PORT="${{ steps.release-config.outputs.api_port }}" \
+            --dart-define=API_VERSION="${{ steps.release-config.outputs.api_version }}"
+
+      - name: Verify static release output
+        run: |
+          test -f build/web/index.html
+          test -f build/web/main.dart.js
+
+      - name: Publish matching release branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          external_repository: emmett-ola/cashlenx-app-release
+          publish_branch: ${{ github.ref_name }}
+          publish_dir: ./build/web
+          personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          commit_message: deploy ${{ github.repository }}@${{ github.sha }}
+
   package-candidate:
     name: Package untagged candidate
     if: github.event_name == 'workflow_dispatch'

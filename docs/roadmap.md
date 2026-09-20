@@ -19,7 +19,7 @@ Implemented:
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
 - Authenticated home shell with real summary/recent-transaction data, transaction CRUD, hierarchical category CRUD, budget preview, settings, and bottom navigation.
 - Docker-based Flutter web deployment using `docker/Dockerfile`, `docker/compose.yml`, a shared external network, and nginx route fallback.
-- GitHub Actions web release workflow that builds, analyzes, tests, and publishes static web output to the release repo.
+- GitHub Actions CI that validates the web and container builds, then publishes branch-configured static web output to the matching release-repository branch.
 - `flutter analyze` and `flutter test` are clean.
 
 Known gaps:
