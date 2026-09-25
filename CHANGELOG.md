@@ -8,6 +8,10 @@ state.
 
 ### Changed
 
+- Upgraded CI and the revision-pinned client toolchain to Flutter 3.47.5 / Dart
+  3.13.4 and refreshed the locked dependency graph, including current major
+  releases for routing, secure storage, injection, equality, and code
+  generation.
 - Bound candidate image tags and metadata to the normalized public web
   configuration profile and SHA-256 fingerprint, and made runtime start use
   only an already present image without pulling.
@@ -16,8 +20,6 @@ state.
   configured image identity, value-safe start output, and bounded readiness.
 - Added one-shot status/doctor diagnostics, bounded logs, verified effective
   image identity, and observable graceful, forced, and repeated-stop outcomes.
-- Aligned CI and the digest-pinned builder on Flutter 3.44.0 / Dart 3.12.0 and
-  made normal CI validate the deployable image through the canonical build.
 
 ## [1.0.0-rc.1] - 2026-09-16
 

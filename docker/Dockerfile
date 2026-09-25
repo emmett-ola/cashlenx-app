@@ -1,12 +1,18 @@
 ARG FLUTTER_BUILD_IMAGE=ghcr.io/cirruslabs/flutter:stable@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
-ARG NGINX_IMAGE=nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913
+ARG NGINX_IMAGE=nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f
 
 FROM ${FLUTTER_BUILD_IMAGE} AS build
 
+ARG FLUTTER_REVISION
 ARG FLUTTER_VERSION
 ARG DART_VERSION
-RUN flutter --version --machine | grep -F '"frameworkVersion": "'"${FLUTTER_VERSION}"'"' >/dev/null \
- && dart --version 2>&1 | grep -F "Dart SDK version: ${DART_VERSION}" >/dev/null
+RUN git -C "$FLUTTER_ROOT" fetch --depth 1 origin "refs/tags/${FLUTTER_VERSION}:refs/tags/${FLUTTER_VERSION}" \
+ && git -C "$FLUTTER_ROOT" checkout --detach "$FLUTTER_VERSION" \
+ && test "$(git -C "$FLUTTER_ROOT" rev-parse HEAD)" = "$FLUTTER_REVISION" \
+ && flutter precache --web \
+ && flutter_version_json="$(flutter --version --machine)" \
+ && printf '%s\n' "$flutter_version_json" | grep -Eq '"frameworkVersion"[[:space:]]*:[[:space:]]*"'"${FLUTTER_VERSION}"'"' \
+ && printf '%s\n' "$flutter_version_json" | grep -Eq '"dartSdkVersion"[[:space:]]*:[[:space:]]*"'"${DART_VERSION}"'"'
 
 ARG APP_ENV=dev
 ARG API_SCHEME=http

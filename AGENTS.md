@@ -190,13 +190,13 @@ The repo contains generated Dart files:
 Do not hand-edit generated files. Edit source files and regenerate with:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 Use watch mode during longer generated-code sessions:
 
 ```bash
-dart run build_runner watch --delete-conflicting-outputs
+dart run build_runner watch
 ```
 
 ## Standard Commands

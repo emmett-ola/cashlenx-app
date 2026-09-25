@@ -7,6 +7,7 @@ services:
       dockerfile: docker/Dockerfile
       args:
         FLUTTER_BUILD_IMAGE: ${FLUTTER_BUILD_IMAGE:?FLUTTER_BUILD_IMAGE is required from docker/images.env}
+        FLUTTER_REVISION: ${FLUTTER_REVISION:?FLUTTER_REVISION is required from docker/images.env}
         FLUTTER_VERSION: ${FLUTTER_VERSION:?FLUTTER_VERSION is required from docker/images.env}
         DART_VERSION: ${DART_VERSION:?DART_VERSION is required from docker/images.env}
         NGINX_IMAGE: ${NGINX_IMAGE:?NGINX_IMAGE is required from docker/images.env}

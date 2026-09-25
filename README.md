@@ -91,11 +91,11 @@ lib/
 
 4.  **Generate code (required):**
     ```bash
-    dart run build_runner build --delete-conflicting-outputs
+    dart run build_runner build
     ```
     *Tip: Use `watch` during development to auto-generate files on change:*
     ```bash
-    dart run build_runner watch --delete-conflicting-outputs
+    dart run build_runner watch
     ```
 
 5.  **Run the app:**
