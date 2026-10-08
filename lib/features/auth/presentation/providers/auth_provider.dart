@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../../../core/services/secure_storage_service.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../domain/models/user.dart';
@@ -59,7 +60,6 @@ class AuthNotifier extends _$AuthNotifier {
     String password, {
     bool rememberMe = false,
   }) async {
-    state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(authRepositoryProvider);
       return await repository.login(username, password, rememberMe: rememberMe);

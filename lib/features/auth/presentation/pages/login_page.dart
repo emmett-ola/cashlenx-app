@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/services/secure_storage_service.dart';
 import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
@@ -24,6 +25,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -52,8 +54,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _identifierController.text.trim().isNotEmpty &&
       _passwordController.text.isNotEmpty;
 
-  void _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _handleLogin() async {
+    if (_isSubmitting || !_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    try {
       await ref
           .read(authNotifierProvider.notifier)
           .login(
@@ -61,6 +66,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             _passwordController.text,
             rememberMe: _rememberMe,
           );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -72,8 +79,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-    final isLoading = authState.isLoading;
     final t = ref.watch(translationsProvider);
 
     // Listen for errors
@@ -204,7 +209,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               child: CustomButton(
                 text: t('sign_in'),
                 onPressed: _canSubmit ? _handleLogin : null,
-                isLoading: isLoading,
+                isLoading: _isSubmitting,
                 height: 48,
                 borderRadius: AppDesignTokens.radiusControl,
               ),

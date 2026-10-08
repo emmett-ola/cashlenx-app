@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cashlenx/core/infrastructure/persistence/memory_key_value_store.dart';
 import 'package:cashlenx/core/services/secure_storage_service.dart';
 import 'package:cashlenx/features/auth/data/repositories/auth_repository_impl.dart';
@@ -9,6 +11,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'interactive login does not replace signed-out state with loading',
+    () async {
+      final repository = _PendingAuthRepository();
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(_SignedOutAuthNotifier.new),
+          authRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(authNotifierProvider.future);
+
+      final login = container
+          .read(authNotifierProvider.notifier)
+          .login('maca', 'secret1');
+      await Future<void>.delayed(Duration.zero);
+
+      final submittingState = container.read(authNotifierProvider);
+      expect(submittingState.isLoading, isFalse);
+      expect(submittingState.hasValue, isTrue);
+      expect(submittingState.value, isNull);
+
+      repository.loginCompleter.completeError(
+        StateError('Invalid credentials'),
+      );
+      await login;
+
+      expect(container.read(authNotifierProvider).hasError, isTrue);
+    },
+  );
+
   test(
     'demo logout clears local auth state without calling repository',
     () async {
@@ -166,4 +200,22 @@ class _FakeAuthRepository implements AuthRepository {
   Future<void> confirmPasswordReset(String token, String password) {
     throw UnimplementedError();
   }
+}
+
+class _PendingAuthRepository extends _FakeAuthRepository {
+  final loginCompleter = Completer<User>();
+
+  @override
+  Future<User> login(
+    String username,
+    String password, {
+    bool rememberMe = false,
+  }) {
+    return loginCompleter.future;
+  }
+}
+
+class _SignedOutAuthNotifier extends AuthNotifier {
+  @override
+  Future<User?> build() async => null;
 }
