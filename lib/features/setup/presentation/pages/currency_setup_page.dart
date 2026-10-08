@@ -4,10 +4,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
+import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/currency_provider.dart';
+import '../../../settings/data/user_configuration_sync.dart';
 import '../../data/setup_service.dart';
 
 class CurrencySetupPage extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class CurrencySetupPage extends ConsumerStatefulWidget {
 class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
   final _searchController = TextEditingController();
   late CurrencyOption _selectedCurrency;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -77,9 +80,8 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                               ? 'setup_currency_preference'
                               : 'currency_setup_title',
                         ),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -145,21 +147,29 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         FilledButton(
-                          onPressed: _finish,
+                          onPressed: _isSaving ? null : _finish,
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(52),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .primary,
                           ),
-                          child: Text(
-                            appT(
-                              context,
-                              widget.firstLoginSetup
-                                  ? 'setup_finish_button'
-                                  : 'currency_setup_continue_button',
-                            ),
-                          ),
+                          child: _isSaving
+                              ? const SizedBox.square(
+                                  dimension: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  appT(
+                                    context,
+                                    widget.firstLoginSetup
+                                        ? 'setup_finish_button'
+                                        : 'currency_setup_continue_button',
+                                  ),
+                                ),
                         ),
                         if (widget.firstLoginSetup) ...[
                           const SizedBox(height: 12),
@@ -185,16 +195,27 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
   }
 
   Future<void> _finish() async {
-    await ref.read(currencyProvider.notifier).setCurrency(_selectedCurrency);
-    if (widget.firstLoginSetup) {
-      final user = ref.read(authNotifierProvider).value;
-      if (user != null) {
-        await ref.read(setupServiceProvider).markSetupCompleted(user.id);
-        ref.invalidate(setupCompletedProvider);
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      await ref.read(currencyProvider.notifier).setCurrency(_selectedCurrency);
+      await ref.read(persistUserConfigurationProvider)();
+      if (widget.firstLoginSetup) {
+        final user = ref.read(authNotifierProvider).value;
+        if (user != null) {
+          await ref.read(setupServiceProvider).markSetupCompleted(user.id);
+          ref.invalidate(setupCompletedProvider);
+        }
       }
+      if (!mounted) return;
+      context.go('/home');
+    } catch (error) {
+      if (!mounted) return;
+      ToastUtils.showServerErrors(context, error);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    if (!mounted) return;
-    context.go('/home');
   }
 }
 
@@ -229,9 +250,8 @@ class _WelcomeHeader extends StatelessWidget {
         Text(
           appT(context, 'welcome_title'),
           textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+          style: Theme.of(context).textTheme.headlineMedium
+              ?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 8),
         Text(
