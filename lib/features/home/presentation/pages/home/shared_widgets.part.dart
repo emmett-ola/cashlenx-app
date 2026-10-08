@@ -236,9 +236,10 @@ class _AvatarImage extends StatelessWidget {
       );
     }
 
-    if (value.startsWith('assets/')) {
+    final assetPath = resolveAvatarAssetPath(value);
+    if (assetPath != null) {
       return Image.asset(
-        value,
+        assetPath,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) =>
             _DefaultAvatarImage(username: username),
@@ -257,7 +258,7 @@ class _DefaultAvatarImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      _defaultAvatarAsset,
+      defaultAvatarAsset,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         final initial = username.trim().isEmpty ? 'U' : username.trim()[0];

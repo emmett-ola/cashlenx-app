@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
+import '../../../../shared/avatar_presets.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -12,18 +13,6 @@ import '../../../demo/data/demo_data_store.dart';
 import '../../../home/presentation/providers/currency_provider.dart';
 import '../../../settings/data/user_configuration_sync.dart';
 import '../../domain/user_profile.dart';
-
-const _avatarPresets = [
-  Color(0xFF5FB3A9),
-  Color(0xFF8B7CF6),
-  Color(0xFFF59E0B),
-  Color(0xFF10B981),
-  Color(0xFFEF4444),
-  Color(0xFF3B82F6),
-];
-
-const _defaultAvatarAsset =
-    'assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -98,7 +87,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       avatarValue: _avatarValue,
                       displayName: _nameController.text,
                       isEditing: _isEditing,
-                      onAvatarTap: () => _showAvatarPicker(profile),
+                      onAvatarTap: _showAvatarPicker,
                     ),
                   ),
                 ),
@@ -367,7 +356,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  void _showAvatarPicker(UserProfile profile) {
+  void _showAvatarPicker() {
     if (!_isEditing) return;
 
     showModalBottomSheet<void>(
@@ -376,50 +365,52 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return _ProfileModal(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppPanelHeader(
-                title: appT(context, 'profile_avatar_modal_title'),
-              ),
-              const SizedBox(height: 20),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppPanelHeader(
+                  title: appT(context, 'profile_avatar_modal_title'),
                 ),
-                itemCount: _avatarPresets.length,
-                itemBuilder: (context, index) {
-                  final value = 'preset:$index';
-                  final selected = _avatarValue == value;
-                  return _AvatarPresetButton(
-                    color: _avatarPresets[index],
-                    initial: _profileInitial(profile, _nameController.text),
-                    selected: selected,
-                    onTap: () {
-                      setState(() => _avatarValue = value);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 20),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                  ),
+                  itemCount: avatarPresetAssets.length,
+                  itemBuilder: (context, index) {
+                    final value = avatarPresetAssets[index];
+                    final selected =
+                        resolveAvatarAssetPath(_avatarValue) == value;
+                    return _AvatarPresetButton(
+                      assetPath: value,
+                      selected: selected,
+                      onTap: () {
+                        setState(() => _avatarValue = value);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
                 ),
-                child: Text(
-                  appT(context, 'profile_avatar_tip'),
-                  style: const TextStyle(color: AppSurfaceTokens.textColor),
+                const SizedBox(height: 18),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    appT(context, 'profile_avatar_tip'),
+                    style: const TextStyle(color: AppSurfaceTokens.textColor),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -581,12 +572,7 @@ class _AvatarCard extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              _ProfileAvatar(
-                profile: profile,
-                avatarValue: avatarValue,
-                displayName: displayName,
-                size: 96,
-              ),
+              _ProfileAvatar(avatarValue: avatarValue, size: 96),
               if (isEditing)
                 Positioned(
                   right: -2,
@@ -634,29 +620,13 @@ class _AvatarCard extends StatelessWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
-    required this.profile,
-    required this.avatarValue,
-    required this.displayName,
-    required this.size,
-  });
+  const _ProfileAvatar({required this.avatarValue, required this.size});
 
-  final UserProfile profile;
   final String avatarValue;
-  final String displayName;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final preset = _presetIndex(avatarValue);
-    if (preset != null) {
-      return _AvatarFallback(
-        initial: _profileInitial(profile, displayName),
-        color: _avatarPresets[preset],
-        size: size,
-      );
-    }
-
     if (avatarValue.startsWith('http://') ||
         avatarValue.startsWith('https://')) {
       return ClipOval(
@@ -672,10 +642,11 @@ class _ProfileAvatar extends StatelessWidget {
       );
     }
 
-    if (avatarValue.startsWith('assets/')) {
+    final assetPath = resolveAvatarAssetPath(avatarValue);
+    if (assetPath != null) {
       return ClipOval(
         child: Image.asset(
-          avatarValue,
+          assetPath,
           width: size,
           height: size,
           fit: BoxFit.cover,
@@ -699,48 +670,10 @@ class _DefaultProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipOval(
       child: Image.asset(
-        _defaultAvatarAsset,
+        defaultAvatarAsset,
         width: size,
         height: size,
         fit: BoxFit.cover,
-      ),
-    );
-  }
-}
-
-class _AvatarFallback extends StatelessWidget {
-  const _AvatarFallback({
-    required this.initial,
-    required this.color,
-    required this.size,
-  });
-
-  final String initial;
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color, Color.lerp(color, Colors.white, 0.32)!],
-        ),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          initial,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size * 0.34,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
       ),
     );
   }
@@ -1128,14 +1061,12 @@ class _ProfileModal extends StatelessWidget {
 
 class _AvatarPresetButton extends StatelessWidget {
   const _AvatarPresetButton({
-    required this.color,
-    required this.initial,
+    required this.assetPath,
     required this.selected,
     required this.onTap,
   });
 
-  final Color color;
-  final String initial;
+  final String assetPath;
   final bool selected;
   final VoidCallback onTap;
 
@@ -1143,6 +1074,7 @@ class _AvatarPresetButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeColor = Theme.of(context).colorScheme.primary;
     return InkWell(
+      key: ValueKey('avatar-preset-$assetPath'),
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: DecoratedBox(
@@ -1158,7 +1090,10 @@ class _AvatarPresetButton extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(4),
-              child: _AvatarFallback(initial: initial, color: color, size: 72),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.asset(assetPath, fit: BoxFit.cover),
+              ),
             ),
             if (selected)
               DecoratedBox(
@@ -1213,21 +1148,6 @@ class _ProfileError extends StatelessWidget {
       ),
     );
   }
-}
-
-String _profileInitial(UserProfile profile, String displayName) {
-  final text = displayName.trim().isEmpty ? profile.displayName : displayName;
-  if (text.trim().isEmpty) return 'U';
-  return text.trim()[0].toUpperCase();
-}
-
-int? _presetIndex(String value) {
-  if (!value.startsWith('preset:')) return null;
-  final index = int.tryParse(value.substring(7));
-  if (index == null || index < 0 || index >= _avatarPresets.length) {
-    return null;
-  }
-  return index;
 }
 
 String _displayValue(BuildContext context, String value) {

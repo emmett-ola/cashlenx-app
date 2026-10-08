@@ -11,6 +11,7 @@ import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
+import '../../../../shared/avatar_presets.dart';
 import '../../../../shared/widgets/app_color_picker.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';
@@ -29,9 +30,6 @@ part 'home/transactions.part.dart';
 part 'home/settings_tab.part.dart';
 part 'home/shared_widgets.part.dart';
 part 'home/home_models.part.dart';
-
-const _defaultAvatarAsset =
-    'assets/images/avatars/f9b59ca5421b2b7ef2e31c2ba4d827f48d22594a.png';
 
 final _userProfileProvider = FutureProvider<UserProfile?>((ref) async {
   final user = await ref.watch(authNotifierProvider.future);
@@ -57,9 +55,8 @@ final _dashboardProvider = FutureProvider<_DashboardResponse>((ref) async {
   final user = await ref.watch(authNotifierProvider.future);
   if (user?.role == 'demo') {
     ref.watch(demoDataRevisionProvider);
-    return await _DashboardApi.demo(
-      ref.watch(demoDataStoreProvider),
-    ).fetchDashboard();
+    return await _DashboardApi.demo(ref.watch(demoDataStoreProvider))
+        .fetchDashboard();
   }
 
   return await _DashboardApi(ref.watch(cashlenxApiProvider)).fetchDashboard();
