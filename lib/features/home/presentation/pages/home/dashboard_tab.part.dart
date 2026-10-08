@@ -163,7 +163,7 @@ class _SummaryCard extends StatefulWidget {
 }
 
 class _SummaryCardState extends State<_SummaryCard> {
-  var _selectedRange = _SummaryRange.total;
+  var _selectedRange = _SummaryRange.day;
 
   @override
   Widget build(BuildContext context) {

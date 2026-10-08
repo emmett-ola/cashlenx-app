@@ -27,12 +27,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    expect(find.text('Total Balance'), findsOneWidget);
+    expect(find.text('Today Balance'), findsOneWidget);
     expect(find.text('Day'), findsOneWidget);
     expect(find.text('Month'), findsOneWidget);
     expect(find.text('Year'), findsOneWidget);
     expect(find.text('Total'), findsOneWidget);
-    expect(find.text(r'$88,000.00'), findsOneWidget);
+    expect(find.text(r'$128.45'), findsOneWidget);
     expect(find.text('Coffee beans'), findsOneWidget);
     expect(find.text('-\$12.50'), findsOneWidget);
     expect(find.text('+\$3,500.00'), findsOneWidget);
@@ -54,11 +54,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Day'));
+    await tester.tap(find.text('Total'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Today Balance'), findsOneWidget);
-    expect(find.text(r'$128.45'), findsOneWidget);
+    expect(find.text('Total Balance'), findsOneWidget);
+    expect(find.text(r'$88,000.00'), findsOneWidget);
 
     await tester.tap(find.text('Year'));
     await tester.pumpAndSettle();
@@ -134,7 +134,7 @@ void main() {
   });
 
   for (final scenario in <(HomeSection, String)>[
-    (HomeSection.dashboard, 'Total Balance'),
+    (HomeSection.dashboard, 'Today Balance'),
     (HomeSection.categories, 'Manage your categories'),
     (HomeSection.budget, 'Manage your spending limits'),
     (HomeSection.settings, 'Preferences'),

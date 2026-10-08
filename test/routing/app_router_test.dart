@@ -41,7 +41,7 @@ void main() {
 
     final router = container.read(routerProvider);
     for (final scenario in <(String, String)>[
-      ('/home', 'Total Balance'),
+      ('/home', 'Today Balance'),
       ('/categories', 'Manage your categories'),
       ('/budgets', 'Manage your spending limits'),
       ('/settings', 'Preferences'),

@@ -30,7 +30,7 @@ void main() {
     testWidgets('dashboard visual acceptance at ${entry.key}', (tester) async {
       await _pumpDemoPage(tester, entry.value, const HomePage());
 
-      expect(find.text('Total Balance'), findsOneWidget);
+      expect(find.text('Today Balance'), findsOneWidget);
       expect(find.text('Coffee beans'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await expectLater(
