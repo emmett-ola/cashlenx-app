@@ -43,4 +43,50 @@ void main() {
       BorderRadius.circular(AppDesignTokens.radiusControl),
     );
   });
+
+  testWidgets('auth input keeps entered text distinct from its placeholder', (
+    tester,
+  ) async {
+    final controller = TextEditingController(text: 'emmett');
+    addTearDown(controller.dispose);
+
+    Future<void> pumpWithTheme(ThemeData theme) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme.brightness == Brightness.light ? theme : null,
+          darkTheme: theme.brightness == Brightness.dark ? theme : null,
+          themeMode: theme.brightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          home: Scaffold(
+            body: CustomInput(
+              label: 'Username',
+              placeholder: 'Enter username',
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await pumpWithTheme(AppTheme.lightTheme(AppTheme.primaryColor));
+    var field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.style?.color, AppDesignTokens.text);
+    expect(field.decoration?.hintStyle?.color, AppDesignTokens.mutedText);
+    expect(field.style?.color, isNot(field.decoration?.hintStyle?.color));
+
+    final darkTheme = AppTheme.darkTheme(AppTheme.primaryColor);
+    await pumpWithTheme(darkTheme);
+    field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.style?.color, darkTheme.colorScheme.onSurface);
+    expect(
+      field.decoration?.hintStyle?.color,
+      darkTheme.colorScheme.onSurfaceVariant,
+    );
+    expect(
+      field.decoration?.fillColor,
+      darkTheme.colorScheme.surfaceContainerHighest,
+    );
+  });
 }

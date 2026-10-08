@@ -30,17 +30,28 @@ class CustomInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final inputTextColor = isDark
+        ? colorScheme.onSurface
+        : AppDesignTokens.text;
+    final hintTextColor = isDark
+        ? colorScheme.onSurfaceVariant
+        : AppDesignTokens.mutedText;
+    final fillColor = isDark
+        ? colorScheme.surfaceContainerHighest
+        : AppDesignTokens.softFill;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: inputTextColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -51,9 +62,15 @@ class CustomInput extends StatelessWidget {
           keyboardType: keyboardType,
           onChanged: onChanged,
           enabled: enabled,
+          style: TextStyle(
+            color: enabled
+                ? inputTextColor
+                : inputTextColor.withValues(alpha: 0.38),
+            fontSize: 16,
+          ),
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+            hintStyle: TextStyle(color: hintTextColor, fontSize: 16),
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             contentPadding: const EdgeInsets.symmetric(
@@ -70,16 +87,14 @@ class CustomInput extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
-              borderSide: BorderSide(color: themeColor, width: 2),
+              borderSide: BorderSide(color: colorScheme.primary, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDesignTokens.radiusField),
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: enabled
-                ? AppDesignTokens.softFill
-                : AppDesignTokens.softFill.withValues(alpha: 0.7),
+            fillColor: enabled ? fillColor : fillColor.withValues(alpha: 0.7),
           ),
         ),
       ],
