@@ -6,6 +6,7 @@ import 'package:cashlenx/main.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
 import 'package:cashlenx/routing/app_router.dart';
+import 'package:cashlenx/shared/widgets/mobile_page_shell.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +41,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final router = container.read(routerProvider);
+    router.go('/settings');
+    await tester.pump();
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.byType(MobilePageShell), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(MobilePageShell), findsOneWidget);
+
     for (final scenario in <(String, String)>[
       ('/home', 'Today Balance'),
       ('/categories', 'Manage your categories'),

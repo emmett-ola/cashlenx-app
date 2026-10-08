@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../core/infrastructure/routing/auth_redirect_policy.dart';
 import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/splash/presentation/pages/splash_screen.dart';
@@ -88,42 +89,61 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const MobilePageShell(
-          child: HomePage(section: HomeSection.dashboard),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.dashboard),
+          ),
         ),
       ),
       GoRoute(
         path: '/categories',
         name: 'categories',
-        builder: (context, state) => const MobilePageShell(
-          child: HomePage(section: HomeSection.categories),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.categories),
+          ),
         ),
       ),
       GoRoute(
         path: '/budgets',
         name: 'budgets',
-        builder: (context, state) =>
-            const MobilePageShell(child: HomePage(section: HomeSection.budget)),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.budget),
+          ),
+        ),
       ),
       GoRoute(
         path: '/settings',
         name: 'settings',
-        builder: (context, state) => const MobilePageShell(
-          child: HomePage(section: HomeSection.settings),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.settings),
+          ),
         ),
       ),
       GoRoute(
         path: '/transactions',
         name: 'transactions',
-        builder: (context, state) => const MobilePageShell(
-          child: HomePage(section: HomeSection.transactions),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.transactions),
+          ),
         ),
       ),
       GoRoute(
         path: '/statistics',
         name: 'statistics',
-        builder: (context, state) => const MobilePageShell(
-          child: HomePage(section: HomeSection.statistics),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: const MobilePageShell(
+            child: HomePage(section: HomeSection.statistics),
+          ),
         ),
       ),
       GoRoute(
