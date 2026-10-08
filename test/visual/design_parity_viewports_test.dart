@@ -24,6 +24,7 @@ void main() {
     'phone-390': Size(390, 844),
     'shell-430': Size(430, 932),
     'tablet-768': Size(768, 1024),
+    'desktop-1440': Size(1440, 900),
   };
 
   for (final entry in viewports.entries) {
