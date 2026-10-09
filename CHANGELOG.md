@@ -6,6 +6,17 @@ state.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-09
+
+### Fixed
+
+- Normalized real and demo monthly-comparison responses into an ordered
+  January-to-December series with zero-filled missing months.
+- Made all twelve localized month labels visible in the statistics chart on
+  compact and wide layouts without relying on hidden horizontal scrolling.
+- Kept category editor requests aligned with the Server's persisted `emoji`
+  and `bg_color` fields so refreshed category lists retain customization.
+
 ## [1.0.3] - 2026-10-09
 
 ### Changed

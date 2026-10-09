@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_i18n.dart';
 import '../../../theme/app_theme.dart';
@@ -214,83 +215,97 @@ class _ComparisonCard extends StatelessWidget {
   final StatisticsSnapshot data;
   @override
   Widget build(BuildContext context) {
-    final count = math.min(
-      data.months.length,
-      math.min(data.monthlyIncome.length, data.monthlyExpense.length),
-    );
+    const count = 12;
     final maxValue = [
       ...data.monthlyIncome,
       ...data.monthlyExpense,
     ].fold<double>(0, math.max);
     return _Card(
       title: appT(context, 'monthly_comparison'),
-      child: count == 0
-          ? _NoData()
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: math.max(MediaQuery.sizeOf(context).width - 66, 600),
-                height: 190,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(count, (index) {
-                    final incomeHeight = maxValue == 0
-                        ? 0.0
-                        : data.monthlyIncome[index] / maxValue * 130;
-                    final expenseHeight = maxValue == 0
-                        ? 0.0
-                        : data.monthlyExpense[index] / maxValue * 130;
-                    return Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final slotWidth = constraints.maxWidth / count;
+          final barWidth = math.max(3.0, math.min(9.0, (slotWidth - 3) / 2));
+          return SizedBox(
+            key: const ValueKey('monthly-comparison-chart'),
+            height: 190,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(count, (index) {
+                final income = index < data.monthlyIncome.length
+                    ? data.monthlyIncome[index]
+                    : 0.0;
+                final expense = index < data.monthlyExpense.length
+                    ? data.monthlyExpense[index]
+                    : 0.0;
+                final incomeHeight = maxValue == 0
+                    ? 0.0
+                    : income / maxValue * 130;
+                final expenseHeight = maxValue == 0
+                    ? 0.0
+                    : expense / maxValue * 130;
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _Bar(
-                                height: incomeHeight,
-                                color: AppTheme.successColor,
-                              ),
-                              const SizedBox(width: 3),
-                              _Bar(
-                                height: expenseHeight,
-                                color: AppTheme.errorColor,
-                              ),
-                            ],
+                          _Bar(
+                            height: incomeHeight,
+                            color: AppTheme.successColor,
+                            width: barWidth,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            data.months[index],
-                            style: const TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 11,
-                            ),
+                          const SizedBox(width: 3),
+                          _Bar(
+                            height: expenseHeight,
+                            color: AppTheme.errorColor,
+                            width: barWidth,
                           ),
                         ],
                       ),
-                    );
-                  }),
-                ),
-              ),
+                      const SizedBox(height: 8),
+                      FittedBox(
+                        child: Text(
+                          _monthLabel(context, index + 1),
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _Bar extends StatelessWidget {
-  const _Bar({required this.height, required this.color});
+  const _Bar({required this.height, required this.color, required this.width});
   final double height;
   final Color color;
+  final double width;
   @override
   Widget build(BuildContext context) => Container(
-    width: 11,
+    width: width,
     height: math.max(height, 2),
     decoration: BoxDecoration(
       color: color,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
     ),
   );
+}
+
+String _monthLabel(BuildContext context, int month) {
+  return DateFormat.MMM(Localizations.localeOf(context).toLanguageTag())
+      .format(DateTime(2000, month));
 }
 
 class _TopExpensesCard extends StatelessWidget {

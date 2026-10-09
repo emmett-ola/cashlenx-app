@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../network/cashlenx_api.dart';
@@ -50,6 +52,7 @@ class StatisticsRepository {
     final comparison = _mapData(responses[1]);
     final top = _mapData(responses[2]);
     final rawTop = top['expenses'];
+    final monthly = _normalizeMonthlyComparison(comparison);
 
     return StatisticsSnapshot(
       year: year,
@@ -57,9 +60,9 @@ class StatisticsRepository {
       expense: _number(summary['expense'] ?? summary['total_expense']),
       balance: _number(summary['balance']),
       transactionCount: (summary['transaction_count'] as num?)?.toInt() ?? 0,
-      months: _strings(comparison['months']),
-      monthlyIncome: _numbers(comparison['income']),
-      monthlyExpense: _numbers(comparison['expense']),
+      months: monthly.months,
+      monthlyIncome: monthly.income,
+      monthlyExpense: monthly.expense,
       topExpenses: rawTop is List
           ? rawTop
                 .whereType<Map>()
@@ -88,3 +91,92 @@ List<double> _numbers(Object? value) => value is List
 List<String> _strings(Object? value) => value is List
     ? value.map((item) => item.toString()).toList(growable: false)
     : const [];
+
+const _canonicalMonths = <String>[
+  '01',
+  '02',
+  '03',
+  '04',
+  '05',
+  '06',
+  '07',
+  '08',
+  '09',
+  '10',
+  '11',
+  '12',
+];
+
+const _englishMonthIndexes = <String, int>{
+  'jan': 0,
+  'january': 0,
+  'feb': 1,
+  'february': 1,
+  'mar': 2,
+  'march': 2,
+  'apr': 3,
+  'april': 3,
+  'may': 4,
+  'jun': 5,
+  'june': 5,
+  'jul': 6,
+  'july': 6,
+  'aug': 7,
+  'august': 7,
+  'sep': 8,
+  'sept': 8,
+  'september': 8,
+  'oct': 9,
+  'october': 9,
+  'nov': 10,
+  'november': 10,
+  'dec': 11,
+  'december': 11,
+};
+
+_MonthlySeries _normalizeMonthlyComparison(Map<String, dynamic> json) {
+  final rawMonths = _strings(json['months']);
+  final rawIncome = _numbers(json['income']);
+  final rawExpense = _numbers(json['expense']);
+  final income = List<double>.filled(12, 0);
+  final expense = List<double>.filled(12, 0);
+  final itemCount = [
+    rawMonths.length,
+    rawIncome.length,
+    rawExpense.length,
+  ].fold<int>(0, math.max);
+
+  for (var index = 0; index < itemCount && index < 12; index++) {
+    final monthIndex = index < rawMonths.length
+        ? (_monthIndex(rawMonths[index]) ?? index)
+        : index;
+    if (monthIndex < 0 || monthIndex >= 12) continue;
+    if (index < rawIncome.length) income[monthIndex] = rawIncome[index];
+    if (index < rawExpense.length) expense[monthIndex] = rawExpense[index];
+  }
+
+  return _MonthlySeries(
+    months: _canonicalMonths,
+    income: List.unmodifiable(income),
+    expense: List.unmodifiable(expense),
+  );
+}
+
+int? _monthIndex(String value) {
+  final normalized = value.trim().toLowerCase();
+  final numeric = int.tryParse(normalized);
+  if (numeric != null && numeric >= 1 && numeric <= 12) return numeric - 1;
+  return _englishMonthIndexes[normalized];
+}
+
+class _MonthlySeries {
+  const _MonthlySeries({
+    required this.months,
+    required this.income,
+    required this.expense,
+  });
+
+  final List<String> months;
+  final List<double> income;
+  final List<double> expense;
+}
