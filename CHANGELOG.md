@@ -6,7 +6,13 @@ state.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-09
+
 ### Changed
+
+- Replaced the CashLenX launcher and product branding with the unified
+  camera-and-cash artwork across Android, iOS, macOS, Windows, Flutter Web/PWA,
+  splash, authentication, first-login setup, and About surfaces.
 
 - Upgraded CI and the revision-pinned client toolchain to Flutter 3.47.5 / Dart
   3.13.4 and refreshed the locked dependency graph, including current major
