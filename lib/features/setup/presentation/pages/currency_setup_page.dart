@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/app_surface.dart';
+import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/currency_provider.dart';
@@ -241,10 +241,7 @@ class _WelcomeHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: SvgPicture.asset(
-            'assets/images/logo_teal.svg',
-            key: const ValueKey('setup-official-logo'),
-          ),
+          child: const BrandLogo(key: ValueKey('setup-official-logo')),
         ),
         const SizedBox(height: 18),
         Text(

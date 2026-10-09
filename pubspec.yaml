@@ -66,19 +66,19 @@ flutter:
     - assets/images/avatars/
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: "ic_launcher"
   ios: true
-  # Canonical app icon source. Replace these two files for future seasonal or
+  # Canonical app icon sources. Replace these files for future seasonal or
   # holiday icon campaigns, then rerun `dart run flutter_launcher_icons`.
   image_path: "assets/images/app_icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "assets/images/app_icon_background.png"
   adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
   web:
     generate: true
     image_path: "assets/images/app_icon.png"
     background_color: "#FFFFFF"
-    theme_color: "#79BCB8"
+    theme_color: "#01BDB3"
   windows:
     generate: true
     image_path: "assets/images/app_icon.png"

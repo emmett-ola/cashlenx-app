@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
+import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../theme/app_theme.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -84,10 +84,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 children: [
                   ScaleTransition(
                     scale: _pulseAnimation,
-                    child: SvgPicture.asset(
-                      'assets/images/logo_white.svg',
+                    child: const BrandLogo(
                       height: 112,
                       width: 112,
+                      tone: BrandLogoTone.white,
                     ),
                   ),
                   const SizedBox(height: 24),

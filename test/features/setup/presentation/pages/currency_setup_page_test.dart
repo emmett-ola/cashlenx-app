@@ -6,12 +6,12 @@ import 'package:cashlenx/features/setup/data/setup_service.dart';
 import 'package:cashlenx/features/setup/presentation/pages/currency_setup_page.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
+import 'package:cashlenx/shared/widgets/brand_logo.dart';
 import 'package:cashlenx/theme/app_theme.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,7 +40,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const ValueKey('setup-official-logo')), findsOneWidget);
-    expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.byType(BrandLogo), findsOneWidget);
     expect(find.text('CX'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'Singapore');

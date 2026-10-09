@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/i18n/app_i18n.dart';
+import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../theme/app_theme.dart';
 
 class AuthLayout extends ConsumerWidget {
@@ -94,9 +94,7 @@ class AuthLayout extends ConsumerWidget {
                                   ),
                                 ],
                               ),
-                              child: SvgPicture.asset(
-                                'assets/images/logo_teal.svg',
-                              ),
+                              child: const BrandLogo(),
                             ),
                             const SizedBox(height: 18),
                             Text(
