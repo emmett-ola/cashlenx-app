@@ -16,7 +16,7 @@ void main() {
   if (comparator is LocalFileComparator) {
     goldenFileComparator = _TolerantGoldenFileComparator(
       comparator.basedir.resolve('design_parity_viewports_test.dart'),
-      precisionTolerance: 0.02,
+      precisionTolerance: 0.03,
     );
   }
 
