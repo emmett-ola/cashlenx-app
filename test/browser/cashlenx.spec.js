@@ -141,7 +141,7 @@ async function loginBrowser(page, identifier) {
   await page.getByRole('button', { name: '$ USD US Dollar' }).click();
   await finishFirstLoginSetup(page);
   await expect(page).toHaveURL(/#\/home$/);
-  await expectSemanticText(page, 'Total Balance');
+  await expectSemanticText(page, 'Today Balance');
 }
 
 test.beforeAll(async () => {
@@ -188,7 +188,7 @@ test('built client completes authenticated and demo journeys', async ({ page }) 
   await page.reload();
   await enableFlutterSemantics(page);
   await expect(page).toHaveURL(/#\/home$/);
-  await expectSemanticText(page, 'Total Balance');
+  await expectSemanticText(page, 'Today Balance');
 
   for (const destination of [
     ['categories', 'Manage your categories'],
