@@ -234,9 +234,7 @@ test('built client completes authenticated and demo journeys', async ({ page }) 
   });
   await expect(createCategory).toBeVisible();
   await createCategory.click();
-  await demoPage
-    .getByRole('textbox', { name: 'Enter category name' })
-    .fill('Isolated Demo');
+  await enterText(demoPage, 0, 'Isolated Demo');
   const create = demoPage.getByRole('button', { name: 'Create' });
   await expect(create).toBeVisible();
   await create.click();
