@@ -94,7 +94,10 @@ growing global folders.
   expire the session; transient transport failures keep it for a later retry.
 - Demo mode resets `DemoDataStore` every time the user chooses demo mode from
   login and clears real session credentials first. After entry, demo categories
-  and transactions are editable during that session.
+  and transactions are editable during that session. The reset preserves the
+  language selected on the unauthenticated screen in the new demo
+  configuration, while finance, profile, currency, and theme data return to
+  their demo defaults.
 - Home shell has Home, Category, Add, Budget, and Settings tabs.
 - Dashboard data uses the real API for normal users and `DemoDataStore` for demo
   users.

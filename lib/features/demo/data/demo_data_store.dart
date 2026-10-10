@@ -34,7 +34,7 @@ class DemoDataStore {
   late ApiJson _profile;
   late ApiJson _configuration;
 
-  void reset() {
+  void reset({String displayLanguage = 'en'}) {
     _nextCategoryId = 100;
     _nextTransactionId = 100;
     _nextBudgetId = 100;
@@ -54,7 +54,7 @@ class DemoDataStore {
       'birth_date': '1995-03-15',
     };
     _configuration = {
-      'display_language': 'en',
+      'display_language': displayLanguage,
       'currency_code': 'USD',
       'active_theme_color': '#008080',
     };

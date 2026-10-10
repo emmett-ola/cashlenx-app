@@ -1,14 +1,18 @@
 import 'package:cashlenx/core/infrastructure/persistence/memory_key_value_store.dart';
 import 'package:cashlenx/core/infrastructure/errors/api_exception.dart';
+import 'package:cashlenx/core/i18n/app_i18n.dart';
 import 'package:cashlenx/core/services/secure_storage_service.dart';
 import 'package:cashlenx/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/domain/repositories/auth_repository.dart';
 import 'package:cashlenx/features/auth/presentation/pages/login_page.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
+import 'package:cashlenx/features/settings/data/user_configuration_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('accepts a username in the login identifier field', (
@@ -97,6 +101,76 @@ void main() {
       expect(find.text('Invalid credentials'), findsOneWidget);
     },
   );
+
+  for (final (languageIndex, language) in AppLanguage.values.indexed) {
+    testWidgets(
+      'keeps ${language.name} from login through the first demo screen',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'app_language': 'en'});
+        await tester.binding.setSurfaceSize(const Size(430, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final container = ProviderContainer(
+          overrides: [
+            secureStorageServiceProvider.overrideWithValue(
+              SecureStorageService(MemoryKeyValueStore()),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final router = GoRouter(
+          initialLocation: '/login',
+          routes: [
+            GoRoute(
+              path: '/login',
+              builder: (context, state) => const Scaffold(body: LoginPage()),
+            ),
+            GoRoute(
+              path: '/home',
+              builder: (context, state) => const _DemoHomeProbe(),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump();
+
+        await tester.tap(find.text('Change Language'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(ListTile).at(languageIndex));
+        await tester.pumpAndSettle();
+
+        final demoAction = find.text(
+          AppTranslations(language)('continue_demo'),
+        );
+        await tester.ensureVisible(demoAction);
+        await tester.tap(demoAction);
+        await tester.pumpAndSettle();
+
+        expect(find.text('ready:${language.code}'), findsOneWidget);
+        expect(container.read(i18nProvider), language);
+      },
+    );
+  }
+}
+
+class _DemoHomeProbe extends ConsumerWidget {
+  const _DemoHomeProbe();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sync = ref.watch(userConfigurationSyncProvider);
+    final language = ref.watch(i18nProvider);
+    final state = sync.isLoading ? 'loading' : 'ready';
+    return Scaffold(body: Text('$state:${language.code}'));
+  }
 }
 
 class _FakeAuthRepository implements AuthRepository {

@@ -1,16 +1,25 @@
 import 'dart:async';
 
 import 'package:cashlenx/core/infrastructure/persistence/memory_key_value_store.dart';
+import 'package:cashlenx/core/i18n/app_i18n.dart';
 import 'package:cashlenx/core/services/secure_storage_service.dart';
 import 'package:cashlenx/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/domain/repositories/auth_repository.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/demo/data/demo_data_store.dart';
+import 'package:cashlenx/features/settings/data/user_configuration_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   test(
     'interactive login does not replace signed-out state with loading',
     () async {
@@ -118,6 +127,44 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'demo configuration sync preserves the language selected at entry',
+    () async {
+      SharedPreferences.setMockInitialValues({'app_language': 'en'});
+      final storage = SecureStorageService(MemoryKeyValueStore());
+      final container = ProviderContainer(
+        overrides: [secureStorageServiceProvider.overrideWithValue(storage)],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(i18nProvider.notifier)
+          .setLanguage(AppLanguage.traditionalChinese);
+      await container.read(authNotifierProvider.notifier).continueAsDemo();
+
+      final configuration = await container
+          .read(demoDataStoreProvider)
+          .getConfiguration();
+      expect(
+        (configuration['data'] as Map)['display_language'],
+        AppLanguage.traditionalChinese.serverCode,
+      );
+
+      await container
+          .read(i18nProvider.notifier)
+          .setLanguage(AppLanguage.english);
+      container.invalidate(userConfigurationSyncProvider);
+      await container.read(userConfigurationSyncProvider.future);
+
+      expect(container.read(i18nProvider), AppLanguage.traditionalChinese);
+      final preferences = await SharedPreferences.getInstance();
+      expect(
+        preferences.getString('app_language'),
+        AppLanguage.traditionalChinese.code,
+      );
+    },
+  );
 
   test('session expiration clears tokens but preserves remember-me', () async {
     final storage = SecureStorageService(MemoryKeyValueStore());

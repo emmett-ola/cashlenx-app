@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/services/secure_storage_service.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../domain/models/user.dart';
@@ -67,8 +68,9 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> continueAsDemo() async {
+    final displayLanguage = ref.read(i18nProvider).serverCode;
     await ref.read(secureStorageServiceProvider).clearSession();
-    ref.read(demoDataStoreProvider).reset();
+    ref.read(demoDataStoreProvider).reset(displayLanguage: displayLanguage);
     ref.read(demoDataRevisionProvider.notifier).bump();
 
     final now = DateTime.now();
