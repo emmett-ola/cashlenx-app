@@ -249,13 +249,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showAddTransactionSheet() {
-    showModalBottomSheet<void>(
+    showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _AddTransactionSheet(),
-    ).whenComplete(() {
-      ref.invalidate(_dashboardProvider);
+    ).then((created) {
+      if (created == true) ref.invalidate(_dashboardProvider);
     });
   }
 }

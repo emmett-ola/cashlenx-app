@@ -1400,9 +1400,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
               description: description.isEmpty ? null : description,
             );
       }
-      ref.invalidate(_dashboardProvider);
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context, true);
       ToastUtils.showSuccess(context, appT(context, 'transaction_added'));
     } catch (error) {
       if (!mounted) return;
