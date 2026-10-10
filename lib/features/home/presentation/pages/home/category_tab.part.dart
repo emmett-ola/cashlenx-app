@@ -701,6 +701,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
             remark: remark,
           );
       ref.read(demoDataRevisionProvider.notifier).bump();
+      ref.invalidate(_dashboardProvider);
       return;
     }
 
@@ -715,6 +716,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
           bgColor: bgColor,
           remark: remark,
         );
+    ref.invalidate(_dashboardProvider);
   }
 
   Future<void> _deleteCategoryById(String id) async {
