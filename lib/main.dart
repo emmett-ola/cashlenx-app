@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'core/config/app_config.dart';
 import 'core/i18n/app_i18n.dart';
 import 'routing/app_router.dart';
+import 'theme/app_fonts.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -11,6 +13,7 @@ void main() async {
 
   // Initialize Config (Env, Logging, etc.)
   await AppConfig.init();
+  await AppFonts.ensureBundledFontsLoaded();
 
   runApp(const ProviderScope(child: CashLenXApp()));
 }
@@ -37,8 +40,8 @@ class CashLenXApp extends ConsumerWidget {
       ],
 
       // Theme
-      theme: AppTheme.lightTheme(themeColor),
-      darkTheme: AppTheme.darkTheme(themeColor),
+      theme: AppTheme.lightTheme(themeColor, language: language),
+      darkTheme: AppTheme.darkTheme(themeColor, language: language),
       themeMode: themeMode,
 
       // Routing

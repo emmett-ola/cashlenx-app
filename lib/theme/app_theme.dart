@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/i18n/app_i18n.dart';
+import 'app_fonts.dart';
+
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
 );
@@ -82,7 +85,10 @@ class AppTheme {
   static const successColor = AppDesignTokens.success;
   static const warningColor = AppDesignTokens.warning;
 
-  static ThemeData lightTheme(Color themeColor) {
+  static ThemeData lightTheme(
+    Color themeColor, {
+    AppLanguage language = AppLanguage.english,
+  }) {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: themeColor,
       brightness: Brightness.light,
@@ -90,51 +96,57 @@ class AppTheme {
       error: errorColor,
     ).copyWith(primary: themeColor, onPrimary: Colors.white);
 
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppDesignTokens.background,
-      cardTheme: const CardThemeData(
-        color: AppDesignTokens.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppDesignTokens.radiusCard),
-          ),
-        ),
-      ),
-      dialogTheme: const DialogThemeData(
-        backgroundColor: AppDesignTokens.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppDesignTokens.radiusCard),
-          ),
-        ),
-      ),
-      appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: const RoundedRectangleBorder(
+    return _withLocalizedFonts(
+      ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        colorScheme: colorScheme,
+        scaffoldBackgroundColor: AppDesignTokens.background,
+        cardTheme: const CardThemeData(
+          color: AppDesignTokens.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
-              Radius.circular(AppDesignTokens.radiusControl),
+              Radius.circular(AppDesignTokens.radiusCard),
             ),
           ),
         ),
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppDesignTokens.radiusField),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: AppDesignTokens.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDesignTokens.radiusCard),
+            ),
           ),
         ),
-        filled: true,
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(AppDesignTokens.radiusControl),
+              ),
+            ),
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDesignTokens.radiusField),
+            ),
+          ),
+          filled: true,
+        ),
       ),
+      language,
     );
   }
 
-  static ThemeData darkTheme(Color themeColor) {
+  static ThemeData darkTheme(
+    Color themeColor, {
+    AppLanguage language = AppLanguage.english,
+  }) {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: themeColor,
       brightness: Brightness.dark,
@@ -142,36 +154,54 @@ class AppTheme {
       error: errorColor,
     ).copyWith(primary: themeColor, onPrimary: Colors.white);
 
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: colorScheme,
-      cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
-      dialogTheme: const DialogThemeData(
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppDesignTokens.radiusCard),
-          ),
-        ),
-      ),
-      appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: const RoundedRectangleBorder(
+    return _withLocalizedFonts(
+      ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: colorScheme,
+        cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
+        dialogTheme: const DialogThemeData(
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
-              Radius.circular(AppDesignTokens.radiusControl),
+              Radius.circular(AppDesignTokens.radiusCard),
             ),
           ),
         ),
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(AppDesignTokens.radiusField),
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(AppDesignTokens.radiusControl),
+              ),
+            ),
           ),
         ),
-        filled: true,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDesignTokens.radiusField),
+            ),
+          ),
+          filled: true,
+        ),
+      ),
+      language,
+    );
+  }
+
+  static ThemeData _withLocalizedFonts(ThemeData theme, AppLanguage language) {
+    final family = AppFonts.familyFor(language);
+    final fallback = AppFonts.fallbackFamiliesFor(language);
+    return theme.copyWith(
+      textTheme: theme.textTheme.apply(
+        fontFamily: family,
+        fontFamilyFallback: fallback,
+      ),
+      primaryTextTheme: theme.primaryTextTheme.apply(
+        fontFamily: family,
+        fontFamilyFallback: fallback,
       ),
     );
   }

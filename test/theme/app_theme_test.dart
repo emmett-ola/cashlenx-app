@@ -1,4 +1,6 @@
 import 'package:cashlenx/theme/app_theme.dart';
+import 'package:cashlenx/theme/app_fonts.dart';
+import 'package:cashlenx/core/i18n/app_i18n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,40 @@ void main() {
     expect(AppDesignTokens.radiusControl, 8);
     expect(AppDesignTokens.radiusCard, 16);
     expect(AppDesignTokens.radiusHero, 24);
+  });
+
+  test('themes select preloaded locale-specific Chinese font families', () {
+    final simplified = AppTheme.lightTheme(
+      AppTheme.primaryColor,
+      language: AppLanguage.simplifiedChinese,
+    );
+    final traditional = AppTheme.darkTheme(
+      AppTheme.primaryColor,
+      language: AppLanguage.traditionalChinese,
+    );
+    final english = AppTheme.lightTheme(AppTheme.primaryColor);
+
+    expect(
+      simplified.textTheme.bodyMedium?.fontFamily,
+      AppFonts.simplifiedChineseFamily,
+    );
+    expect(
+      traditional.textTheme.bodyMedium?.fontFamily,
+      AppFonts.traditionalChineseFamily,
+    );
+    expect(
+      english.textTheme.bodyMedium?.fontFamilyFallback,
+      containsAll([
+        AppFonts.simplifiedChineseFamily,
+        AppFonts.traditionalChineseFamily,
+      ]),
+    );
+  });
+
+  testWidgets('bundled Chinese interface fonts load before app startup', (
+    tester,
+  ) async {
+    await AppFonts.ensureBundledFontsLoaded();
   });
 
   test('theme color notifier loads and persists selected color', () async {

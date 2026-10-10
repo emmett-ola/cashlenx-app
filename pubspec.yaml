@@ -66,6 +66,14 @@ flutter:
     - assets/images/
     - assets/images/avatars/
 
+  fonts:
+    - family: CashLenX Noto Sans SC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-UI.ttf
+    - family: CashLenX Noto Sans TC
+      fonts:
+        - asset: assets/fonts/NotoSansTC-UI.ttf
+
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true

@@ -110,6 +110,10 @@ growing global folders.
 - Date display and inline calendar labels use Flutter localizations so language
   and region control date format, month title, weekday labels, and first day of
   week.
+- Simplified and Traditional Chinese interface subsets of Noto Sans are bundled
+  under `assets/fonts/`, loaded before `runApp`, and selected centrally by the
+  active locale. Regenerate them with `tool/update_cjk_font_subsets.py` whenever
+  localized interface copy adds new code points.
 - Settings includes theme color, currency, language, about, and logout.
 - Theme color persists through `themeColorProvider` and should drive primary
   buttons, accents, selected states, and highlights. Splash/pre-splash stays
