@@ -396,19 +396,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     );
                   },
                 ),
-                const SizedBox(height: 18),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    appT(context, 'profile_avatar_tip'),
-                    style: const TextStyle(color: AppSurfaceTokens.textColor),
-                  ),
-                ),
               ],
             ),
           ),
@@ -577,20 +564,25 @@ class _AvatarCard extends StatelessWidget {
                 Positioned(
                   right: -2,
                   bottom: -2,
-                  child: Material(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: const CircleBorder(),
-                    elevation: 3,
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: onAvatarTap,
-                      child: const SizedBox(
-                        width: 34,
-                        height: 34,
-                        child: Icon(
-                          Icons.camera_alt_outlined,
-                          color: Colors.white,
-                          size: 18,
+                  child: Semantics(
+                    button: true,
+                    label: appT(context, 'profile_edit_avatar'),
+                    child: Material(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: const CircleBorder(),
+                      elevation: 3,
+                      child: InkWell(
+                        key: const ValueKey('profile-avatar-edit'),
+                        customBorder: const CircleBorder(),
+                        onTap: onAvatarTap,
+                        child: const SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
@@ -1029,30 +1021,36 @@ class _ProfileModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
-      child: SafeArea(
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.80,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            key: const ValueKey('profile-modal-surface'),
+            constraints: BoxConstraints(
+              maxWidth: 520,
+              maxHeight: MediaQuery.sizeOf(context).height * 0.80,
+            ),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: child,
           ),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.20),
-                blurRadius: 28,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: child,
         ),
       ),
     );

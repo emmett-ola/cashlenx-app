@@ -43,7 +43,7 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.binding.setSurfaceSize(const Size(390, 844));
+    await tester.binding.setSurfaceSize(const Size(1200, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final container = ProviderContainer(
       overrides: [
@@ -65,8 +65,18 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Edit'));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.camera_alt_outlined));
+    expect(find.bySemanticsLabel('Edit avatar'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
+
+    expect(
+      tester.getSize(find.byKey(const ValueKey('profile-modal-surface'))).width,
+      lessThanOrEqualTo(520),
+    );
+    expect(
+      find.text('Tip: Choose an avatar that best represents you!'),
+      findsNothing,
+    );
 
     for (final assetPath in avatarPresetAssets) {
       expect(find.byKey(ValueKey('avatar-preset-$assetPath')), findsOneWidget);
