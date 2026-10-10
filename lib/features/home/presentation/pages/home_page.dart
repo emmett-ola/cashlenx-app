@@ -20,6 +20,7 @@ import '../../../budget/presentation/budget_tab.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../../profile/domain/user_profile.dart';
 import '../../../settings/data/user_configuration_sync.dart';
+import '../../../statistics/presentation/analytics_context.dart';
 import '../../../statistics/presentation/statistics_page.dart';
 import '../providers/currency_provider.dart';
 import '../utils/transaction_filter_utils.dart';
@@ -127,6 +128,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final username = profile?.displayName ?? user?.username ?? 'User';
     final avatarUrl = profile?.avatarUrl;
     final isDemo = user?.role == 'demo';
+    final analyticsRange = ref.watch(analyticsRangeProvider);
 
     return Scaffold(
       backgroundColor: _AppShellColors.background,
@@ -156,6 +158,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                     onProfileTap: _openProfile,
                     onSeeAllTransactions: _openTransactions,
                     onMoreStats: _openMoreStats,
+                    selectedRange: analyticsRange,
+                    onRangeChanged: ref
+                        .read(analyticsRangeProvider.notifier)
+                        .setRange,
                   ),
                   const _CategoryTab(),
                   const SizedBox.shrink(),
@@ -221,6 +227,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _openMoreStats() {
+    final range = ref.read(analyticsRangeProvider);
+    if (range == AnalyticsRange.total) {
+      ref.read(analyticsRangeProvider.notifier).setRange(AnalyticsRange.year);
+    }
     _navigate(HomeSection.statistics);
   }
 

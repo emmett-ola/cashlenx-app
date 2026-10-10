@@ -18,6 +18,8 @@ Implemented:
 - Demo mode route into the authenticated home shell.
 - Logout calls the backend logout endpoint when a refresh token is available, then clears the local session.
 - Authenticated home shell with real summary/recent-transaction data, transaction CRUD, hierarchical category CRUD, budget preview, settings, and bottom navigation.
+- Expanded Day, Month, and Year statistics backed by matching summary, trend,
+  and top-expense APIs, with a ledger-derived Demo equivalent.
 - Docker-based Flutter web deployment using `docker/Dockerfile`, `docker/compose.yml`, a shared external network, and nginx route fallback.
 - GitHub Actions CI that validates the web and container builds, then publishes branch-configured static web output to the matching release-repository branch.
 - `flutter analyze` and `flutter test` are clean.
@@ -25,7 +27,8 @@ Implemented:
 Known gaps:
 
 - Budget creation/editing is still a coming-soon interaction and displayed budget values are placeholders.
-- The expanded statistics screen still uses test presentation data rather than the full statistic/chart API surface.
+- Additional statistics chart types and normal-user export/import UI remain
+  unselected.
 - Auth provider/repository unit coverage is still lighter than the live integration path.
 - The home shell is concentrated in a large presentation file and should be split by feature as those areas mature.
 - A maintained live Flutter-to-server integration harness is not currently present.

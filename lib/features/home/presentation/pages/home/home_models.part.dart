@@ -151,7 +151,12 @@ class _DashboardApi {
         total: totalSummary,
       ),
       recentTransactions: recentTransactions,
-      categoryBreakdown: _categoryBreakdownFromSummary(monthSummary),
+      categoryBreakdowns: {
+        AnalyticsRange.day: _categoryBreakdownFromSummary(daySummary),
+        AnalyticsRange.month: _categoryBreakdownFromSummary(monthSummary),
+        AnalyticsRange.year: _categoryBreakdownFromSummary(yearSummary),
+        AnalyticsRange.total: _categoryBreakdownFromSummary(totalSummary),
+      },
     );
   }
 
@@ -200,17 +205,21 @@ class _DashboardResponse {
   const _DashboardResponse({
     required this.summary,
     required this.recentTransactions,
-    required this.categoryBreakdown,
+    required this.categoryBreakdowns,
   });
 
   final _Summary summary;
   final List<_Transaction> recentTransactions;
-  final List<_CategoryBreakdownItem> categoryBreakdown;
+  final Map<AnalyticsRange, List<_CategoryBreakdownItem>> categoryBreakdowns;
+
+  List<_CategoryBreakdownItem> categoryBreakdown(AnalyticsRange range) {
+    return categoryBreakdowns[range] ?? const [];
+  }
 
   factory _DashboardResponse.mock({
     _Summary? summary,
     List<_Transaction>? recentTransactions,
-    List<_CategoryBreakdownItem>? categoryBreakdown,
+    Map<AnalyticsRange, List<_CategoryBreakdownItem>>? categoryBreakdowns,
   }) {
     summary ??= const _Summary(
       dayBalance: 185.50,
@@ -226,45 +235,49 @@ class _DashboardResponse {
       totalIncome: 6380,
       totalExpense: 3485.70,
     );
-    final resolvedCategoryBreakdown =
-        categoryBreakdown ??
-        const [
-          _CategoryBreakdownItem(
-            name: 'Food',
-            amount: 450,
-            percent: 33,
-            color: Color(0xFFFF8A65),
-          ),
-          _CategoryBreakdownItem(
-            name: 'Shopping',
-            amount: 320,
-            percent: 24,
-            color: AppTheme.secondaryColor,
-          ),
-          _CategoryBreakdownItem(
-            name: 'Transport',
-            amount: 180,
-            percent: 13,
-            color: Color(0xFFFFB74D),
-          ),
-          _CategoryBreakdownItem(
-            name: 'Home',
-            amount: 280,
-            percent: 21,
-            color: Color(0xFF9575CD),
-          ),
-          _CategoryBreakdownItem(
-            name: 'Others',
-            amount: 120,
-            percent: 9,
-            color: Color(0xFF90A4AE),
-          ),
-        ];
+    const fallbackCategoryBreakdown = [
+      _CategoryBreakdownItem(
+        name: 'Food',
+        amount: 450,
+        percent: 33,
+        color: Color(0xFFFF8A65),
+      ),
+      _CategoryBreakdownItem(
+        name: 'Shopping',
+        amount: 320,
+        percent: 24,
+        color: AppTheme.secondaryColor,
+      ),
+      _CategoryBreakdownItem(
+        name: 'Transport',
+        amount: 180,
+        percent: 13,
+        color: Color(0xFFFFB74D),
+      ),
+      _CategoryBreakdownItem(
+        name: 'Home',
+        amount: 280,
+        percent: 21,
+        color: Color(0xFF9575CD),
+      ),
+      _CategoryBreakdownItem(
+        name: 'Others',
+        amount: 120,
+        percent: 9,
+        color: Color(0xFF90A4AE),
+      ),
+    ];
+    final resolvedCategoryBreakdowns =
+        categoryBreakdowns ??
+        {
+          for (final range in AnalyticsRange.values)
+            range: fallbackCategoryBreakdown,
+        };
 
     return _DashboardResponse(
       summary: summary,
       recentTransactions: recentTransactions ?? const [],
-      categoryBreakdown: resolvedCategoryBreakdown,
+      categoryBreakdowns: resolvedCategoryBreakdowns,
     );
   }
 }
@@ -324,27 +337,27 @@ class _Summary {
 
   double get expense => totalExpense;
 
-  _SummaryRangeValues range(_SummaryRange range) {
+  _SummaryRangeValues range(AnalyticsRange range) {
     return switch (range) {
-      _SummaryRange.day => _SummaryRangeValues(
+      AnalyticsRange.day => _SummaryRangeValues(
         balanceLabel: 'Today Balance',
         totalBalance: dayBalance,
         income: dayIncome,
         expense: dayExpense,
       ),
-      _SummaryRange.month => _SummaryRangeValues(
+      AnalyticsRange.month => _SummaryRangeValues(
         balanceLabel: 'Month Balance',
         totalBalance: monthBalance,
         income: monthIncome,
         expense: monthExpense,
       ),
-      _SummaryRange.year => _SummaryRangeValues(
+      AnalyticsRange.year => _SummaryRangeValues(
         balanceLabel: 'Year Balance',
         totalBalance: yearBalance,
         income: yearIncome,
         expense: yearExpense,
       ),
-      _SummaryRange.total => _SummaryRangeValues(
+      AnalyticsRange.total => _SummaryRangeValues(
         balanceLabel: 'Total Balance',
         totalBalance: totalBalance,
         income: totalIncome,
@@ -366,17 +379,6 @@ class _SummaryRangeValues {
   final double totalBalance;
   final double income;
   final double expense;
-}
-
-enum _SummaryRange {
-  day('day'),
-  month('month'),
-  year('year'),
-  total('total');
-
-  const _SummaryRange(this.labelKey);
-
-  final String labelKey;
 }
 
 enum _CashFlowType {
@@ -832,12 +834,12 @@ String _greeting(BuildContext context) {
   return appT(context, 'greeting_evening');
 }
 
-String _summaryBalanceKey(_SummaryRange range) {
+String _summaryBalanceKey(AnalyticsRange range) {
   return switch (range) {
-    _SummaryRange.day => 'day_balance',
-    _SummaryRange.month => 'month_balance',
-    _SummaryRange.year => 'year_balance',
-    _SummaryRange.total => 'total_balance',
+    AnalyticsRange.day => 'day_balance',
+    AnalyticsRange.month => 'month_balance',
+    AnalyticsRange.year => 'year_balance',
+    AnalyticsRange.total => 'total_balance',
   };
 }
 

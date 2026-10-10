@@ -195,6 +195,7 @@ const _zhCnExtra = {
   'transactions_empty_message': '还没有交易。添加一笔交易后会显示在这里。',
   'more_statistics_title': '更多统计',
   'monthly_comparison': '月度收支对比',
+  'income_expense_trend': '收支趋势',
   'top_expenses': '最高支出',
   'no_statistics_data': '该时间段暂无数据',
   'more_statistics_test_data_description':
@@ -420,6 +421,7 @@ const _zhTwExtra = {
   'transactions_empty_message': '還沒有交易。新增一筆交易後會顯示在這裡。',
   'more_statistics_title': '更多統計',
   'monthly_comparison': '每月收支比較',
+  'income_expense_trend': '收支趨勢',
   'top_expenses': '最高支出',
   'no_statistics_data': '該時段暫無資料',
   'more_statistics_test_data_description':
@@ -707,6 +709,7 @@ const _en = {
       'No transactions yet. Add one and it will appear here.',
   'more_statistics_title': 'More Statistics',
   'monthly_comparison': 'Monthly Comparison',
+  'income_expense_trend': 'Income & Expense Trend',
   'top_expenses': 'Top Expenses',
   'no_statistics_data': 'No data for this period',
   'more_statistics_test_data_description':

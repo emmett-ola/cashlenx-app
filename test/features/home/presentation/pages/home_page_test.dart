@@ -1,6 +1,7 @@
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/home/presentation/pages/home_page.dart';
+import 'package:cashlenx/features/statistics/presentation/analytics_context.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
 import 'package:cashlenx/theme/app_theme.dart';
@@ -66,6 +67,12 @@ void main() {
     expect(find.text('Year Balance'), findsOneWidget);
     expect(find.text(r'$39,420.25'), findsOneWidget);
 
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Month Balance'), findsOneWidget);
+    expect(find.text(r'$4,225.50'), findsOneWidget);
+
     await tester.scrollUntilVisible(
       find.text('Spending by Category'),
       300,
@@ -119,8 +126,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('More Statistics'), findsOneWidget);
-    expect(find.text('Monthly Comparison'), findsOneWidget);
+    expect(find.text('Income & Expense Trend'), findsOneWidget);
     expect(find.text('Top Expenses'), findsOneWidget);
+    final rangeSelector = tester.widget<SegmentedButton<AnalyticsRange>>(
+      find.byKey(const ValueKey('statistics-range-selector')),
+    );
+    expect(rangeSelector.selected, {AnalyticsRange.month});
 
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
@@ -131,6 +142,36 @@ void main() {
     expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
     expect(find.text('Amount'), findsOneWidget);
     expect(find.text('Category'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('dashboard category breakdown follows the summary range', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+    expect(find.text('Month Balance'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Spending by Category'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('No data for this period'), findsOneWidget);
+    expect(find.text('Day Category'), findsNothing);
   });
 
   for (final scenario in <(HomeSection, String)>[
@@ -427,6 +468,7 @@ class _FakeCashlenxApi extends CashlenxApi {
       balance: 128.45,
       totalIncome: 300,
       totalExpense: 171.55,
+      categoryBreakdown: const {'Day Category': 171.55},
     );
   }
 
@@ -437,6 +479,7 @@ class _FakeCashlenxApi extends CashlenxApi {
       balance: 4225.50,
       totalIncome: 5200,
       totalExpense: 974.50,
+      categoryBreakdown: const {},
     );
   }
 
@@ -447,6 +490,7 @@ class _FakeCashlenxApi extends CashlenxApi {
       balance: 39420.25,
       totalIncome: 48600,
       totalExpense: 9179.75,
+      categoryBreakdown: const {'Year Category': 9179.75},
     );
   }
 
@@ -456,6 +500,7 @@ class _FakeCashlenxApi extends CashlenxApi {
       balance: 88000,
       totalIncome: 120000,
       totalExpense: 32000,
+      categoryBreakdown: const {'Total Category': 32000},
     );
   }
 
@@ -623,6 +668,7 @@ class _FakeCashlenxApi extends CashlenxApi {
     required double balance,
     required double totalIncome,
     required double totalExpense,
+    required Map<String, double> categoryBreakdown,
   }) {
     return {
       'code': 'OK',
@@ -632,11 +678,7 @@ class _FakeCashlenxApi extends CashlenxApi {
         'total_income': totalIncome,
         'total_expense': totalExpense,
         'transaction_count': 12,
-        'category_breakdown': {
-          'Dining': 420.25,
-          'Shopping': 300.75,
-          'Transport': 253.50,
-        },
+        'category_breakdown': categoryBreakdown,
       },
       'meta': <String, dynamic>{},
       'errors': <dynamic>[],

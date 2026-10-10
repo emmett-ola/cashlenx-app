@@ -2,15 +2,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../settings/data/user_configuration_sync.dart';
 
 final setupServiceProvider = Provider<SetupService>((ref) {
   return const SetupService();
 });
 
 final setupCompletedProvider = FutureProvider<bool>((ref) async {
-  final user = ref.watch(authNotifierProvider).value;
+  final user = await ref.watch(authNotifierProvider.future);
   if (user == null || user.role == 'demo') return true;
-  return ref.read(setupServiceProvider).hasCompletedSetup(user.id);
+  final service = ref.read(setupServiceProvider);
+  final localCompleted = await service.hasCompletedSetup(user.id);
+  final sync = await ref.watch(userConfigurationSyncProvider.future);
+
+  if (!sync.synchronized || sync.setupCompleted == null) {
+    return localCompleted;
+  }
+  if (!sync.setupCompleted!) return false;
+
+  if (!localCompleted) {
+    await service.markSetupCompleted(user.id);
+  }
+  return true;
 });
 
 class SetupService {

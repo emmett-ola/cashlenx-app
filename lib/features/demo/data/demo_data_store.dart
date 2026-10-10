@@ -467,12 +467,24 @@ class DemoDataStore {
     return _wrappedData({'deleted': true});
   }
 
+  Future<ApiJson> getStatisticDailySummary(String date) async {
+    return _getStatisticSummary('daily', date);
+  }
+
+  Future<ApiJson> getStatisticMonthlySummary(String month) async {
+    return _getStatisticSummary('monthly', month);
+  }
+
   Future<ApiJson> getStatisticYearlySummary(String year) async {
+    return _getStatisticSummary('yearly', year);
+  }
+
+  Future<ApiJson> _getStatisticSummary(String period, String token) async {
     var income = 0.0;
     var expense = 0.0;
     var count = 0;
     for (final item in _transactions) {
-      if (!item['belongs_date'].toString().startsWith(year)) continue;
+      if (!_dateDigits(item['belongs_date']).startsWith(token)) continue;
       final amount = (item['amount'] as num?)?.toDouble() ?? 0;
       if (item['flow_type'] == 'income') {
         income += amount;
@@ -482,13 +494,39 @@ class DemoDataStore {
       count++;
     }
     return _wrappedData({
-      'period': year,
-      'period_type': 'yearly',
+      'period': token,
+      'period_type': period,
       'income': income,
       'expense': expense,
       'balance': income - expense,
       'transaction_count': count,
     });
+  }
+
+  Future<ApiJson> getStatisticDailyTrends(String date) async {
+    return _getStatisticTrends(date);
+  }
+
+  Future<ApiJson> getStatisticMonthlyTrends(String month) async {
+    return _getStatisticTrends(month);
+  }
+
+  Future<ApiJson> _getStatisticTrends(String token) async {
+    final points = <String, Map<String, dynamic>>{};
+    for (final item in _transactions) {
+      final date = _dateDigits(item['belongs_date']);
+      if (!date.startsWith(token)) continue;
+      final point = points.putIfAbsent(
+        date,
+        () => {'date': date, 'income': 0.0, 'expense': 0.0},
+      );
+      final amount = (item['amount'] as num?)?.toDouble() ?? 0;
+      final key = item['flow_type'] == 'income' ? 'income' : 'expense';
+      point[key] = (point[key] as double) + amount;
+    }
+    final dataPoints = points.values.toList(growable: false)
+      ..sort((a, b) => a['date'].toString().compareTo(b['date'].toString()));
+    return _wrappedData({'period': token, 'data_points': dataPoints});
   }
 
   Future<ApiJson> getMonthlyComparisonChart(String year) async {
@@ -517,16 +555,34 @@ class DemoDataStore {
     });
   }
 
+  Future<ApiJson> getStatisticDailyTop({
+    required String date,
+    int? limit,
+  }) async {
+    return _getStatisticTop(date, limit: limit);
+  }
+
+  Future<ApiJson> getStatisticMonthlyTop({
+    required String month,
+    int? limit,
+  }) async {
+    return _getStatisticTop(month, limit: limit);
+  }
+
   Future<ApiJson> getStatisticYearlyTop({
     required String year,
     int? limit,
   }) async {
+    return _getStatisticTop(year, limit: limit);
+  }
+
+  Future<ApiJson> _getStatisticTop(String token, {int? limit}) async {
     final expenses =
         _transactions
             .where(
               (item) =>
                   item['flow_type'] == 'expense' &&
-                  item['belongs_date'].toString().startsWith(year),
+                  _dateDigits(item['belongs_date']).startsWith(token),
             )
             .toList()
           ..sort(
@@ -547,7 +603,7 @@ class DemoDataStore {
         )
         .toList(growable: false);
     return _wrappedData({
-      'period': year,
+      'period': token,
       'limit': limit ?? 5,
       'total_expense': expenses.fold<double>(
         0,

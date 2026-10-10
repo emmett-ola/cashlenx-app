@@ -6,6 +6,21 @@ state.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-10
+
+### Added
+
+- Added Day, Month, and Year controls to expanded statistics with matching
+  period navigation, API-backed summaries, trends, and top expenses for real
+  and Demo users.
+
+### Fixed
+
+- Kept the dashboard summary and category breakdown on one shared range and
+  carried Day, Month, or Year into expanded statistics.
+- Restored account-backed currency, language, theme, and setup completion
+  before routing an existing user on a clean device.
+
 ## [1.0.6] - 2026-10-10
 
 ### Fixed

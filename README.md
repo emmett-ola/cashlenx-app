@@ -24,13 +24,16 @@ design reference at build time or runtime.
 - **Authentication**: Login, verified registration, password reset,
   refresh-token sessions, logout, and editable profile.
 - **Dashboard**: Real summaries and recent transactions for authenticated
-  users, with an isolated editable demo mode.
+  users, with range-aligned category reporting and an isolated editable demo
+  mode.
 - **Transactions**: List, filter, create, edit, and delete income and expenses.
 - **Categories**: User-scoped hierarchical category management.
 - **Settings**: Theme color, currency, language, avatar preset, and profile.
+- **Statistics**: Day, Month, and Year summaries, trends, and top expenses with
+  matching period navigation.
 - **Cross-Platform**: Flutter targets Android, iOS, web, and desktop.
 
-Budget editing and the full reports/statistics experience remain roadmap work.
+Additional report visualizations and export/import UI remain roadmap work.
 
 ## 🛠 Tech Stack
 - **Framework**: [Flutter](https://flutter.dev/)

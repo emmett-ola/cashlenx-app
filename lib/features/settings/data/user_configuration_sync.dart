@@ -7,33 +7,57 @@ import '../../auth/presentation/providers/auth_provider.dart';
 import '../../demo/data/demo_data_store.dart';
 import '../../home/presentation/providers/currency_provider.dart';
 
-final userConfigurationSyncProvider = FutureProvider<void>((ref) async {
-  final user = await ref.watch(authNotifierProvider.future);
-  if (user == null) return;
+class UserConfigurationSyncResult {
+  const UserConfigurationSyncResult({
+    required this.synchronized,
+    this.setupCompleted,
+  });
 
-  try {
-    final response = user.role == 'demo'
-        ? await ref.read(demoDataStoreProvider).getConfiguration()
-        : await ref.read(cashlenxApiProvider).getUserConfiguration();
-    final data = _responseData(response);
-    final language = AppLanguage.fromCode(data['display_language']?.toString());
-    final currency = CurrencyOption.fromCode(
-      data['currency_code']?.toString().toUpperCase(),
-    );
-    final color = AppTheme.colorFromHex(data['active_theme_color']?.toString());
+  const UserConfigurationSyncResult.unavailable()
+    : synchronized = false,
+      setupCompleted = null;
 
-    await ref.read(i18nProvider.notifier).setLanguage(language);
-    if (currency != null) {
-      await ref.read(currencyProvider.notifier).setCurrency(currency);
-    }
-    if (color != null) {
-      await ref.read(themeColorProvider.notifier).setColor(color);
-    }
-  } catch (_) {
-    // Local preferences remain the offline fallback when configuration sync
-    // cannot reach the authenticated service.
-  }
-});
+  final bool synchronized;
+  final bool? setupCompleted;
+}
+
+final userConfigurationSyncProvider =
+    FutureProvider<UserConfigurationSyncResult>((ref) async {
+      final user = await ref.watch(authNotifierProvider.future);
+      if (user == null) return const UserConfigurationSyncResult.unavailable();
+
+      try {
+        final response = user.role == 'demo'
+            ? await ref.read(demoDataStoreProvider).getConfiguration()
+            : await ref.read(cashlenxApiProvider).getUserConfiguration();
+        final data = _responseData(response);
+        final language = AppLanguage.fromCode(
+          data['display_language']?.toString(),
+        );
+        final currency = CurrencyOption.fromCode(
+          data['currency_code']?.toString().toUpperCase(),
+        );
+        final color = AppTheme.colorFromHex(
+          data['active_theme_color']?.toString(),
+        );
+
+        await ref.read(i18nProvider.notifier).setLanguage(language);
+        if (currency != null) {
+          await ref.read(currencyProvider.notifier).setCurrency(currency);
+        }
+        if (color != null) {
+          await ref.read(themeColorProvider.notifier).setColor(color);
+        }
+        return UserConfigurationSyncResult(
+          synchronized: true,
+          setupCompleted: data['setup_completed'] as bool?,
+        );
+      } catch (_) {
+        // Local preferences remain the offline fallback when configuration sync
+        // cannot reach the authenticated service.
+        return const UserConfigurationSyncResult.unavailable();
+      }
+    });
 
 final persistUserConfigurationProvider = Provider<Future<void> Function()>((
   ref,

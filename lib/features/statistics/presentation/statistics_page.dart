@@ -8,6 +8,7 @@ import '../../../core/i18n/app_i18n.dart';
 import '../../../theme/app_theme.dart';
 import '../data/statistics_repository.dart';
 import '../domain/statistics_snapshot.dart';
+import 'analytics_context.dart';
 
 class StatisticsPage extends ConsumerStatefulWidget {
   const StatisticsPage({required this.onBack, super.key});
@@ -19,16 +20,21 @@ class StatisticsPage extends ConsumerStatefulWidget {
 }
 
 class _StatisticsPageState extends ConsumerState<StatisticsPage> {
-  var _year = DateTime.now().year;
+  var _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = ref.watch(yearlyStatisticsProvider(_year));
+    final storedRange = ref.watch(analyticsRangeProvider);
+    final range = storedRange == AnalyticsRange.total
+        ? AnalyticsRange.year
+        : storedRange;
+    final query = StatisticsQuery(range: range, date: _selectedDate);
+    final snapshot = ref.watch(statisticsProvider(query));
+
     return ColoredBox(
       color: const Color(0xFFF9FAFB),
       child: RefreshIndicator(
-        onRefresh: () async =>
-            ref.refresh(yearlyStatisticsProvider(_year).future),
+        onRefresh: () => ref.refresh(statisticsProvider(query).future),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
@@ -51,9 +57,21 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
               ],
             ),
             const SizedBox(height: 16),
-            _YearSelector(
-              year: _year,
-              onChanged: (delta) => setState(() => _year += delta),
+            _RangeSelector(
+              range: range,
+              onChanged: (value) {
+                ref.read(analyticsRangeProvider.notifier).setRange(value);
+              },
+            ),
+            const SizedBox(height: 12),
+            _PeriodSelector(
+              range: range,
+              date: _selectedDate,
+              onChanged: (delta) {
+                setState(() {
+                  _selectedDate = _movePeriod(_selectedDate, range, delta);
+                });
+              },
             ),
             const SizedBox(height: 16),
             ...snapshot.when(
@@ -65,14 +83,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
               ],
               error: (error, stack) => [
                 _ErrorCard(
-                  onRetry: () =>
-                      ref.invalidate(yearlyStatisticsProvider(_year)),
+                  onRetry: () => ref.invalidate(statisticsProvider(query)),
                 ),
               ],
               data: (data) => [
                 _SummaryGrid(data: data),
                 const SizedBox(height: 16),
-                _ComparisonCard(data: data),
+                _SeriesCard(data: data),
                 const SizedBox(height: 16),
                 _TopExpensesCard(expenses: data.topExpenses),
               ],
@@ -84,43 +101,88 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
   }
 }
 
-class _YearSelector extends StatelessWidget {
-  const _YearSelector({required this.year, required this.onChanged});
-  final int year;
-  final ValueChanged<int> onChanged;
+class _RangeSelector extends StatelessWidget {
+  const _RangeSelector({required this.range, required this.onChanged});
+
+  final AnalyticsRange range;
+  final ValueChanged<AnalyticsRange> onChanged;
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFE5E7EB)),
-    ),
-    child: Row(
-      children: [
-        IconButton(
-          onPressed: () => onChanged(-1),
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: Text(
-            '$year',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ),
-        IconButton(
-          onPressed: () => onChanged(1),
-          icon: const Icon(Icons.chevron_right),
-        ),
+  Widget build(BuildContext context) {
+    return SegmentedButton<AnalyticsRange>(
+      key: const ValueKey('statistics-range-selector'),
+      segments: [
+        for (final value in const [
+          AnalyticsRange.day,
+          AnalyticsRange.month,
+          AnalyticsRange.year,
+        ])
+          ButtonSegment(value: value, label: Text(appT(context, value.name))),
       ],
-    ),
-  );
+      selected: {range},
+      showSelectedIcon: false,
+      onSelectionChanged: (values) => onChanged(values.single),
+    );
+  }
+}
+
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector({
+    required this.range,
+    required this.date,
+    required this.onChanged,
+  });
+
+  final AnalyticsRange range;
+  final DateTime date;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final canMoveBack = _periodStart(date, range).year > 1900;
+    final canMoveForward = _periodStart(
+      date,
+      range,
+    ).isBefore(_periodStart(DateTime.now(), range));
+
+    return Container(
+      key: const ValueKey('statistics-period-selector'),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            key: const ValueKey('statistics-previous-period'),
+            onPressed: canMoveBack ? () => onChanged(-1) : null,
+            icon: const Icon(Icons.chevron_left),
+          ),
+          Expanded(
+            child: Text(
+              _periodLabel(context, range, date),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          IconButton(
+            key: const ValueKey('statistics-next-period'),
+            onPressed: canMoveForward ? () => onChanged(1) : null,
+            icon: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SummaryGrid extends StatelessWidget {
   const _SummaryGrid({required this.data});
+
   final StatisticsSnapshot data;
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
@@ -165,11 +227,13 @@ class _MetricCard extends StatelessWidget {
     required this.icon,
     this.wide = false,
   });
+
   final String label;
   final double value;
   final Color color;
   final IconData icon;
   final bool wide;
+
   @override
   Widget build(BuildContext context) => Container(
     width: wide ? double.infinity : null,
@@ -210,78 +274,75 @@ class _MetricCard extends StatelessWidget {
   );
 }
 
-class _ComparisonCard extends StatelessWidget {
-  const _ComparisonCard({required this.data});
+class _SeriesCard extends StatelessWidget {
+  const _SeriesCard({required this.data});
+
   final StatisticsSnapshot data;
+
   @override
   Widget build(BuildContext context) {
-    const count = 12;
     final maxValue = [
-      ...data.monthlyIncome,
-      ...data.monthlyExpense,
+      ...data.seriesIncome,
+      ...data.seriesExpense,
     ].fold<double>(0, math.max);
     return _Card(
-      title: appT(context, 'monthly_comparison'),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final slotWidth = constraints.maxWidth / count;
-          final barWidth = math.max(3.0, math.min(9.0, (slotWidth - 3) / 2));
-          return SizedBox(
-            key: const ValueKey('monthly-comparison-chart'),
-            height: 190,
-            child: Row(
+      title: appT(context, 'income_expense_trend'),
+      child: SizedBox(
+        key: const ValueKey('statistics-series-chart'),
+        height: 190,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final count = math.max(1, data.seriesLabels.length);
+            final slotWidth = constraints.maxWidth / count;
+            final barWidth = math.max(2.0, math.min(9.0, (slotWidth - 2) / 2));
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(count, (index) {
-                final income = index < data.monthlyIncome.length
-                    ? data.monthlyIncome[index]
-                    : 0.0;
-                final expense = index < data.monthlyExpense.length
-                    ? data.monthlyExpense[index]
-                    : 0.0;
-                final incomeHeight = maxValue == 0
-                    ? 0.0
-                    : income / maxValue * 130;
-                final expenseHeight = maxValue == 0
-                    ? 0.0
-                    : expense / maxValue * 130;
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _Bar(
-                            height: incomeHeight,
-                            color: AppTheme.successColor,
-                            width: barWidth,
-                          ),
-                          const SizedBox(width: 3),
-                          _Bar(
-                            height: expenseHeight,
-                            color: AppTheme.errorColor,
-                            width: barWidth,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      FittedBox(
-                        child: Text(
-                          _monthLabel(context, index + 1),
-                          style: const TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 11,
+              children: [
+                for (var index = 0; index < data.seriesLabels.length; index++)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _Bar(
+                              height: _barHeight(
+                                data.seriesIncome[index],
+                                maxValue,
+                              ),
+                              color: AppTheme.successColor,
+                              width: barWidth,
+                            ),
+                            const SizedBox(width: 2),
+                            _Bar(
+                              height: _barHeight(
+                                data.seriesExpense[index],
+                                maxValue,
+                              ),
+                              color: AppTheme.errorColor,
+                              width: barWidth,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        FittedBox(
+                          child: Text(
+                            _seriesLabel(context, data, index),
+                            style: const TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 10,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                );
-              }),
-            ),
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -289,9 +350,11 @@ class _ComparisonCard extends StatelessWidget {
 
 class _Bar extends StatelessWidget {
   const _Bar({required this.height, required this.color, required this.width});
+
   final double height;
   final Color color;
   final double width;
+
   @override
   Widget build(BuildContext context) => Container(
     width: width,
@@ -303,19 +366,16 @@ class _Bar extends StatelessWidget {
   );
 }
 
-String _monthLabel(BuildContext context, int month) {
-  return DateFormat.MMM(Localizations.localeOf(context).toLanguageTag())
-      .format(DateTime(2000, month));
-}
-
 class _TopExpensesCard extends StatelessWidget {
   const _TopExpensesCard({required this.expenses});
+
   final List<TopExpense> expenses;
+
   @override
   Widget build(BuildContext context) => _Card(
     title: appT(context, 'top_expenses'),
     child: expenses.isEmpty
-        ? _NoData()
+        ? const _NoData()
         : Column(
             children: [
               for (final (index, expense) in expenses.indexed)
@@ -352,8 +412,10 @@ class _TopExpensesCard extends StatelessWidget {
 
 class _Card extends StatelessWidget {
   const _Card({required this.title, required this.child});
+
   final String title;
   final Widget child;
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(18),
@@ -377,6 +439,8 @@ class _Card extends StatelessWidget {
 }
 
 class _NoData extends StatelessWidget {
+  const _NoData();
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 24),
@@ -391,7 +455,9 @@ class _NoData extends StatelessWidget {
 
 class _ErrorCard extends StatelessWidget {
   const _ErrorCard({required this.onRetry});
+
   final VoidCallback onRetry;
+
   @override
   Widget build(BuildContext context) => Center(
     child: FilledButton(
@@ -399,6 +465,54 @@ class _ErrorCard extends StatelessWidget {
       child: Text(appT(context, 'retry')),
     ),
   );
+}
+
+DateTime _movePeriod(DateTime date, AnalyticsRange range, int delta) {
+  return switch (range) {
+    AnalyticsRange.day => date.add(Duration(days: delta)),
+    AnalyticsRange.month => DateTime(date.year, date.month + delta),
+    AnalyticsRange.year => DateTime(date.year + delta, date.month, date.day),
+    AnalyticsRange.total => date,
+  };
+}
+
+DateTime _periodStart(DateTime date, AnalyticsRange range) {
+  return switch (range) {
+    AnalyticsRange.day => DateTime(date.year, date.month, date.day),
+    AnalyticsRange.month => DateTime(date.year, date.month),
+    AnalyticsRange.year => DateTime(date.year),
+    AnalyticsRange.total => DateTime(date.year),
+  };
+}
+
+String _periodLabel(BuildContext context, AnalyticsRange range, DateTime date) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  return switch (range) {
+    AnalyticsRange.day => DateFormat.yMMMMd(locale).format(date),
+    AnalyticsRange.month => DateFormat.yMMMM(locale).format(date),
+    AnalyticsRange.year ||
+    AnalyticsRange.total => DateFormat.y(locale).format(date),
+  };
+}
+
+String _seriesLabel(BuildContext context, StatisticsSnapshot data, int index) {
+  if (data.range == AnalyticsRange.year) {
+    return DateFormat.MMM(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(DateTime(2000, index + 1));
+  }
+  if (data.range == AnalyticsRange.month) {
+    final day = index + 1;
+    final last = data.seriesLabels.length;
+    return day == 1 || day == last || day % 5 == 0 ? '$day' : '';
+  }
+  return DateFormat.Md(
+    Localizations.localeOf(context).toLanguageTag(),
+  ).format(data.date);
+}
+
+double _barHeight(double value, double maximum) {
+  return maximum == 0 ? 0 : value / maximum * 130;
 }
 
 String _money(double value) => '\$${value.toStringAsFixed(0)}';

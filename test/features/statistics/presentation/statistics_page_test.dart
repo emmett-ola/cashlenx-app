@@ -1,51 +1,55 @@
 import 'package:cashlenx/features/statistics/data/statistics_repository.dart';
 import 'package:cashlenx/features/statistics/domain/statistics_snapshot.dart';
+import 'package:cashlenx/features/statistics/presentation/analytics_context.dart';
 import 'package:cashlenx/features/statistics/presentation/statistics_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows all twelve months on a compact viewport', (tester) async {
+  testWidgets('changes range and preserves twelve months on compact layouts', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(320, 568));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          yearlyStatisticsProvider.overrideWith(
-            (ref, year) async => StatisticsSnapshot(
-              year: year,
+          statisticsProvider.overrideWith((ref, query) async {
+            final count = query.range == AnalyticsRange.year ? 12 : 1;
+            return StatisticsSnapshot(
+              range: query.range,
+              date: query.date,
               income: 1200,
               expense: 600,
               balance: 600,
               transactionCount: 12,
-              months: const [
-                '01',
-                '02',
-                '03',
-                '04',
-                '05',
-                '06',
-                '07',
-                '08',
-                '09',
-                '10',
-                '11',
-                '12',
-              ],
-              monthlyIncome: List.generate(12, (index) => index * 100),
-              monthlyExpense: List.generate(12, (index) => index * 50),
+              seriesLabels: List.generate(
+                count,
+                (index) => '${index + 1}'.padLeft(2, '0'),
+              ),
+              seriesIncome: List.generate(count, (index) => index * 100),
+              seriesExpense: List.generate(count, (index) => index * 50),
               topExpenses: const [],
-            ),
-          ),
+            );
+          }),
         ],
         child: const MaterialApp(home: StatisticsPage(onBack: _noop)),
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(find.text('Day'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('statistics-period-selector')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('monthly-comparison-chart')),
+      find.byKey(const ValueKey('statistics-series-chart')),
       250,
       scrollable: find.byType(Scrollable).first,
     );
@@ -67,6 +71,40 @@ void main() {
       expect(find.text(month), findsOneWidget);
     }
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('period navigation reloads the selected range', (tester) async {
+    final queries = <StatisticsQuery>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          statisticsProvider.overrideWith((ref, query) async {
+            queries.add(query);
+            return StatisticsSnapshot(
+              range: query.range,
+              date: query.date,
+              income: 0,
+              expense: 0,
+              balance: 0,
+              transactionCount: 0,
+              seriesLabels: const ['01'],
+              seriesIncome: const [0],
+              seriesExpense: const [0],
+              topExpenses: const [],
+            );
+          }),
+        ],
+        child: const MaterialApp(home: StatisticsPage(onBack: _noop)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final initialDate = queries.last.date;
+
+    await tester.tap(find.byKey(const ValueKey('statistics-previous-period')));
+    await tester.pumpAndSettle();
+
+    expect(queries.last.range, AnalyticsRange.day);
+    expect(queries.last.date, initialDate.subtract(const Duration(days: 1)));
   });
 }
 

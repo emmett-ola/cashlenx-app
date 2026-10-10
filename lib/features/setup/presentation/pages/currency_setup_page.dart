@@ -205,6 +205,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
         final user = ref.read(authNotifierProvider).value;
         if (user != null) {
           await ref.read(setupServiceProvider).markSetupCompleted(user.id);
+          ref.invalidate(userConfigurationSyncProvider);
           ref.invalidate(setupCompletedProvider);
         }
       }

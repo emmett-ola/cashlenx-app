@@ -8,6 +8,8 @@ class _DashboardTab extends ConsumerWidget {
     required this.onProfileTap,
     required this.onSeeAllTransactions,
     required this.onMoreStats,
+    required this.selectedRange,
+    required this.onRangeChanged,
   });
 
   final String username;
@@ -16,6 +18,8 @@ class _DashboardTab extends ConsumerWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onSeeAllTransactions;
   final VoidCallback onMoreStats;
+  final AnalyticsRange selectedRange;
+  final ValueChanged<AnalyticsRange> onRangeChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,14 +39,18 @@ class _DashboardTab extends ConsumerWidget {
           onProfileTap: onProfileTap,
         ),
         children: [
-          _SummaryCard(summary: data.summary),
+          _SummaryCard(
+            summary: data.summary,
+            selectedRange: selectedRange,
+            onRangeChanged: onRangeChanged,
+          ),
           _RecentActivity(
             transactions: data.recentTransactions,
             onSeeAll: onSeeAllTransactions,
             onTransactionTap: onTransactionTap,
           ),
           _SpendingByCategoryCard(
-            categories: data.categoryBreakdown,
+            categories: data.categoryBreakdown(selectedRange),
             onMoreStats: onMoreStats,
           ),
         ],
@@ -153,21 +161,20 @@ class _StandardHeader extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatefulWidget {
-  const _SummaryCard({required this.summary});
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.summary,
+    required this.selectedRange,
+    required this.onRangeChanged,
+  });
 
   final _Summary summary;
-
-  @override
-  State<_SummaryCard> createState() => _SummaryCardState();
-}
-
-class _SummaryCardState extends State<_SummaryCard> {
-  var _selectedRange = _SummaryRange.day;
+  final AnalyticsRange selectedRange;
+  final ValueChanged<AnalyticsRange> onRangeChanged;
 
   @override
   Widget build(BuildContext context) {
-    final summary = widget.summary.range(_selectedRange);
+    final values = summary.range(selectedRange);
     final themeColor = _themeColor(context);
 
     return Container(
@@ -196,7 +203,7 @@ class _SummaryCardState extends State<_SummaryCard> {
                   MediaQuery.sizeOf(context).width <= 340 ||
                   MediaQuery.textScalerOf(context).scale(1) > 1.3;
               final label = Text(
-                appT(context, _summaryBalanceKey(_selectedRange)),
+                appT(context, _summaryBalanceKey(selectedRange)),
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white70,
@@ -204,10 +211,8 @@ class _SummaryCardState extends State<_SummaryCard> {
                 ),
               );
               final switcher = _SummaryRangeSwitcher(
-                selectedRange: _selectedRange,
-                onChanged: (range) {
-                  setState(() => _selectedRange = range);
-                },
+                selectedRange: selectedRange,
+                onChanged: onRangeChanged,
               );
 
               if (compact) {
@@ -236,7 +241,7 @@ class _SummaryCardState extends State<_SummaryCard> {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              _money(summary.totalBalance),
+              _money(values.totalBalance),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
@@ -251,7 +256,7 @@ class _SummaryCardState extends State<_SummaryCard> {
                 child: _SummaryMetric(
                   icon: Icons.south_west,
                   label: appT(context, 'income'),
-                  value: _money(summary.income),
+                  value: _money(values.income),
                   iconColor: AppTheme.successColor,
                 ),
               ),
@@ -260,7 +265,7 @@ class _SummaryCardState extends State<_SummaryCard> {
                 child: _SummaryMetric(
                   icon: Icons.north_east,
                   label: appT(context, 'expense'),
-                  value: _money(summary.expense),
+                  value: _money(values.expense),
                   iconColor: AppTheme.errorColor,
                 ),
               ),
@@ -278,8 +283,8 @@ class _SummaryRangeSwitcher extends StatelessWidget {
     required this.onChanged,
   });
 
-  final _SummaryRange selectedRange;
-  final ValueChanged<_SummaryRange> onChanged;
+  final AnalyticsRange selectedRange;
+  final ValueChanged<AnalyticsRange> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +297,7 @@ class _SummaryRangeSwitcher extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: _SummaryRange.values.map((range) {
+        children: AnalyticsRange.values.map((range) {
           final isSelected = range == selectedRange;
 
           return Semantics(
@@ -321,7 +326,7 @@ class _SummaryRangeSwitcher extends StatelessWidget {
                       : null,
                 ),
                 child: Text(
-                  appT(context, range.labelKey),
+                  appT(context, range.name),
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
                     fontSize: 12,
@@ -557,7 +562,16 @@ class _SpendingByCategoryCard extends StatelessWidget {
             width: double.infinity,
             child: CustomPaint(
               painter: _CategoryDonutPainter(visibleCategories),
-              child: const SizedBox.expand(),
+              child: visibleCategories.isEmpty
+                  ? Center(
+                      child: Text(
+                        appT(context, 'no_statistics_data'),
+                        style: const TextStyle(
+                          color: _AppShellColors.mutedText,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.expand(),
             ),
           ),
           const SizedBox(height: 10),
