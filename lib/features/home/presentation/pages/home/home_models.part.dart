@@ -474,7 +474,12 @@ class _Transaction {
 
   factory _Transaction.fromJson(Map<String, dynamic> json) {
     final flowType = _CashFlowType.fromApi(
-      json['flow_type'] ?? json['flowType'] ?? json['type'] ?? json['Type'],
+      json['category_type'] ??
+          json['categoryType'] ??
+          json['flow_type'] ??
+          json['flowType'] ??
+          json['type'] ??
+          json['Type'],
     );
     final category = _jsonMap(json['category'] ?? json['Category']);
     final categoryName =
