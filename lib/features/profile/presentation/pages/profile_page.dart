@@ -33,6 +33,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   var _isSaving = false;
   var _isEditing = false;
   var _avatarValue = '';
+  String? _phoneError;
+  String? _locationError;
+  String? _birthDateError;
   late CurrencyOption _selectedCurrency;
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
@@ -79,7 +82,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       onBack: () => context.canPop()
                           ? context.pop()
                           : context.go('/home'),
-                      onEdit: () => setState(() => _isEditing = true),
+                      onEdit: _startEditing,
                       onSave: _saveProfile,
                     ),
                     child: _AvatarCard(
@@ -106,7 +109,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               phoneController: _phoneController,
                               locationController: _locationController,
                               birthDateController: _birthDateController,
+                              phoneError: _phoneError,
+                              locationError: _locationError,
+                              birthDateError: _birthDateError,
                               currency: _selectedCurrency,
+                              onPhoneChanged: (_) => _clearPhoneError(),
+                              onLocationChanged: (_) => _clearLocationError(),
+                              onBirthDateChanged: (_) => _clearBirthDateError(),
                               onCurrencyTap: _showCurrencyPicker,
                               onBirthDateTap: _selectBirthDate,
                             ),
@@ -191,34 +200,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final profile = _profile;
     if (profile == null || _isSaving) return;
 
-    setState(() => _isSaving = true);
     final nickname = _nameController.text.trim();
     final avatarUrl = _avatarValue.trim();
     final phoneNumber = _phoneController.text.trim();
     final location = _locationController.text.trim();
     final birthDate = _birthDateController.text.trim();
+    if (!_validateDraft(
+      phoneNumber: phoneNumber,
+      location: location,
+      birthDate: birthDate,
+    )) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    final optionalNickname = _optionalProfileValue(nickname);
+    final optionalAvatarUrl = _optionalProfileValue(avatarUrl);
+    final optionalPhoneNumber = _optionalProfileValue(phoneNumber);
+    final optionalLocation = _optionalProfileValue(location);
+    final optionalBirthDate = _optionalProfileValue(birthDate);
 
     try {
       await ref.read(currencyProvider.notifier).setCurrency(_selectedCurrency);
       await ref.read(persistUserConfigurationProvider)();
 
       final profileDraft = profile.copyWith(
-        nickname: nickname,
-        avatarUrl: avatarUrl,
-        phoneNumber: phoneNumber,
-        location: location,
-        birthDate: birthDate,
+        nickname: optionalNickname,
+        avatarUrl: optionalAvatarUrl,
+        phoneNumber: optionalPhoneNumber,
+        location: optionalLocation,
+        birthDate: optionalBirthDate,
       );
       final updated = _isDemo
           ? UserProfile.fromResponse(
               await ref
                   .read(demoDataStoreProvider)
                   .updateProfile(
-                    nickname: nickname,
-                    avatarUrl: avatarUrl,
-                    phoneNumber: phoneNumber,
-                    location: location,
-                    birthDate: birthDate,
+                    nickname: optionalNickname,
+                    avatarUrl: optionalAvatarUrl,
+                    phoneNumber: optionalPhoneNumber,
+                    location: optionalLocation,
+                    birthDate: optionalBirthDate,
                   ),
               fallback: profileDraft,
             )
@@ -226,11 +248,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               await ref
                   .read(cashlenxApiProvider)
                   .updateUserProfile(
-                    nickname: nickname,
-                    avatarUrl: avatarUrl,
-                    phoneNumber: phoneNumber,
-                    location: location,
-                    birthDate: birthDate,
+                    nickname: optionalNickname,
+                    avatarUrl: optionalAvatarUrl,
+                    phoneNumber: optionalPhoneNumber,
+                    location: optionalLocation,
+                    birthDate: optionalBirthDate,
                   ),
               fallback: profileDraft,
             );
@@ -257,6 +279,55 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _birthDateController.text = profile.birthDate ?? '';
     _avatarValue = profile.avatarUrl ?? '';
     _selectedCurrency = ref.read(currencyProvider);
+    _clearValidationErrors();
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditing = true;
+      _clearValidationErrors();
+    });
+  }
+
+  bool _validateDraft({
+    required String phoneNumber,
+    required String location,
+    required String birthDate,
+  }) {
+    final phoneError = phoneNumber.runes.length > 32
+        ? appT(context, 'profile_phone_too_long')
+        : null;
+    final locationError = location.runes.length > 200
+        ? appT(context, 'profile_location_too_long')
+        : null;
+    final birthDateError = _birthDateValidationError(context, birthDate);
+
+    setState(() {
+      _phoneError = phoneError;
+      _locationError = locationError;
+      _birthDateError = birthDateError;
+    });
+    return phoneError == null &&
+        locationError == null &&
+        birthDateError == null;
+  }
+
+  void _clearValidationErrors() {
+    _phoneError = null;
+    _locationError = null;
+    _birthDateError = null;
+  }
+
+  void _clearPhoneError() {
+    if (_phoneError != null) setState(() => _phoneError = null);
+  }
+
+  void _clearLocationError() {
+    if (_locationError != null) setState(() => _locationError = null);
+  }
+
+  void _clearBirthDateError() {
+    if (_birthDateError != null) setState(() => _birthDateError = null);
   }
 
   Future<void> _selectBirthDate() async {
@@ -274,6 +345,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     setState(() {
       _birthDateController.text =
           '${selected.year}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+      _birthDateError = null;
     });
   }
 
@@ -679,7 +751,13 @@ class _PersonalInformationCard extends StatelessWidget {
     required this.phoneController,
     required this.locationController,
     required this.birthDateController,
+    required this.phoneError,
+    required this.locationError,
+    required this.birthDateError,
     required this.currency,
+    required this.onPhoneChanged,
+    required this.onLocationChanged,
+    required this.onBirthDateChanged,
     required this.onCurrencyTap,
     required this.onBirthDateTap,
   });
@@ -690,7 +768,13 @@ class _PersonalInformationCard extends StatelessWidget {
   final TextEditingController phoneController;
   final TextEditingController locationController;
   final TextEditingController birthDateController;
+  final String? phoneError;
+  final String? locationError;
+  final String? birthDateError;
   final CurrencyOption currency;
+  final ValueChanged<String> onPhoneChanged;
+  final ValueChanged<String> onLocationChanged;
+  final ValueChanged<String> onBirthDateChanged;
   final VoidCallback onCurrencyTap;
   final VoidCallback onBirthDateTap;
 
@@ -731,6 +815,8 @@ class _PersonalInformationCard extends StatelessWidget {
                     controller: phoneController,
                     hintText: appT(context, 'profile_phone_placeholder'),
                     icon: Icons.phone_outlined,
+                    errorText: phoneError,
+                    onChanged: onPhoneChanged,
                   )
                 : _ReadOnlyValue(_displayValue(context, phoneController.text)),
           ),
@@ -742,6 +828,8 @@ class _PersonalInformationCard extends StatelessWidget {
                     controller: locationController,
                     hintText: appT(context, 'profile_location_placeholder'),
                     icon: Icons.location_on_outlined,
+                    errorText: locationError,
+                    onChanged: onLocationChanged,
                   )
                 : _ReadOnlyValue(
                     _displayValue(context, locationController.text),
@@ -759,6 +847,8 @@ class _PersonalInformationCard extends StatelessWidget {
                         controller: birthDateController,
                         hintText: 'YYYY-MM-DD',
                         icon: Icons.calendar_today_outlined,
+                        errorText: birthDateError,
+                        onChanged: onBirthDateChanged,
                       ),
                     ),
                   )
@@ -930,22 +1020,57 @@ class _ProfileTextField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     this.icon,
+    this.errorText,
+    this.onChanged,
   });
 
   final TextEditingController controller;
   final String hintText;
   final IconData? icon;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onChanged: onChanged,
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: icon == null ? null : Icon(icon),
+        errorText: errorText,
       ),
     );
   }
+}
+
+String? _optionalProfileValue(String value) {
+  return value.isEmpty ? null : value;
+}
+
+String? _birthDateValidationError(BuildContext context, String value) {
+  if (value.isEmpty) return null;
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+  if (match == null) return appT(context, 'profile_birth_date_invalid');
+
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final date = DateTime.tryParse(value);
+  if (date == null ||
+      date.year != year ||
+      date.month != month ||
+      date.day != day ||
+      year < 1900) {
+    return appT(context, 'profile_birth_date_invalid');
+  }
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (date.isAfter(today)) {
+    return appT(context, 'profile_birth_date_future');
+  }
+  return null;
 }
 
 class _ReadOnlyValue extends StatelessWidget {

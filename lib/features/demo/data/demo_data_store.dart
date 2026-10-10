@@ -65,20 +65,20 @@ class DemoDataStore {
   }
 
   Future<ApiJson> updateProfile({
-    required String nickname,
-    required String avatarUrl,
-    required String phoneNumber,
-    required String location,
-    required String birthDate,
+    String? nickname,
+    String? avatarUrl,
+    String? phoneNumber,
+    String? location,
+    String? birthDate,
   }) async {
-    _profile = {
-      ..._profile,
+    final values = <String, String?>{
       'nickname': nickname,
       'avatar_url': avatarUrl,
       'phone_number': phoneNumber,
       'location': location,
       'birth_date': birthDate,
-    };
+    }..removeWhere((_, value) => value == null || value.trim().isEmpty);
+    _profile = {..._profile, ...values};
     return _wrappedData(Map<String, dynamic>.from(_profile));
   }
 

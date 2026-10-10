@@ -212,17 +212,20 @@ class CashlenxApi {
     String? location,
     String? birthDate,
   }) {
-    return _put(
-      '/user/profile',
-      data: _withoutNulls({
-        'nickname': nickname,
-        'avatar_url': avatarUrl,
-        'gender': gender,
-        'phone_number': phoneNumber,
-        'location': location,
-        'birth_date': birthDate,
-      }),
-    );
+    final data = _withoutNulls({
+      'nickname': _optionalProfileValue(nickname),
+      'avatar_url': _optionalProfileValue(avatarUrl),
+      'gender': _optionalProfileValue(gender),
+      'phone_number': _optionalProfileValue(phoneNumber),
+      'location': _optionalProfileValue(location),
+      'birth_date': _optionalProfileValue(birthDate),
+    });
+    return _put('/user/profile', data: data ?? const <String, dynamic>{});
+  }
+
+  static String? _optionalProfileValue(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return value;
   }
 
   Future<ApiJson> getUserConfiguration() {
