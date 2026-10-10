@@ -6,6 +6,19 @@ state.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-10
+
+### Fixed
+
+- Kept recent cash flows stable by business date and creation order, refreshed
+  dashboard data after successful transaction creation, and displayed current
+  category presentation and income direction consistently.
+- Applied transaction filters before pagination and added page navigation with
+  stale-response protection across authenticated and Demo data.
+- Constrained the responsive Web avatar picker and clarified its edit action.
+- Validated populated profile drafts before any write and omitted blank
+  optional profile values while preserving stored values.
+
 ## [1.0.5] - 2026-10-10
 
 ### Fixed
