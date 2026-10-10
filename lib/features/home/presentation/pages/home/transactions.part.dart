@@ -15,6 +15,8 @@ class _TransactionsScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
+  static const _pageSize = 20;
+
   var _selectedType = _TransactionFilterType.all;
   String? _selectedCategoryId;
   DateTime? _dateFrom;
@@ -25,39 +27,12 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   Object? _error;
   List<_Transaction> _transactions = const [];
   List<_CategoryItem> _categories = const [];
+  var _pageIndex = 0;
+  var _totalCount = 0;
+  var _requestSerial = 0;
+  Timer? _searchDebounce;
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
-
-  List<_Transaction> get _filteredTransactions {
-    final query = _searchController.text.trim().toLowerCase();
-    final filtered = _transactions
-        .where((transaction) {
-          if (_selectedType != _TransactionFilterType.all &&
-              transaction.flowType != _selectedType.flowType) {
-            return false;
-          }
-          if (_selectedCategoryId != null &&
-              transaction.categoryId != _selectedCategoryId) {
-            return false;
-          }
-          if (!isWithinInclusiveDateRange(
-            transaction.dateSort,
-            from: _dateFrom,
-            to: _dateTo,
-          )) {
-            return false;
-          }
-          if (query.isNotEmpty &&
-              !transaction.title.toLowerCase().contains(query) &&
-              !transaction.category.toLowerCase().contains(query)) {
-            return false;
-          }
-          return true;
-        })
-        .toList(growable: false);
-
-    return filtered..sort(_compareTransactionsNewestFirst);
-  }
 
   List<_CategoryItem> get _categoryOptions {
     return _categories
@@ -82,19 +57,19 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   void initState() {
     super.initState();
     _loadData();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredTransactions = _filteredTransactions;
-
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -131,15 +106,8 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                 dateTo: _dateTo,
                 categories: _categoryOptions,
                 searchController: _searchController,
-                onTypeChanged: (type) {
-                  setState(() {
-                    _selectedType = type;
-                    _selectedCategoryId = null;
-                  });
-                },
-                onCategoryChanged: (categoryId) {
-                  setState(() => _selectedCategoryId = categoryId);
-                },
+                onTypeChanged: _changeType,
+                onCategoryChanged: _changeCategory,
                 onDateFromPressed: () => _selectFilterDate(isFrom: true),
                 onDateToPressed: () => _selectFilterDate(isFrom: false),
                 onClear: _clearFilters,
@@ -156,12 +124,8 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                 dateFrom: _dateFrom,
                 dateTo: _dateTo,
                 searchQuery: _searchController.text.trim(),
-                onTypeRemoved: () {
-                  setState(() => _selectedType = _TransactionFilterType.all);
-                },
-                onCategoryRemoved: () {
-                  setState(() => _selectedCategoryId = null);
-                },
+                onTypeRemoved: _removeTypeFilter,
+                onCategoryRemoved: _removeCategoryFilter,
                 onDateRemoved: () => unawaited(_removeDateFilter()),
                 onSearchRemoved: _searchController.clear,
               ),
@@ -174,7 +138,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
               child: Text(
                 _transactionResultSummary(
                   context,
-                  filteredTransactions.length,
+                  _totalCount,
                   filtered: _activeFilterCount > 0,
                 ),
                 key: const ValueKey('transaction-result-summary'),
@@ -193,7 +157,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
               ? SliverToBoxAdapter(
                   child: _TransactionErrorCard(onRetry: _loadData),
                 )
-              : filteredTransactions.isEmpty
+              : _transactions.isEmpty
               ? SliverToBoxAdapter(
                   child: _EmptyStateCard(
                     icon: Icons.receipt_long_outlined,
@@ -210,10 +174,10 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                 )
               : SliverList.separated(
                   itemBuilder: (context, index) {
-                    final transaction = filteredTransactions[index];
+                    final transaction = _transactions[index];
                     final previous = index == 0
                         ? null
-                        : filteredTransactions[index - 1];
+                        : _transactions[index - 1];
                     final showHeader =
                         previous == null ||
                         !_isSameDate(previous.dateSort, transaction.dateSort);
@@ -249,38 +213,57 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                   },
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 8),
-                  itemCount: filteredTransactions.length,
+                  itemCount: _transactions.length,
                 ),
         ),
+        if (!_isLoading && _error == null && _totalCount > 0)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+              child: _TransactionPaginationControls(
+                page: _pageIndex + 1,
+                pageCount: _pageCount,
+                onPrevious: _pageIndex > 0
+                    ? () => unawaited(_goToPage(_pageIndex - 1))
+                    : null,
+                onNext: (_pageIndex + 1) * _pageSize < _totalCount
+                    ? () => unawaited(_goToPage(_pageIndex + 1))
+                    : null,
+              ),
+            ),
+          ),
       ],
     );
   }
 
   Future<void> _loadData() async {
+    final requestSerial = ++_requestSerial;
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final responses = _isDemo
-          ? await Future.wait([
-              ref.read(demoDataStoreProvider).listAllTransactions(),
-              ref.read(demoDataStoreProvider).listAllCategories(),
-            ])
-          : await Future.wait([
-              ref.read(cashlenxApiProvider).listAllTransactions(),
-              ref.read(cashlenxApiProvider).listAllCategories(),
-            ]);
-      if (!mounted) return;
+      final responses = await Future.wait([
+        _fetchTransactions(),
+        _isDemo
+            ? ref.read(demoDataStoreProvider).listAllCategories()
+            : ref.read(cashlenxApiProvider).listAllCategories(),
+      ]);
+      if (!mounted || requestSerial != _requestSerial) return;
+      final transactions = _Transaction.listFromResponse(responses[0])
+        ..sort(_compareTransactionsNewestFirst);
       setState(() {
-        _transactions = _Transaction.listFromResponse(responses[0])
-          ..sort(_compareTransactionsNewestFirst);
+        _transactions = transactions;
+        _totalCount = _totalCountFromResponse(
+          responses[0],
+          fallback: transactions.length,
+        );
         _categories = _CategoryItem.listFromResponse(responses[1]);
         _isLoading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestSerial != _requestSerial) return;
       setState(() {
         _error = error;
         _isLoading = false;
@@ -290,15 +273,16 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
   }
 
   void _clearFilters() {
-    final shouldReload = !_isDemo && (_dateFrom != null || _dateTo != null);
     setState(() {
       _selectedType = _TransactionFilterType.all;
       _selectedCategoryId = null;
       _dateFrom = null;
       _dateTo = null;
       _searchController.clear();
+      _pageIndex = 0;
     });
-    if (shouldReload) unawaited(_reloadTransactionsForDateRange());
+    _searchDebounce?.cancel();
+    unawaited(_reloadTransactions());
   }
 
   _CategoryItem? get _selectedCategory {
@@ -332,49 +316,118 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
       } else {
         _dateTo = calendarDate(selected);
       }
+      _pageIndex = 0;
     });
-    await _reloadTransactionsForDateRange();
+    await _reloadTransactions();
   }
 
   Future<void> _removeDateFilter() async {
     setState(() {
       _dateFrom = null;
       _dateTo = null;
+      _pageIndex = 0;
     });
-    await _reloadTransactionsForDateRange();
+    await _reloadTransactions();
   }
 
-  Future<void> _reloadTransactionsForDateRange() async {
-    if (_isDemo) return;
-
+  Future<void> _reloadTransactions() async {
+    final requestSerial = ++_requestSerial;
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final response = _dateFrom == null && _dateTo == null
-          ? await ref.read(cashlenxApiProvider).listAllTransactions()
-          : await ref
-                .read(cashlenxApiProvider)
-                .getTransactionsByDateRange(
-                  from: _dateToken(_dateFrom ?? DateTime(2000)),
-                  to: _dateToken(_dateTo ?? DateTime(2100, 12, 31)),
-                );
-      if (!mounted) return;
+      final response = await _fetchTransactions();
+      if (!mounted || requestSerial != _requestSerial) return;
+      final transactions = _Transaction.listFromResponse(response)
+        ..sort(_compareTransactionsNewestFirst);
       setState(() {
-        _transactions = _Transaction.listFromResponse(response)
-          ..sort(_compareTransactionsNewestFirst);
+        _transactions = transactions;
+        _totalCount = _totalCountFromResponse(
+          response,
+          fallback: transactions.length,
+        );
         _isLoading = false;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestSerial != _requestSerial) return;
       setState(() {
         _error = error;
         _isLoading = false;
       });
       ToastUtils.showServerErrors(context, error);
     }
+  }
+
+  Future<ApiJson> _fetchTransactions() {
+    final search = _searchController.text.trim();
+    final type = _selectedType.flowType?.name;
+    final fromDate = _dateFrom == null ? null : _dateToken(_dateFrom!);
+    final toDate = _dateTo == null ? null : _dateToken(_dateTo!);
+    if (_isDemo) {
+      return ref
+          .read(demoDataStoreProvider)
+          .listAllTransactions(
+            limit: _pageSize,
+            offset: _pageIndex * _pageSize,
+            type: type,
+            categoryId: _selectedCategoryId,
+            description: search.isEmpty ? null : search,
+            fromDate: fromDate,
+            toDate: toDate,
+          );
+    }
+    return ref
+        .read(cashlenxApiProvider)
+        .listAllTransactions(
+          limit: _pageSize,
+          offset: _pageIndex * _pageSize,
+          type: type,
+          categoryId: _selectedCategoryId,
+          description: search.isEmpty ? null : search,
+          fromDate: fromDate,
+          toDate: toDate,
+        );
+  }
+
+  int get _pageCount => math.max(1, (_totalCount + _pageSize - 1) ~/ _pageSize);
+
+  void _onSearchChanged() {
+    if (!mounted) return;
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      _pageIndex = 0;
+      unawaited(_reloadTransactions());
+    });
+  }
+
+  void _changeType(_TransactionFilterType type) {
+    setState(() {
+      _selectedType = type;
+      _selectedCategoryId = null;
+      _pageIndex = 0;
+    });
+    unawaited(_reloadTransactions());
+  }
+
+  void _changeCategory(String? categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _pageIndex = 0;
+    });
+    unawaited(_reloadTransactions());
+  }
+
+  void _removeTypeFilter() => _changeType(_TransactionFilterType.all);
+
+  void _removeCategoryFilter() => _changeCategory(null);
+
+  Future<void> _goToPage(int pageIndex) async {
+    setState(() => _pageIndex = pageIndex);
+    await _reloadTransactions();
   }
 }
 
@@ -2143,6 +2196,62 @@ String _transactionResultSummary(
     _ => '$count ${appT(context, 'transactions_count')}',
   };
   return filtered ? '$base (${appT(context, 'filtered')})' : base;
+}
+
+int _totalCountFromResponse(ApiJson response, {required int fallback}) {
+  final meta = _jsonMap(response['meta']);
+  final value = meta?['total_count'] ?? meta?['totalCount'];
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+class _TransactionPaginationControls extends StatelessWidget {
+  const _TransactionPaginationControls({
+    required this.page,
+    required this.pageCount,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final int page;
+  final int pageCount;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            key: const ValueKey('transactions-previous-page'),
+            onPressed: onPrevious,
+            icon: const Icon(Icons.chevron_left),
+            label: Text(appT(context, 'previous')),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '$page / $pageCount',
+          key: const ValueKey('transaction-page-status'),
+          style: const TextStyle(
+            color: _AppShellColors.mutedText,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            key: const ValueKey('transactions-next-page'),
+            onPressed: onNext,
+            iconAlignment: IconAlignment.end,
+            icon: const Icon(Icons.chevron_right),
+            label: Text(appT(context, 'next')),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _TransactionLoadingCard extends StatelessWidget {

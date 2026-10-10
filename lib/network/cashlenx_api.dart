@@ -406,6 +406,8 @@ class CashlenxApi {
     String? type,
     String? categoryId,
     String? description,
+    String? fromDate,
+    String? toDate,
   }) {
     return _get(
       '/cash',
@@ -415,6 +417,8 @@ class CashlenxApi {
         'type': type,
         'category_id': categoryId,
         'description': description,
+        'from_date': fromDate,
+        'to_date': toDate,
       },
     );
   }

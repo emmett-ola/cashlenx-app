@@ -157,20 +157,41 @@ class DemoDataStore {
     String? type,
     String? categoryId,
     String? description,
+    String? fromDate,
+    String? toDate,
   }) async {
+    final normalizedSearch = description?.trim().toLowerCase();
     final matching =
         _transactions
+            .map(_withCurrentCategory)
             .where((transaction) {
-              if (type != null && transaction['flow_type'] != type)
+              final transactionType =
+                  transaction['category_type'] ?? transaction['flow_type'];
+              if (type != null && transactionType != type) {
                 return false;
+              }
               if (categoryId != null &&
                   transaction['category_id'] != categoryId) {
                 return false;
               }
-              if (description != null &&
+              if (normalizedSearch != null &&
+                  normalizedSearch.isNotEmpty &&
                   !transaction['description'].toString().toLowerCase().contains(
-                    description.toLowerCase(),
-                  )) {
+                    normalizedSearch,
+                  ) &&
+                  !transaction['category_name']
+                      .toString()
+                      .toLowerCase()
+                      .contains(normalizedSearch)) {
+                return false;
+              }
+              final belongsDate = _dateDigits(transaction['belongs_date']);
+              if (fromDate != null &&
+                  belongsDate.compareTo(_dateDigits(fromDate)) < 0) {
+                return false;
+              }
+              if (toDate != null &&
+                  belongsDate.compareTo(_dateDigits(toDate)) > 0) {
                 return false;
               }
               return true;
@@ -227,7 +248,7 @@ class DemoDataStore {
     if (transaction.isEmpty) {
       throw StateError('Demo transaction not found.');
     }
-    return _wrappedData(Map<String, dynamic>.from(transaction));
+    return _wrappedData(_withCurrentCategory(transaction));
   }
 
   Future<ApiJson> updateTransactionById(
@@ -695,6 +716,29 @@ class DemoDataStore {
         .compareTo(aCreated ?? DateTime.fromMillisecondsSinceEpoch(0));
     if (createdCompare != 0) return createdCompare;
     return b['id'].toString().compareTo(a['id'].toString());
+  }
+
+  ApiJson _withCurrentCategory(ApiJson transaction) {
+    final categoryId = transaction['category_id']?.toString();
+    final category = _categories.cast<ApiJson?>().firstWhere(
+      (candidate) => candidate?['Id']?.toString() == categoryId,
+      orElse: () => null,
+    );
+    if (category == null) {
+      return {
+        ...transaction,
+        'category_name': 'Unknown',
+        'category_emoji': '\u{1F642}',
+        'category_bg_color': '#E5E7EB',
+      };
+    }
+    return {
+      ...transaction,
+      'category_name': category['name'],
+      'category_type': category['type'],
+      'category_emoji': category['emoji'],
+      'category_bg_color': category['bg_color'],
+    };
   }
 
   ApiJson _categoryData({

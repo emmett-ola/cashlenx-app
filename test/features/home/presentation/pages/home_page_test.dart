@@ -246,8 +246,20 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.filter_list));
     await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'SALARY');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 transaction (filtered)'), findsOneWidget);
+    expect(find.text('Salary'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'not-found');
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.filter_list));
     await tester.pumpAndSettle();
 
@@ -266,7 +278,7 @@ void main() {
     expect(find.byType(InputChip), findsNothing);
   });
 
-  testWidgets('authenticated date filters use the server range endpoint', (
+  testWidgets('authenticated filters are sent before server pagination', (
     tester,
   ) async {
     final api = _FakeCashlenxApi();
@@ -297,9 +309,58 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
-    expect(api.lastRangeFrom, isNotNull);
-    expect(api.lastRangeFrom, matches(RegExp(r'^\d{8}$')));
-    expect(api.lastRangeTo, '21001231');
+    expect(api.lastTransactionFromDate, isNotNull);
+    expect(api.lastTransactionFromDate, matches(RegExp(r'^\d{8}$')));
+    expect(api.lastTransactionToDate, isNull);
+    expect(api.lastTransactionLimit, 20);
+    expect(api.lastTransactionOffset, 0);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Income'));
+    await tester.pumpAndSettle();
+    expect(api.lastTransactionType, 'income');
+
+    await tester.enterText(find.byType(TextField), 'salary');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(api.lastTransactionDescription, 'salary');
+  });
+
+  testWidgets('transactions expose server-backed page navigation', (
+    tester,
+  ) async {
+    final api = _PagingCashlenxApi();
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(
+          home: HomePage(section: HomeSection.transactions),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('21 transactions'), findsOneWidget);
+    expect(find.text('Transaction 1'), findsOneWidget);
+    expect(find.text('Transaction 21'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('transactions-next-page')),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('1 / 2'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('transactions-next-page')));
+    await tester.pumpAndSettle();
+
+    expect(api.offsets, containsAllInOrder([0, 20]));
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.text('Transaction 21'), findsOneWidget);
   });
 }
 
@@ -336,8 +397,13 @@ class _UserAuthNotifier extends AuthNotifier {
 class _FakeCashlenxApi extends CashlenxApi {
   _FakeCashlenxApi() : super(ApiClient(Dio()));
 
-  String? lastRangeFrom;
-  String? lastRangeTo;
+  int? lastTransactionLimit;
+  int? lastTransactionOffset;
+  String? lastTransactionType;
+  String? lastTransactionCategoryId;
+  String? lastTransactionDescription;
+  String? lastTransactionFromDate;
+  String? lastTransactionToDate;
 
   @override
   Future<ApiJson> getUserProfile() async {
@@ -400,32 +466,79 @@ class _FakeCashlenxApi extends CashlenxApi {
     String? type,
     String? categoryId,
     String? description,
+    String? fromDate,
+    String? toDate,
   }) async {
+    lastTransactionLimit = limit;
+    lastTransactionOffset = offset;
+    lastTransactionType = type;
+    lastTransactionCategoryId = categoryId;
+    lastTransactionDescription = description;
+    lastTransactionFromDate = fromDate;
+    lastTransactionToDate = toDate;
+    final transactions = <ApiJson>[
+      {
+        'id': '507f1f77bcf86cd799439101',
+        'belongs_date': '20260517',
+        'category_id': '507f1f77bcf86cd799439011',
+        'category_name': 'Food',
+        'category_type': 'expense',
+        'amount': 12.5,
+        'description': 'Coffee beans',
+        'category': {'emoji': '\u{1F35C}', 'bg_color': '#FF8A65'},
+      },
+      {
+        'id': '507f1f77bcf86cd799439102',
+        'belongs_date': '2026-05-16',
+        'category_id': '507f1f77bcf86cd799439015',
+        'category_name': 'Salary',
+        'category_type': 'income',
+        'amount': 3500,
+        'description': '',
+        'category_emoji': '\u{1F4BC}',
+        'category_bg_color': '#10B981',
+      },
+    ];
+    final normalizedSearch = description?.toLowerCase();
+    final matches = transactions
+        .where((transaction) {
+          if (type != null && transaction['category_type'] != type) {
+            return false;
+          }
+          if (categoryId != null && transaction['category_id'] != categoryId) {
+            return false;
+          }
+          if (normalizedSearch != null &&
+              !transaction['description'].toString().toLowerCase().contains(
+                normalizedSearch,
+              ) &&
+              !transaction['category_name'].toString().toLowerCase().contains(
+                normalizedSearch,
+              )) {
+            return false;
+          }
+          final date = transaction['belongs_date'].toString().replaceAll(
+            '-',
+            '',
+          );
+          if (fromDate != null && date.compareTo(fromDate) < 0) return false;
+          if (toDate != null && date.compareTo(toDate) > 0) return false;
+          return true;
+        })
+        .toList(growable: false);
+    final page = matches
+        .skip(offset ?? 0)
+        .take(limit ?? matches.length)
+        .toList(growable: false);
     return {
       'code': 'OK',
       'message': '',
-      'data': [
-        {
-          'id': '507f1f77bcf86cd799439101',
-          'belongs_date': '20260517',
-          'category_name': 'Food',
-          'category_type': 'expense',
-          'amount': 12.5,
-          'description': 'Coffee beans',
-          'category': {'emoji': '\u{1F35C}', 'bg_color': '#FF8A65'},
-        },
-        {
-          'id': '507f1f77bcf86cd799439102',
-          'belongs_date': '2026-05-16',
-          'category_name': 'Salary',
-          'category_type': 'income',
-          'amount': 3500,
-          'description': '',
-          'category_emoji': '\u{1F4BC}',
-          'category_bg_color': '#10B981',
-        },
-      ],
-      'meta': {'total_count': 2, 'limit': limit, 'offset': offset ?? 0},
+      'data': page,
+      'meta': {
+        'total_count': matches.length,
+        'limit': limit,
+        'offset': offset ?? 0,
+      },
       'errors': <dynamic>[],
       'extra': <String, dynamic>{},
     };
@@ -436,9 +549,7 @@ class _FakeCashlenxApi extends CashlenxApi {
     required String from,
     required String to,
   }) async {
-    lastRangeFrom = from;
-    lastRangeTo = to;
-    return listAllTransactions();
+    return listAllTransactions(fromDate: from, toDate: to);
   }
 
   @override
@@ -528,6 +639,59 @@ class _FakeCashlenxApi extends CashlenxApi {
         },
       },
       'meta': <String, dynamic>{},
+      'errors': <dynamic>[],
+      'extra': <String, dynamic>{},
+    };
+  }
+}
+
+class _PagingCashlenxApi extends _FakeCashlenxApi {
+  final offsets = <int>[];
+
+  @override
+  Future<ApiJson> listAllTransactions({
+    int? limit,
+    int? offset,
+    String? type,
+    String? categoryId,
+    String? description,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final resolvedOffset = offset ?? 0;
+    final resolvedLimit = limit ?? 20;
+    offsets.add(resolvedOffset);
+    final transactions = List<ApiJson>.generate(21, (index) {
+      final number = index + 1;
+      return {
+        'id': 'transaction-$number',
+        'belongs_date': '20261010',
+        'category_id': '507f1f77bcf86cd799439011',
+        'category_name': 'Food',
+        'category_type': 'expense',
+        'amount': number,
+        'description': 'Transaction $number',
+        'create_time': DateTime.utc(
+          2026,
+          10,
+          10,
+          23,
+          59 - index,
+        ).toIso8601String(),
+      };
+    });
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': transactions
+          .skip(resolvedOffset)
+          .take(resolvedLimit)
+          .toList(growable: false),
+      'meta': {
+        'total_count': transactions.length,
+        'limit': resolvedLimit,
+        'offset': resolvedOffset,
+      },
       'errors': <dynamic>[],
       'extra': <String, dynamic>{},
     };

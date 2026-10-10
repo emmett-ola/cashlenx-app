@@ -190,6 +190,7 @@ const _zhCnExtra = {
   'transaction': '笔交易',
   'transactions_count': '笔交易',
   'filtered': '已筛选',
+  'previous': '上一页',
   'transactions_empty_filtered': '请调整筛选条件，或清除筛选以查看全部交易。',
   'transactions_empty_message': '还没有交易。添加一笔交易后会显示在这里。',
   'more_statistics_title': '更多统计',
@@ -410,6 +411,7 @@ const _zhTwExtra = {
   'transaction': '筆交易',
   'transactions_count': '筆交易',
   'filtered': '已篩選',
+  'previous': '上一頁',
   'transactions_empty_filtered': '請調整篩選條件，或清除篩選以查看全部交易。',
   'transactions_empty_message': '還沒有交易。新增一筆交易後會顯示在這裡。',
   'more_statistics_title': '更多統計',
@@ -690,6 +692,7 @@ const _en = {
   'transaction': 'transaction',
   'transactions_count': 'transactions',
   'filtered': 'filtered',
+  'previous': 'Previous',
   'transactions_empty_filtered':
       'Adjust your filters, or clear them to see every transaction.',
   'transactions_empty_message':
