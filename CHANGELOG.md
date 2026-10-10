@@ -6,6 +6,15 @@ state.
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-10
+
+### Fixed
+
+- Bundled and preloaded repository-owned Noto Sans SC and TC interface subsets
+  so Chinese text renders completely on the first visible Flutter frame.
+- Preserved the language selected on the unauthenticated screen when entering
+  Demo mode while continuing to reset Demo finance and profile data.
+
 ## [1.0.4] - 2026-10-09
 
 ### Fixed
