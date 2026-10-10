@@ -448,6 +448,7 @@ class _Transaction {
     required this.dateLabel,
     required this.dateGroupLabel,
     required this.dateSort,
+    required this.createdAt,
     required this.amount,
     required this.category,
     required this.categoryId,
@@ -463,6 +464,7 @@ class _Transaction {
   final String dateLabel;
   final String dateGroupLabel;
   final DateTime dateSort;
+  final DateTime createdAt;
   final double amount;
   final String category;
   final String? categoryId;
@@ -501,6 +503,9 @@ class _Transaction {
       dateLabel: _fallbackTransactionDateLabel(rawDate),
       dateGroupLabel: _fallbackTransactionDateLabel(rawDate),
       dateSort: _transactionDateSort(rawDate),
+      createdAt: _transactionTimestampSort(
+        json['create_time'] ?? json['created_at'] ?? json['createTime'],
+      ),
       amount: amount,
       category: categoryName,
       categoryId: _nullableString(json['category_id'] ?? json['categoryId']),
@@ -713,6 +718,11 @@ DateTime _transactionDateSort(Object? value) {
   return _parseTransactionDate(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
+DateTime _transactionTimestampSort(Object? value) {
+  return DateTime.tryParse(value?.toString() ?? '') ??
+      DateTime.fromMillisecondsSinceEpoch(0);
+}
+
 DateTime? _parseTransactionDate(Object? value) {
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return null;
@@ -727,6 +737,8 @@ DateTime? _parseTransactionDate(Object? value) {
 int _compareTransactionsNewestFirst(_Transaction a, _Transaction b) {
   final dateCompare = b.dateSort.compareTo(a.dateSort);
   if (dateCompare != 0) return dateCompare;
+  final createdCompare = b.createdAt.compareTo(a.createdAt);
+  if (createdCompare != 0) return createdCompare;
   return b.id.compareTo(a.id);
 }
 
@@ -870,15 +882,11 @@ Map<String, double> _jsonDoubleMap(Object? value) {
 }
 
 TextStyle _pageTitle(BuildContext context) {
-  return Theme.of(context).textTheme.headlineSmall!.copyWith(
-    color: _AppShellColors.text,
-    fontWeight: FontWeight.w800,
-  );
+  return Theme.of(context).textTheme.headlineSmall!
+      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
 }
 
 TextStyle _sectionTitle(BuildContext context) {
-  return Theme.of(context).textTheme.titleMedium!.copyWith(
-    color: _AppShellColors.text,
-    fontWeight: FontWeight.w800,
-  );
+  return Theme.of(context).textTheme.titleMedium!
+      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
 }

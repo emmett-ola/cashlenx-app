@@ -158,26 +158,37 @@ class DemoDataStore {
     String? categoryId,
     String? description,
   }) async {
-    final transactions = _transactions
-        .where((transaction) {
-          if (type != null && transaction['flow_type'] != type) return false;
-          if (categoryId != null && transaction['category_id'] != categoryId) {
-            return false;
-          }
-          if (description != null &&
-              !transaction['description'].toString().toLowerCase().contains(
-                description.toLowerCase(),
-              )) {
-            return false;
-          }
-          return true;
-        })
-        .map(Map<String, dynamic>.from)
+    final matching =
+        _transactions
+            .where((transaction) {
+              if (type != null && transaction['flow_type'] != type)
+                return false;
+              if (categoryId != null &&
+                  transaction['category_id'] != categoryId) {
+                return false;
+              }
+              if (description != null &&
+                  !transaction['description'].toString().toLowerCase().contains(
+                    description.toLowerCase(),
+                  )) {
+                return false;
+              }
+              return true;
+            })
+            .map(Map<String, dynamic>.from)
+            .toList(growable: false)
+          ..sort(_compareTransactionDataNewestFirst);
+    final transactions = matching
         .skip(offset ?? 0)
         .take(limit ?? _transactions.length)
         .toList(growable: false);
 
-    return _wrappedList(transactions, limit: limit, offset: offset);
+    return _wrappedList(
+      transactions,
+      limit: limit,
+      offset: offset,
+      totalCount: matching.length,
+    );
   }
 
   Future<ApiJson> createTransaction({
@@ -200,6 +211,7 @@ class DemoDataStore {
       'flow_type': type,
       'amount': amount,
       'description': description,
+      'create_time': DateTime.now().toUtc().toIso8601String(),
       'category_emoji': category['emoji'],
       'category_bg_color': category['bg_color'],
     };
@@ -550,13 +562,18 @@ class DemoDataStore {
     };
   }
 
-  ApiJson _wrappedList(List<ApiJson> data, {int? limit, int? offset}) {
+  ApiJson _wrappedList(
+    List<ApiJson> data, {
+    int? limit,
+    int? offset,
+    int? totalCount,
+  }) {
     return {
       'code': 'OK',
       'message': '',
       'data': data,
       'meta': {
-        'total_count': data.length,
+        'total_count': totalCount ?? data.length,
         'limit': limit ?? data.length,
         'offset': offset ?? 0,
       },
@@ -622,6 +639,7 @@ class DemoDataStore {
         'flow_type': 'expense',
         'amount': 12.5,
         'description': 'Coffee beans',
+        'create_time': now.toUtc().toIso8601String(),
         'category': {'emoji': '\u{1F35C}', 'bg_color': '#FF8A65'},
       },
       {
@@ -632,6 +650,7 @@ class DemoDataStore {
         'flow_type': 'income',
         'amount': 3500,
         'description': '',
+        'create_time': previous.toUtc().toIso8601String(),
         'category_emoji': '\u{1F4BC}',
         'category_bg_color': '#10B981',
       },
@@ -665,6 +684,18 @@ class DemoDataStore {
 
   static String _dashDate(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  static int _compareTransactionDataNewestFirst(ApiJson a, ApiJson b) {
+    final dateCompare = _dateDigits(b['belongs_date'])
+        .compareTo(_dateDigits(a['belongs_date']));
+    if (dateCompare != 0) return dateCompare;
+    final aCreated = DateTime.tryParse(a['create_time']?.toString() ?? '');
+    final bCreated = DateTime.tryParse(b['create_time']?.toString() ?? '');
+    final createdCompare = (bCreated ?? DateTime.fromMillisecondsSinceEpoch(0))
+        .compareTo(aCreated ?? DateTime.fromMillisecondsSinceEpoch(0));
+    if (createdCompare != 0) return createdCompare;
+    return b['id'].toString().compareTo(a['id'].toString());
+  }
 
   ApiJson _categoryData({
     required String id,
