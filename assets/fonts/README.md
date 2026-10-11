@@ -1,9 +1,9 @@
-# Bundled Chinese Interface Fonts
+# Bundled Chinese Fonts
 
-CashLenX bundles interface-specific subsets of Noto Sans SC and Noto Sans TC so
-Flutter Web can render Simplified and Traditional Chinese before showing the
-first localized frame. The fonts are licensed under the SIL Open Font License
-1.1 in `OFL.txt`.
+CashLenX bundles complete Noto Sans SC and Noto Sans TC fonts so Flutter Web can
+render both repository-owned interface copy and dynamically loaded Chinese text
+before showing the first application frame. The fonts are licensed under the
+SIL Open Font License 1.1 in `OFL.txt`.
 
 The current source files come from Google Fonts commit
 `bd8f81ddb5c74d5c8897b36ad88b440266245103`:
@@ -16,14 +16,14 @@ Their source SHA-256 values are:
 - Noto Sans SC: `a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da`
 - Noto Sans TC: `864727d210d54f2537bbe23b3a839436c3992af72de9322af5270897246bd44f`
 
-The current subset SHA-256 values are:
+The installed asset SHA-256 values match the pinned source files:
 
-- Noto Sans SC UI: `718f5ab77419b8395651271a811177d533fe15ed810d1e423600b2686c5e2555`
-- Noto Sans TC UI: `831916b0a0b0eaa437b2a7a2378107f5325460513f718bc1e720b110f228db6f`
+- Noto Sans SC UI: `a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da`
+- Noto Sans TC UI: `864727d210d54f2537bbe23b3a839436c3992af72de9322af5270897246bd44f`
 
-The subset includes Latin text, common punctuation and currency symbols, CJK
-punctuation, and every non-Latin code point currently present in `lib/**/*.dart`.
-Regenerate both assets after changing localized interface text:
+The `-UI.ttf` filenames are retained for application compatibility, but the
+assets are not glyph subsets. Reinstall both assets from the pinned source files
+with:
 
 ```bash
 python3 tool/update_cjk_font_subsets.py \
@@ -31,5 +31,6 @@ python3 tool/update_cjk_font_subsets.py \
   --traditional-font /path/to/NotoSansTC.ttf
 ```
 
-This subset is for repository-owned interface copy. User-provided text may use
-the platform fallback chain for characters outside the manifest.
+Do not replace these files with repository-text subsets. Category names,
+transaction descriptions, profile data, and future API responses can contain
+Chinese characters that are not present in the application source tree.

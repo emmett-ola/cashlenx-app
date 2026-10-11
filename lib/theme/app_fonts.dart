@@ -9,13 +9,23 @@ class AppFonts {
   static const traditionalChineseFamily = 'CashLenX Noto Sans TC';
   static const simplifiedChineseAsset = 'assets/fonts/NotoSansSC-UI.ttf';
   static const traditionalChineseAsset = 'assets/fonts/NotoSansTC-UI.ttf';
+  static const simplifiedChineseAssetBytes = 17772300;
+  static const traditionalChineseAssetBytes = 11941968;
 
   static Future<void>? _loadFuture;
 
   static Future<void> ensureBundledFontsLoaded() {
     return _loadFuture ??= Future.wait([
-      _loadFont(simplifiedChineseFamily, simplifiedChineseAsset),
-      _loadFont(traditionalChineseFamily, traditionalChineseAsset),
+      _loadFont(
+        simplifiedChineseFamily,
+        simplifiedChineseAsset,
+        simplifiedChineseAssetBytes,
+      ),
+      _loadFont(
+        traditionalChineseFamily,
+        traditionalChineseAsset,
+        traditionalChineseAssetBytes,
+      ),
     ]);
   }
 
@@ -37,8 +47,19 @@ class AppFonts {
         ],
       };
 
-  static Future<void> _loadFont(String family, String asset) async {
-    final loader = FontLoader(family)..addFont(rootBundle.load(asset));
+  static Future<void> _loadFont(
+    String family,
+    String asset,
+    int expectedBytes,
+  ) async {
+    final data = await rootBundle.load(asset);
+    if (data.lengthInBytes != expectedBytes) {
+      throw StateError(
+        '$asset does not contain the pinned complete Chinese font '
+        '($expectedBytes bytes expected, found ${data.lengthInBytes})',
+      );
+    }
+    final loader = FontLoader(family)..addFont(Future.value(data));
     await loader.load();
   }
 }

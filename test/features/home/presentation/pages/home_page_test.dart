@@ -51,6 +51,11 @@ void main() {
     expect(find.text('Transactions'), findsOneWidget);
     expect(find.byIcon(Icons.filter_list), findsOneWidget);
     expect(find.text('Coffee beans'), findsOneWidget);
+    expect(find.text('+\$3,500.00'), findsOneWidget);
+    expect(find.text('\u{1F35C}'), findsOneWidget);
+    expect(find.text('\u{1F4BC}'), findsOneWidget);
+    final allTransactionsIncome = tester.widget<Text>(find.text('+\$3,500.00'));
+    expect(allTransactionsIncome.style?.color, AppTheme.successColor);
 
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
@@ -525,32 +530,33 @@ class _FakeCashlenxApi extends CashlenxApi {
       {
         'id': '507f1f77bcf86cd799439101',
         'belongs_date': '20260517',
-        'category_id': '507f1f77bcf86cd799439011',
+        'category_id': {r'$oid': '507f1f77bcf86cd799439011'},
         'category_name': 'Food',
-        'category_type': 'expense',
         'amount': 12.5,
         'description': 'Coffee beans',
-        'category': {'emoji': '\u{1F35C}', 'bg_color': '#FF8A65'},
       },
       {
         'id': '507f1f77bcf86cd799439102',
         'belongs_date': '2026-05-16',
-        'category_id': '507f1f77bcf86cd799439015',
+        'category_id': {r'$oid': '507f1f77bcf86cd799439015'},
         'category_name': 'Salary',
-        'category_type': 'income',
         'amount': 3500,
         'description': '',
-        'category_emoji': '\u{1F4BC}',
-        'category_bg_color': '#10B981',
       },
     ];
     final normalizedSearch = description?.toLowerCase();
     final matches = transactions
         .where((transaction) {
-          if (type != null && transaction['category_type'] != type) {
+          final transactionCategoryId =
+              (transaction['category_id'] as Map?)?[r'$oid'];
+          final transactionType =
+              transactionCategoryId == '507f1f77bcf86cd799439015'
+              ? 'income'
+              : 'expense';
+          if (type != null && transactionType != type) {
             return false;
           }
-          if (categoryId != null && transaction['category_id'] != categoryId) {
+          if (categoryId != null && transactionCategoryId != categoryId) {
             return false;
           }
           if (normalizedSearch != null &&
@@ -609,7 +615,7 @@ class _FakeCashlenxApi extends CashlenxApi {
 
     final categories = [
       {
-        'Id': '507f1f77bcf86cd799439011',
+        'Id': {r'$oid': '507f1f77bcf86cd799439011'},
         'name': 'Food & Dining',
         'type': 'expense',
         'parent_id': '000000000000000000000000',
@@ -637,10 +643,12 @@ class _FakeCashlenxApi extends CashlenxApi {
         'parent_id': '000000000000000000000000',
       },
       {
-        'Id': '507f1f77bcf86cd799439015',
+        'Id': {r'$oid': '507f1f77bcf86cd799439015'},
         'name': 'Salary',
         'type': 'income',
         'parent_id': '000000000000000000000000',
+        'emoji': '\u{1F4BC}',
+        'bg_color': '#10B981',
       },
       {
         'Id': '507f1f77bcf86cd799439016',

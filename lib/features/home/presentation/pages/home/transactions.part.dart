@@ -251,15 +251,18 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
             : ref.read(cashlenxApiProvider).listAllCategories(),
       ]);
       if (!mounted || requestSerial != _requestSerial) return;
-      final transactions = _Transaction.listFromResponse(responses[0])
-        ..sort(_compareTransactionsNewestFirst);
+      final categories = _CategoryItem.listFromResponse(responses[1]);
+      final transactions = _Transaction.listFromResponse(
+        responses[0],
+        categories: categories,
+      )..sort(_compareTransactionsNewestFirst);
       setState(() {
         _transactions = transactions;
         _totalCount = _totalCountFromResponse(
           responses[0],
           fallback: transactions.length,
         );
-        _categories = _CategoryItem.listFromResponse(responses[1]);
+        _categories = categories;
         _isLoading = false;
       });
     } catch (error) {
@@ -340,8 +343,10 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
     try {
       final response = await _fetchTransactions();
       if (!mounted || requestSerial != _requestSerial) return;
-      final transactions = _Transaction.listFromResponse(response)
-        ..sort(_compareTransactionsNewestFirst);
+      final transactions = _Transaction.listFromResponse(
+        response,
+        categories: _categories,
+      )..sort(_compareTransactionsNewestFirst);
       setState(() {
         _transactions = transactions;
         _totalCount = _totalCountFromResponse(
@@ -878,8 +883,11 @@ class _TransactionDetailScreenState
                   .getTransactionById(widget.transactionId),
               ref.read(cashlenxApiProvider).listAllCategories(),
             ]);
-      final transaction = _Transaction.fromResponse(responses[0]);
       final categories = _CategoryItem.listFromResponse(responses[1]);
+      final transaction = _Transaction.fromResponse(
+        responses[0],
+        categories: categories,
+      );
       if (!mounted) return;
       setState(() {
         _transaction = transaction;

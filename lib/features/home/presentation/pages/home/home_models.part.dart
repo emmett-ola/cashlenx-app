@@ -84,7 +84,7 @@ class _CategoryItem {
         json['name'] ?? json['Name'] ?? json['category_name'] ?? 'Category';
 
     return _CategoryItem(
-      id: id?.toString() ?? name.toString(),
+      id: _nullableString(id) ?? name.toString(),
       name: name.toString(),
       type: _CategoryType.fromApi(json['type'] ?? json['Type']),
       emoji: _categoryEmojiOrDefault(json['emoji'] ?? json['Emoji']),
@@ -128,6 +128,7 @@ class _DashboardApi {
             demoDataStore.getYearlySummary(year),
             demoDataStore.getTotalSummary(),
             demoDataStore.listAllTransactions(limit: 5),
+            demoDataStore.listAllCategories(),
           ])
         : await Future.wait([
             api!.getDailySummary(date),
@@ -135,13 +136,18 @@ class _DashboardApi {
             api.getYearlySummary(year),
             api.getTotalSummary(),
             api.listAllTransactions(limit: 5),
+            api.listAllCategories(),
           ]);
 
     final daySummary = _CashSummary.fromResponse(responses[0]);
     final monthSummary = _CashSummary.fromResponse(responses[1]);
     final yearSummary = _CashSummary.fromResponse(responses[2]);
     final totalSummary = _CashSummary.fromResponse(responses[3]);
-    final recentTransactions = _Transaction.listFromResponse(responses[4]);
+    final categories = _CategoryItem.listFromResponse(responses[5]);
+    final recentTransactions = _Transaction.listFromResponse(
+      responses[4],
+      categories: categories,
+    );
 
     return _DashboardResponse.mock(
       summary: _Summary.fromApi(
@@ -474,14 +480,24 @@ class _Transaction {
   final String icon;
   final Color color;
 
-  factory _Transaction.fromJson(Map<String, dynamic> json) {
+  factory _Transaction.fromJson(
+    Map<String, dynamic> json, {
+    Map<String, _CategoryItem> categoriesById = const {},
+  }) {
+    final categoryId = _nullableString(
+      json['category_id'] ?? json['categoryId'],
+    );
+    final resolvedCategory = categoryId == null
+        ? null
+        : categoriesById[categoryId];
     final flowType = _CashFlowType.fromApi(
       json['category_type'] ??
           json['categoryType'] ??
           json['flow_type'] ??
           json['flowType'] ??
           json['type'] ??
-          json['Type'],
+          json['Type'] ??
+          resolvedCategory?.type.apiValue,
     );
     final category = _jsonMap(json['category'] ?? json['Category']);
     final categoryName =
@@ -490,6 +506,7 @@ class _Transaction {
               json['categoryName'] ??
               category?['name'] ??
               category?['category_name'] ??
+              resolvedCategory?.name ??
               json['Category'],
         ) ??
         'Uncategorized';
@@ -515,39 +532,61 @@ class _Transaction {
       ),
       amount: amount,
       category: categoryName,
-      categoryId: _nullableString(json['category_id'] ?? json['categoryId']),
+      categoryId: categoryId,
       flowType: flowType,
       icon: _categoryEmojiOrDefault(
         json['category_emoji'] ??
             json['categoryEmoji'] ??
             json['emoji'] ??
-            category?['emoji'],
+            category?['emoji'] ??
+            resolvedCategory?.emoji,
       ),
       color: _categoryColorOrDefault(
         json['category_bg_color'] ??
             json['categoryBgColor'] ??
             json['bg_color'] ??
-            category?['bg_color'],
+            category?['bg_color'] ??
+            resolvedCategory?.bgColor,
       ),
     );
   }
 
-  static List<_Transaction> listFromResponse(ApiJson response) {
+  static List<_Transaction> listFromResponse(
+    ApiJson response, {
+    List<_CategoryItem> categories = const [],
+  }) {
     final data = _unwrapData(response);
     final rawList = _asList(data);
+    final categoriesById = {
+      for (final category in categories) category.id: category,
+    };
 
     return rawList
         .whereType<Map>()
-        .map((item) => _Transaction.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => _Transaction.fromJson(
+            Map<String, dynamic>.from(item),
+            categoriesById: categoriesById,
+          ),
+        )
         .toList(growable: false);
   }
 
-  static _Transaction fromResponse(ApiJson response) {
+  static _Transaction fromResponse(
+    ApiJson response, {
+    List<_CategoryItem> categories = const [],
+  }) {
     final data = _unwrapData(response);
+    final categoriesById = {
+      for (final category in categories) category.id: category,
+    };
     if (data is Map) {
-      return _Transaction.fromJson(Map<String, dynamic>.from(data));
+      return _Transaction.fromJson(
+        Map<String, dynamic>.from(data),
+        categoriesById: categoriesById,
+      );
     }
-    return _Transaction.fromJson(response);
+    return _Transaction.fromJson(response, categoriesById: categoriesById);
   }
 }
 
@@ -653,6 +692,7 @@ String _categoryEmojiOrDefault(Object? value) {
 }
 
 Color _categoryColorOrDefault(Object? value) {
+  if (value is Color) return value;
   final text = value?.toString().trim();
   if (text == null || text.isEmpty) return _defaultCategoryColor;
 
@@ -889,11 +929,15 @@ Map<String, double> _jsonDoubleMap(Object? value) {
 }
 
 TextStyle _pageTitle(BuildContext context) {
-  return Theme.of(context).textTheme.headlineSmall!
-      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
+  return Theme.of(context).textTheme.headlineSmall!.copyWith(
+    color: _AppShellColors.text,
+    fontWeight: FontWeight.w800,
+  );
 }
 
 TextStyle _sectionTitle(BuildContext context) {
-  return Theme.of(context).textTheme.titleMedium!
-      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
+  return Theme.of(context).textTheme.titleMedium!.copyWith(
+    color: _AppShellColors.text,
+    fontWeight: FontWeight.w800,
+  );
 }

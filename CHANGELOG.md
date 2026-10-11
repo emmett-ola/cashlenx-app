@@ -6,6 +6,15 @@ state.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reconciled authenticated cash flows with the user's category list so legacy
+  API payloads still render current category icons, colors, and income direction
+  across the dashboard, transaction list, and transaction detail.
+- Replaced repository-text Chinese font subsets with pinned complete Simplified
+  and Traditional Chinese fonts that are verified and loaded before `runApp`,
+  including glyphs used only by dynamic API and user-provided text.
+
 ## [1.0.7] - 2026-10-10
 
 ### Added

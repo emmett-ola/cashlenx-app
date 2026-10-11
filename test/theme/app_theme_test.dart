@@ -51,6 +51,8 @@ void main() {
     tester,
   ) async {
     await AppFonts.ensureBundledFontsLoaded();
+    expect(AppFonts.simplifiedChineseAssetBytes, 17772300);
+    expect(AppFonts.traditionalChineseAssetBytes, 11941968);
   });
 
   test('theme color notifier loads and persists selected color', () async {
