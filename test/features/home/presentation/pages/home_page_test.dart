@@ -4,6 +4,7 @@ import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/home/presentation/pages/home_page.dart';
 import 'package:cashlenx/features/home/presentation/providers/app_release_identity_provider.dart';
+import 'package:cashlenx/features/home/presentation/providers/currency_provider.dart';
 import 'package:cashlenx/features/statistics/presentation/analytics_context.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
@@ -201,6 +202,45 @@ void main() {
     expect(find.text('Spending by Category'), findsNothing);
     expect(find.text('No data for this period'), findsNothing);
     expect(find.text('Day Category'), findsNothing);
+  });
+
+  testWidgets('currency changes update recent activity and transactions', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+          currencyProvider.overrideWith(_MutableCurrencyNotifier.new),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(r'-$12.50'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(HomePage)),
+    );
+    (container.read(currencyProvider.notifier) as _MutableCurrencyNotifier)
+        .setForTest(CurrencyOption.sgd);
+    await tester.pump();
+
+    expect(find.text(r'S$128.45'), findsOneWidget);
+    expect(find.text(r'-S$12.50'), findsOneWidget);
+    expect(find.text(r'+S$3,500.00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('See All'));
+    await tester.pumpAndSettle();
+    expect(find.text(r'-S$12.50'), findsOneWidget);
+    expect(find.text(r'+S$3,500.00'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('dashboard range survives scrolling rebuild refresh and stats', (
@@ -642,6 +682,13 @@ class _TestAuthNotifier extends AuthNotifier {
       updatedAt: now,
     );
   }
+}
+
+class _MutableCurrencyNotifier extends CurrencyNotifier {
+  @override
+  CurrencyOption build() => CurrencyOption.usd;
+
+  void setForTest(CurrencyOption currency) => state = currency;
 }
 
 class _UserAuthNotifier extends AuthNotifier {

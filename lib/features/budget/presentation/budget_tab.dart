@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/i18n/app_i18n.dart';
+import '../../../shared/formatters/money_formatter.dart';
 import '../../../theme/app_theme.dart';
 import '../../demo/data/demo_data_store.dart';
+import '../../home/presentation/providers/currency_provider.dart';
 import '../data/budget_repository.dart';
 import '../domain/budget_models.dart';
 
@@ -23,6 +25,9 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
   @override
   Widget build(BuildContext context) {
     final budgets = ref.watch(monthlyBudgetsProvider(_period));
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
     return ColoredBox(
       color: const Color(0xFFF9FAFB),
       child: RefreshIndicator(
@@ -44,7 +49,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
               ],
               error: (error, stack) => [_ErrorCard(onRetry: _refresh)],
               data: (items) => [
-                _TotalCard(items: items),
+                _TotalCard(items: items, currencySymbol: currencySymbol),
                 const SizedBox(height: 22),
                 Text(
                   appT(context, 'category_budgets'),
@@ -58,6 +63,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                 for (final item in items) ...[
                   _BudgetTile(
                     item: item,
+                    currencySymbol: currencySymbol,
                     onEdit: () => _editBudget(item),
                     onDelete: () => _deleteBudget(item),
                   ),
@@ -101,8 +107,11 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     if (!mounted) return;
     final result = await showDialog<_BudgetDraft>(
       context: context,
-      builder: (context) =>
-          _BudgetDialog(existing: existing, categories: categories),
+      builder: (context) => _BudgetDialog(
+        existing: existing,
+        categories: categories,
+        currencySymbol: ref.read(currencyProvider).symbol,
+      ),
     );
     if (result == null || !mounted) return;
     try {
@@ -151,9 +160,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
   }
 
   void _showError(Object error) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(error.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error.toString())));
   }
 }
 
@@ -226,8 +234,9 @@ class _MonthSelector extends StatelessWidget {
 }
 
 class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.items});
+  const _TotalCard({required this.items, required this.currencySymbol});
   final List<BudgetItem> items;
+  final String currencySymbol;
   @override
   Widget build(BuildContext context) {
     final limit = items.fold<double>(0, (sum, item) => sum + item.limit);
@@ -253,7 +262,7 @@ class _TotalCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _money(limit),
+            formatMoney(limit, symbol: currencySymbol, fractionDigits: 0),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
@@ -265,12 +274,12 @@ class _TotalCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${appT(context, 'spent')}: ${_money(spent)}',
+                  '${appT(context, 'spent')}: ${formatMoney(spent, symbol: currencySymbol, fractionDigits: 0)}',
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
               Text(
-                '${appT(context, 'remaining')}: ${_money(limit - spent)}',
+                '${appT(context, 'remaining')}: ${formatMoney(limit - spent, symbol: currencySymbol, fractionDigits: 0)}',
                 style: const TextStyle(color: Colors.white),
               ),
             ],
@@ -292,10 +301,12 @@ class _TotalCard extends StatelessWidget {
 class _BudgetTile extends StatelessWidget {
   const _BudgetTile({
     required this.item,
+    required this.currencySymbol,
     required this.onEdit,
     required this.onDelete,
   });
   final BudgetItem item;
+  final String currencySymbol;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   @override
@@ -336,7 +347,7 @@ class _BudgetTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${_money(item.spent)} / ${_money(item.limit)}',
+                          '${formatMoney(item.spent, symbol: currencySymbol, fractionDigits: 0)} / ${formatMoney(item.limit, symbol: currencySymbol, fractionDigits: 0)}',
                           style: const TextStyle(color: Color(0xFF6B7280)),
                         ),
                       ],
@@ -437,9 +448,14 @@ class _BudgetDraft {
 }
 
 class _BudgetDialog extends StatefulWidget {
-  const _BudgetDialog({required this.existing, required this.categories});
+  const _BudgetDialog({
+    required this.existing,
+    required this.categories,
+    required this.currencySymbol,
+  });
   final BudgetItem? existing;
   final List<BudgetCategory> categories;
+  final String currencySymbol;
   @override
   State<_BudgetDialog> createState() => _BudgetDialogState();
 }
@@ -485,7 +501,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText: appT(context, 'amount'),
-            prefixText: r'$ ',
+            prefixText: '${widget.currencySymbol} ',
             errorText: _error,
           ),
         ),
@@ -508,5 +524,3 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     Navigator.pop(context, _BudgetDraft(_categoryId!, amount));
   }
 }
-
-String _money(double value) => '\$${value.toStringAsFixed(0)}';

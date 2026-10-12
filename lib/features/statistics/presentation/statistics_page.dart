@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_i18n.dart';
+import '../../../shared/formatters/money_formatter.dart';
 import '../../../theme/app_theme.dart';
+import '../../home/presentation/providers/currency_provider.dart';
 import '../data/statistics_repository.dart';
 import '../domain/statistics_snapshot.dart';
 import 'analytics_context.dart';
@@ -30,6 +32,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
         : storedRange;
     final query = StatisticsQuery(range: range, date: _selectedDate);
     final snapshot = ref.watch(statisticsProvider(query));
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
 
     return ColoredBox(
       color: const Color(0xFFF9FAFB),
@@ -87,11 +92,14 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
                 ),
               ],
               data: (data) => [
-                _SummaryGrid(data: data),
+                _SummaryGrid(data: data, currencySymbol: currencySymbol),
                 const SizedBox(height: 16),
                 _SeriesCard(data: data),
                 const SizedBox(height: 16),
-                _TopExpensesCard(expenses: data.topExpenses),
+                _TopExpensesCard(
+                  expenses: data.topExpenses,
+                  currencySymbol: currencySymbol,
+                ),
               ],
             ),
           ],
@@ -179,9 +187,10 @@ class _PeriodSelector extends StatelessWidget {
 }
 
 class _SummaryGrid extends StatelessWidget {
-  const _SummaryGrid({required this.data});
+  const _SummaryGrid({required this.data, required this.currencySymbol});
 
   final StatisticsSnapshot data;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -192,6 +201,7 @@ class _SummaryGrid extends StatelessWidget {
             child: _MetricCard(
               label: appT(context, 'income'),
               value: data.income,
+              currencySymbol: currencySymbol,
               color: AppTheme.successColor,
               icon: Icons.south_west,
             ),
@@ -201,6 +211,7 @@ class _SummaryGrid extends StatelessWidget {
             child: _MetricCard(
               label: appT(context, 'expense'),
               value: data.expense,
+              currencySymbol: currencySymbol,
               color: AppTheme.errorColor,
               icon: Icons.north_east,
             ),
@@ -211,6 +222,7 @@ class _SummaryGrid extends StatelessWidget {
       _MetricCard(
         label: appT(context, 'total_balance'),
         value: data.balance,
+        currencySymbol: currencySymbol,
         color: AppTheme.primaryColor,
         icon: Icons.account_balance_wallet_outlined,
         wide: true,
@@ -223,6 +235,7 @@ class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.label,
     required this.value,
+    required this.currencySymbol,
     required this.color,
     required this.icon,
     this.wide = false,
@@ -230,6 +243,7 @@ class _MetricCard extends StatelessWidget {
 
   final String label;
   final double value;
+  final String currencySymbol;
   final Color color;
   final IconData icon;
   final bool wide;
@@ -259,7 +273,7 @@ class _MetricCard extends StatelessWidget {
               const SizedBox(height: 4),
               FittedBox(
                 child: Text(
-                  _money(value),
+                  formatMoney(value, symbol: currencySymbol, fractionDigits: 0),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -367,9 +381,13 @@ class _Bar extends StatelessWidget {
 }
 
 class _TopExpensesCard extends StatelessWidget {
-  const _TopExpensesCard({required this.expenses});
+  const _TopExpensesCard({
+    required this.expenses,
+    required this.currencySymbol,
+  });
 
   final List<TopExpense> expenses;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) => _Card(
@@ -398,7 +416,7 @@ class _TopExpensesCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: Text(
-                    '-${_money(expense.amount)}',
+                    '-${formatMoney(expense.amount, symbol: currencySymbol, fractionDigits: 0)}',
                     style: const TextStyle(
                       color: AppTheme.errorColor,
                       fontWeight: FontWeight.w800,
@@ -497,22 +515,18 @@ String _periodLabel(BuildContext context, AnalyticsRange range, DateTime date) {
 
 String _seriesLabel(BuildContext context, StatisticsSnapshot data, int index) {
   if (data.range == AnalyticsRange.year) {
-    return DateFormat.MMM(
-      Localizations.localeOf(context).toLanguageTag(),
-    ).format(DateTime(2000, index + 1));
+    return DateFormat.MMM(Localizations.localeOf(context).toLanguageTag())
+        .format(DateTime(2000, index + 1));
   }
   if (data.range == AnalyticsRange.month) {
     final day = index + 1;
     final last = data.seriesLabels.length;
     return day == 1 || day == last || day % 5 == 0 ? '$day' : '';
   }
-  return DateFormat.Md(
-    Localizations.localeOf(context).toLanguageTag(),
-  ).format(data.date);
+  return DateFormat.Md(Localizations.localeOf(context).toLanguageTag())
+      .format(data.date);
 }
 
 double _barHeight(double value, double maximum) {
   return maximum == 0 ? 0 : value / maximum * 130;
 }
-
-String _money(double value) => '\$${value.toStringAsFixed(0)}';

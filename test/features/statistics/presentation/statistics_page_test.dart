@@ -1,4 +1,5 @@
 import 'package:cashlenx/features/statistics/data/statistics_repository.dart';
+import 'package:cashlenx/features/home/presentation/providers/currency_provider.dart';
 import 'package:cashlenx/features/statistics/domain/statistics_snapshot.dart';
 import 'package:cashlenx/features/statistics/presentation/analytics_context.dart';
 import 'package:cashlenx/features/statistics/presentation/statistics_page.dart';
@@ -16,6 +17,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currencyProvider.overrideWith(_HkdCurrencyNotifier.new),
           statisticsProvider.overrideWith((ref, query) async {
             final count = query.range == AnalyticsRange.year ? 12 : 1;
             return StatisticsSnapshot(
@@ -41,6 +43,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Day'), findsOneWidget);
+    expect(find.text(r'HK$1,200'), findsOneWidget);
+    expect(find.text(r'HK$600'), findsNWidgets(2));
     expect(
       find.byKey(const ValueKey('statistics-period-selector')),
       findsOneWidget,
@@ -109,3 +113,8 @@ void main() {
 }
 
 void _noop() {}
+
+class _HkdCurrencyNotifier extends CurrencyNotifier {
+  @override
+  CurrencyOption build() => CurrencyOption.hkd;
+}

@@ -24,6 +24,9 @@ class _DashboardTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(_dashboardProvider);
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
 
     return dashboard.when(
       loading: () => _LoadingPage(title: appT(context, 'home')),
@@ -43,6 +46,7 @@ class _DashboardTab extends ConsumerWidget {
             summary: data.summary,
             selectedRange: selectedRange,
             onRangeChanged: onRangeChanged,
+            currencySymbol: currencySymbol,
           ),
           _RecentActivity(
             transactions: data.recentTransactions,
@@ -171,11 +175,13 @@ class _SummaryCard extends StatelessWidget {
     required this.summary,
     required this.selectedRange,
     required this.onRangeChanged,
+    required this.currencySymbol,
   });
 
   final _Summary summary;
   final AnalyticsRange selectedRange;
   final ValueChanged<AnalyticsRange> onRangeChanged;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +211,7 @@ class _SummaryCard extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final compact =
-                  MediaQuery.sizeOf(context).width <= 340 ||
+                  constraints.maxWidth <= 260 ||
                   MediaQuery.textScalerOf(context).scale(1) > 1.3;
               final label = Text(
                 appT(context, _summaryBalanceKey(selectedRange)),
@@ -246,7 +252,7 @@ class _SummaryCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              _money(values.totalBalance),
+              formatMoney(values.totalBalance, symbol: currencySymbol),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
@@ -261,7 +267,7 @@ class _SummaryCard extends StatelessWidget {
                 child: _SummaryMetric(
                   icon: Icons.south_west,
                   label: appT(context, 'income'),
-                  value: _money(values.income),
+                  value: formatMoney(values.income, symbol: currencySymbol),
                   iconColor: AppTheme.successColor,
                 ),
               ),
@@ -270,7 +276,7 @@ class _SummaryCard extends StatelessWidget {
                 child: _SummaryMetric(
                   icon: Icons.north_east,
                   label: appT(context, 'expense'),
-                  value: _money(values.expense),
+                  value: formatMoney(values.expense, symbol: currencySymbol),
                   iconColor: AppTheme.errorColor,
                 ),
               ),
@@ -454,15 +460,18 @@ class _RecentActivity extends StatelessWidget {
   }
 }
 
-class _TransactionTile extends StatelessWidget {
+class _TransactionTile extends ConsumerWidget {
   const _TransactionTile({required this.transaction, this.onTap});
 
   final _Transaction transaction;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isIncome = transaction.flowType == _CashFlowType.income;
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
 
     return Material(
       color: Colors.white,
@@ -520,7 +529,7 @@ class _TransactionTile extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
+                    '${isIncome ? '+' : '-'}${formatMoney(transaction.amount.abs(), symbol: currencySymbol)}',
                     style: TextStyle(
                       color: isIncome
                           ? AppTheme.successColor

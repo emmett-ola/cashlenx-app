@@ -12,6 +12,7 @@ import '../../../../core/network/response_wrapper.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../network/cashlenx_api.dart';
 import '../../../../shared/avatar_presets.dart';
+import '../../../../shared/formatters/money_formatter.dart';
 import '../../../../shared/widgets/app_color_picker.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../../../theme/app_theme.dart';

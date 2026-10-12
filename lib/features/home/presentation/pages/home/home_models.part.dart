@@ -775,24 +775,6 @@ String _summaryBalanceKey(AnalyticsRange range) {
   };
 }
 
-String _money(double value, {int decimals = 2}) {
-  final sign = value < 0 ? '-' : '';
-  final fixed = value.abs().toStringAsFixed(decimals);
-  final parts = fixed.split('.');
-  final whole = parts.first;
-  final buffer = StringBuffer();
-
-  for (var i = 0; i < whole.length; i++) {
-    if (i != 0 && (whole.length - i) % 3 == 0) {
-      buffer.write(',');
-    }
-    buffer.write(whole[i]);
-  }
-
-  final cents = decimals == 0 ? '' : '.${parts[1]}';
-  return '$sign\$${buffer.toString()}$cents';
-}
-
 String _hexColor(Color color) {
   final value = color.toARGB32() & 0xFFFFFF;
   return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';

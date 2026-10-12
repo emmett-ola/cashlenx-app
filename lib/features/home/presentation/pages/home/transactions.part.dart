@@ -528,6 +528,9 @@ class _TransactionDetailScreenState
   @override
   Widget build(BuildContext context) {
     final transaction = _transaction;
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
 
     if (_isLoading) {
       return _LoadingPage(title: appT(context, 'transaction_detail'));
@@ -628,6 +631,7 @@ class _TransactionDetailScreenState
                   if (_isEditing)
                     _TransactionAmountDisplay(
                       amountText: _amountText,
+                      currencySymbol: currencySymbol,
                       prefix: _type == _CategoryType.income ? '+' : '-',
                       amountColor: Colors.white,
                       errorText: _showAmountError
@@ -641,7 +645,7 @@ class _TransactionDetailScreenState
                     )
                   else
                     Text(
-                      '${isIncome ? '+' : '-'}${_money(transaction.amount.abs())}',
+                      '${isIncome ? '+' : '-'}${formatMoney(transaction.amount.abs(), symbol: currencySymbol)}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 34,
@@ -1256,6 +1260,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -1294,6 +1301,7 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
                     _TransactionAmountDisplay(
                       label: appT(context, 'add_transaction_amount_label'),
                       amountText: _amountText,
+                      currencySymbol: currencySymbol,
                       amountColor: _themeColor(context),
                       errorText: _showAmountError
                           ? appT(context, 'enter_amount_gt_zero')
@@ -1564,6 +1572,7 @@ class _DetailsToggleButton extends StatelessWidget {
 class _TransactionAmountDisplay extends StatelessWidget {
   const _TransactionAmountDisplay({
     required this.amountText,
+    required this.currencySymbol,
     required this.amountColor,
     required this.expanded,
     required this.onToggleExpanded,
@@ -1575,6 +1584,7 @@ class _TransactionAmountDisplay extends StatelessWidget {
 
   final String? label;
   final String amountText;
+  final String currencySymbol;
   final String prefix;
   final Color amountColor;
   final bool expanded;
@@ -1609,7 +1619,7 @@ class _TransactionAmountDisplay extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '$prefix\$$amountText',
+                    '$prefix$currencySymbol$amountText',
                     style: TextStyle(
                       color: amountColor,
                       fontSize: 34,
