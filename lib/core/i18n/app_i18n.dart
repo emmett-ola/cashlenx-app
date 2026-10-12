@@ -241,7 +241,7 @@ const _zhCnExtra = {
   'currency_description': '选择用于所有交易的主要货币',
   'currency_updated': '货币已更新。',
   'about_title': '关于 CashLenX',
-  'app_tagline': '您值得信赖的个人财务管理伙伴，轻松自信地管理财务。',
+  'app_tagline': '财流顺时而变，定力由己自持',
   'version': '版本',
   'build_date': '构建日期',
   'build_number': '构建号',
@@ -472,7 +472,7 @@ const _zhTwExtra = {
   'currency_description': '選擇用於所有交易的主要貨幣',
   'currency_updated': '貨幣已更新。',
   'about_title': '關於 CashLenX',
-  'app_tagline': '您值得信賴的個人財務管理夥伴，輕鬆自信地管理財務。',
+  'app_tagline': '財流順時而變，定力由己自持',
   'version': '版本',
   'build_date': '建置日期',
   'build_number': '建置編號',
@@ -577,7 +577,7 @@ const _zhTwExtra = {
 
 const _en = {
   'app_name': 'CashLenX',
-  'auth_subtitle': 'Your Financial Companion',
+  'auth_subtitle': 'Times shape your wealth, mind secures your control.',
   'sign_in': 'Sign In',
   'sign_up': 'Sign Up',
   'email_or_username': 'Email or Username',
@@ -763,7 +763,7 @@ const _en = {
   'currency_description': 'Choose your primary currency for all transactions',
   'currency_updated': 'Currency updated.',
   'about_title': 'About CashLenX',
-  'app_tagline': 'Your trusted companion for managing personal finances with ease and confidence.',
+  'app_tagline': 'Times shape your wealth, mind secures your control.',
   'version': 'Version',
   'build_date': 'Build Date',
   'build_number': 'Build Number',
@@ -869,7 +869,7 @@ const _en = {
 
 const _zhCn = {
   'app_name': 'CashLenX',
-  'auth_subtitle': '您的财务管理伙伴',
+  'auth_subtitle': '财流顺时而变，定力由己自持',
   'sign_in': '登录',
   'sign_up': '注册',
   'email_or_username': '邮箱或用户名',
@@ -925,7 +925,7 @@ const _zhCn = {
 
 const _zhTw = {
   'app_name': 'CashLenX',
-  'auth_subtitle': '您的財務管理夥伴',
+  'auth_subtitle': '財流順時而變，定力由己自持',
   'sign_in': '登入',
   'sign_up': '註冊',
   'email_or_username': '電子郵件或使用者名稱',
