@@ -14,6 +14,8 @@ git_commit="${GIT_COMMIT:-$(git rev-parse HEAD)}"
 [[ "$git_commit" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "GIT_COMMIT must be a full 40-character Git revision." >&2; exit 1; }
 product_version="${PRODUCT_VERSION:-$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml | tr -d '\r')}"
 [[ "$product_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] || { echo "PRODUCT_VERSION must be a semantic version." >&2; exit 1; }
+build_date="${BUILD_DATE:-$(date -u +%F)}"
+[[ "$build_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "BUILD_DATE must use UTC YYYY-MM-DD format." >&2; exit 1; }
 
 app_env="$(read_config_value APP_ENV dev)"
 api_scheme="$(read_config_value API_SCHEME http)"
@@ -33,8 +35,8 @@ fi
 [[ "$api_version" =~ ^[A-Za-z0-9._/-]+$ && "$api_version" != /* ]] || { echo "API_VERSION must be a relative URL path." >&2; exit 1; }
 
 export APP_ENV="$app_env" API_SCHEME="$api_scheme" API_DOMAIN="$api_domain" API_PORT="$api_port" API_VERSION="$api_version"
-export PRODUCT_VERSION="$product_version" GIT_COMMIT="$git_commit"
+export PRODUCT_VERSION="$product_version" GIT_COMMIT="$git_commit" BUILD_DATE="$build_date"
 compose_args=(--env-file "$env_file" -f "$compose_file")
 compose_preflight "${compose_args[@]}"
 compose "${compose_args[@]}" build cashlenx-web
-"$project_dir/scripts/verify-image.sh" "$image_ref" "$product_version" "$git_commit"
+"$project_dir/scripts/verify-image.sh" "$image_ref" "$product_version" "$git_commit" "$build_date"

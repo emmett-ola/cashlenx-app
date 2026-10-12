@@ -19,6 +19,7 @@ ARG API_SCHEME=http
 ARG API_DOMAIN=127.0.0.1
 ARG API_PORT=10063
 ARG API_VERSION=api/v1
+ARG BUILD_DATE
 
 WORKDIR /app
 
@@ -31,12 +32,14 @@ RUN flutter build web --release \
       --dart-define=API_SCHEME="${API_SCHEME}" \
       --dart-define=API_DOMAIN="${API_DOMAIN}" \
       --dart-define=API_PORT="${API_PORT}" \
-      --dart-define=API_VERSION="${API_VERSION}"
+      --dart-define=API_VERSION="${API_VERSION}" \
+      --dart-define=BUILD_DATE="${BUILD_DATE}"
 
 FROM ${NGINX_IMAGE}
 
 ARG GIT_COMMIT=unknown
 ARG PRODUCT_VERSION=0.0.0
+ARG BUILD_DATE=unknown
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.version="${PRODUCT_VERSION}"
 
@@ -44,6 +47,6 @@ WORKDIR /app
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/build/web /usr/share/nginx/html
-RUN printf '{"version":"%s","revision":"%s"}\n' "$PRODUCT_VERSION" "$GIT_COMMIT" > /usr/share/nginx/html/build-metadata.json
+RUN printf '{"version":"%s","revision":"%s","build_date":"%s"}\n' "$PRODUCT_VERSION" "$GIT_COMMIT" "$BUILD_DATE" > /usr/share/nginx/html/build-metadata.json
 
 EXPOSE 8080

@@ -53,7 +53,8 @@ jobs:
             --dart-define=API_SCHEME=http \
             --dart-define=API_DOMAIN=127.0.0.1 \
             --dart-define=API_PORT=10063 \
-            --dart-define=API_VERSION=api/v1
+            --dart-define=API_VERSION=api/v1 \
+            --dart-define=BUILD_DATE="$(date -u +%F)"
 
   validate-image:
     name: Validate deployable image
@@ -131,17 +132,23 @@ jobs:
 
       - name: Build branch-configured web release
         run: |
+          build_date="$(date -u +%F)"
           flutter build web --release \
             --dart-define=APP_ENV="${{ steps.release-config.outputs.app_env }}" \
             --dart-define=API_SCHEME="${{ steps.release-config.outputs.api_scheme }}" \
             --dart-define=API_DOMAIN="${{ steps.release-config.outputs.api_domain }}" \
             --dart-define=API_PORT="${{ steps.release-config.outputs.api_port }}" \
-            --dart-define=API_VERSION="${{ steps.release-config.outputs.api_version }}"
+            --dart-define=API_VERSION="${{ steps.release-config.outputs.api_version }}" \
+            --dart-define=BUILD_DATE="$build_date"
+          product_version="$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml | sed 's/+.*//')"
+          printf '{"version":"%s","revision":"%s","build_date":"%s"}\n' \
+            "$product_version" "$GITHUB_SHA" "$build_date" > build/web/build-metadata.json
 
       - name: Verify static release output
         run: |
           test -f build/web/index.html
           test -f build/web/main.dart.js
+          grep -Eq '"build_date":"[0-9]{4}-[0-9]{2}-[0-9]{2}"' build/web/build-metadata.json
 
       - name: Publish matching release branch
         uses: peaceiris/actions-gh-pages@v4

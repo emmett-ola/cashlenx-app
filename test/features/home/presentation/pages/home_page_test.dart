@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/home/presentation/pages/home_page.dart';
+import 'package:cashlenx/features/home/presentation/providers/app_release_identity_provider.dart';
 import 'package:cashlenx/features/statistics/presentation/analytics_context.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
@@ -412,6 +415,54 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
   });
 
+  testWidgets('about shows distinct app API and artifact identities', (
+    tester,
+  ) async {
+    await _openAboutDialog(tester, _FakeCashlenxApi());
+    await tester.pumpAndSettle();
+
+    expect(find.text('App Version'), findsOneWidget);
+    expect(find.text('1.0.9'), findsOneWidget);
+    expect(find.text('API Version'), findsOneWidget);
+    expect(find.text('1.0.4'), findsOneWidget);
+    expect(find.text('Build Date'), findsOneWidget);
+    expect(find.text('2026-10-12'), findsOneWidget);
+    expect(find.text('Build Number'), findsNothing);
+  });
+
+  testWidgets('about keeps app identity visible while API identity loads', (
+    tester,
+  ) async {
+    await _openAboutDialog(tester, _PendingVersionCashlenxApi());
+    await tester.pump();
+
+    expect(find.text('App Version'), findsOneWidget);
+    expect(find.text('1.0.9'), findsOneWidget);
+    expect(find.text('API Version'), findsOneWidget);
+    expect(find.text('Loading…'), findsOneWidget);
+    expect(find.text('Build Date'), findsOneWidget);
+    expect(find.text('2026-10-12'), findsOneWidget);
+  });
+
+  testWidgets('about exposes retry when API identity is unavailable', (
+    tester,
+  ) async {
+    final api = _UnavailableVersionCashlenxApi();
+    await _openAboutDialog(tester, api);
+    await tester.pumpAndSettle();
+
+    expect(find.text('App Version'), findsOneWidget);
+    expect(find.text('1.0.9'), findsOneWidget);
+    expect(find.text('API Version'), findsOneWidget);
+    expect(find.text('Unavailable'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(api.versionRequests, 2);
+    expect(find.text('Unavailable'), findsOneWidget);
+  });
+
   testWidgets('transaction filters expose feedback and empty recovery', (
     tester,
   ) async {
@@ -618,6 +669,16 @@ class _FakeCashlenxApi extends CashlenxApi {
   String? lastTransactionDescription;
   String? lastTransactionFromDate;
   String? lastTransactionToDate;
+
+  @override
+  Future<ApiJson> versionInfo() async {
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': {'version': '1.0.4'},
+      'errors': <dynamic>[],
+    };
+  }
 
   @override
   Future<ApiJson> getUserProfile() async {
@@ -861,6 +922,52 @@ class _FakeCashlenxApi extends CashlenxApi {
       'extra': <String, dynamic>{},
     };
   }
+}
+
+class _PendingVersionCashlenxApi extends _FakeCashlenxApi {
+  @override
+  Future<ApiJson> versionInfo() => Completer<ApiJson>().future;
+}
+
+class _UnavailableVersionCashlenxApi extends _FakeCashlenxApi {
+  var versionRequests = 0;
+
+  @override
+  Future<ApiJson> versionInfo() async {
+    versionRequests++;
+    throw DioException(
+      requestOptions: RequestOptions(path: '/open/version'),
+      type: DioExceptionType.connectionError,
+    );
+  }
+}
+
+Future<void> _openAboutDialog(WidgetTester tester, CashlenxApi api) async {
+  PackageInfo.setMockInitialValues(
+    appName: 'CashLenX',
+    packageName: 'cashlenx',
+    version: '1.0.9',
+    buildNumber: '15',
+    buildSignature: '',
+  );
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+        cashlenxApiProvider.overrideWithValue(api),
+        artifactBuildDateProvider.overrideWithValue('2026-10-12'),
+      ],
+      child: const MaterialApp(home: HomePage(section: HomeSection.settings)),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump();
+  await tester.ensureVisible(find.text('About'));
+  await tester.pump();
+  await tester.tap(find.text('About'));
+  await tester.pump();
 }
 
 class _PagingCashlenxApi extends _FakeCashlenxApi {

@@ -11,6 +11,7 @@ container_runtime_init auto
 image_ref="${1:?image reference is required}"
 expected_version="${2:?expected version is required}"
 expected_revision="${3:?expected revision is required}"
+expected_build_date="${4:?expected build date is required}"
 
 label() {
   container image inspect "$image_ref" --format "{{ index .Config.Labels \"$1\" }}"
@@ -36,3 +37,4 @@ container run --rm --entrypoint sh "$image_ref" -ec '
 metadata="$(container run --rm --entrypoint cat "$image_ref" /usr/share/nginx/html/build-metadata.json)"
 grep -Fq "\"version\":\"${expected_version}\"" <<<"$metadata" || { echo "Public build version metadata mismatch." >&2; exit 1; }
 grep -Fq "\"revision\":\"${expected_revision}\"" <<<"$metadata" || { echo "Public build revision metadata mismatch." >&2; exit 1; }
+grep -Fq "\"build_date\":\"${expected_build_date}\"" <<<"$metadata" || { echo "Public build date metadata mismatch." >&2; exit 1; }

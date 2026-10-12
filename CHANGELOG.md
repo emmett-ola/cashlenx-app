@@ -6,6 +6,22 @@ state.
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-10-12
+
+### Changed
+
+- Adopted the approved English, Simplified Chinese, and Traditional Chinese
+  CashLenX slogan across splash, authentication, and About surfaces.
+- Split About identity into App Version, API Version, and artifact-generated
+  UTC Build Date rows with readable loading, unavailable, and retry states.
+
+### Fixed
+
+- Constrained the About dialog to the mobile content viewport on wide screens
+  while retaining scroll access on compact and large-text layouts.
+- Preserved the selected dashboard range through scrolling, rebuilds, data
+  refresh, and round trips to expanded Statistics.
+
 ## [1.0.8] - 2026-10-12
 
 ### Changed

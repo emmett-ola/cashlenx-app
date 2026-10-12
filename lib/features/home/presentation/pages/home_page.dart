@@ -22,6 +22,7 @@ import '../../../profile/domain/user_profile.dart';
 import '../../../settings/data/user_configuration_sync.dart';
 import '../../../statistics/presentation/analytics_context.dart';
 import '../../../statistics/presentation/statistics_page.dart';
+import '../providers/app_release_identity_provider.dart';
 import '../providers/currency_provider.dart';
 import '../utils/transaction_filter_utils.dart';
 

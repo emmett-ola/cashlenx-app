@@ -142,6 +142,8 @@ void main() {
         await tester.pump(const Duration(seconds: 3));
         await tester.pump();
 
+        await tester.ensureVisible(find.text('Change Language'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Change Language'));
         await tester.pumpAndSettle();
         await tester.tap(find.byType(ListTile).at(languageIndex));

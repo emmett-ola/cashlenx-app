@@ -13,6 +13,7 @@ services:
         NGINX_IMAGE: ${NGINX_IMAGE:?NGINX_IMAGE is required from docker/images.env}
         GIT_COMMIT: ${GIT_COMMIT:-0000000000000000000000000000000000000000}
         PRODUCT_VERSION: ${PRODUCT_VERSION:-0.0.0}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
         APP_ENV: ${APP_ENV:-dev}
         API_SCHEME: ${API_SCHEME:-http}
         API_DOMAIN: ${API_DOMAIN:-127.0.0.1}

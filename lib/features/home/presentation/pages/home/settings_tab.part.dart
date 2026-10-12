@@ -468,6 +468,9 @@ class _AboutVersionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final packageInfo = ref.watch(_packageInfoProvider);
+    final apiVersion = ref.watch(apiReleaseVersionProvider);
+    final buildDate = ref.watch(artifactBuildDateProvider);
+    final unavailable = appT(context, 'unavailable');
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -475,23 +478,41 @@ class _AboutVersionCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        children: packageInfo.when(
-          loading: () => const [Center(child: CircularProgressIndicator())],
-          error: (_, _) => [
-            _AboutVersionRow(label: appT(context, 'version'), value: '—'),
-          ],
-          data: (info) => [
-            _AboutVersionRow(
-              label: appT(context, 'version'),
-              value: info.version,
+        children: [
+          _AboutVersionRow(
+            label: appT(context, 'app_version'),
+            value: packageInfo.when(
+              loading: () => appT(context, 'loading'),
+              error: (_, _) => unavailable,
+              data: (info) => info.version,
             ),
-            const SizedBox(height: 10),
-            _AboutVersionRow(
-              label: appT(context, 'build_number'),
-              value: info.buildNumber,
+          ),
+          const SizedBox(height: 10),
+          _AboutVersionRow(
+            label: appT(context, 'api_version'),
+            value: apiVersion.when(
+              loading: () => appT(context, 'loading'),
+              error: (_, _) => unavailable,
+              data: (version) => version,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _AboutVersionRow(
+            label: appT(context, 'build_date'),
+            value: buildDate ?? unavailable,
+          ),
+          if (apiVersion.hasError) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => ref.invalidate(apiReleaseVersionProvider),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text(appT(context, 'retry')),
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -505,24 +526,34 @@ class _AboutVersionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final labelText = Text(
+      label,
+      style: const TextStyle(
+        color: _AppShellColors.mutedText,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final valueText = Text(
+      value,
+      textAlign: TextAlign.end,
+      style: const TextStyle(
+        color: _AppShellColors.text,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+
+    if (MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [labelText, const SizedBox(height: 4), valueText],
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: _AppShellColors.mutedText,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: _AppShellColors.text,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        Expanded(child: labelText),
+        const SizedBox(width: 12),
+        Flexible(child: valueText),
       ],
     );
   }
