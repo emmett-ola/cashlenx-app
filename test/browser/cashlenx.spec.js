@@ -227,7 +227,11 @@ test('built client completes authenticated and demo journeys', async ({ page }) 
   await expect(demoPage).toHaveURL(/#\/home$/);
   await demoPage.waitForTimeout(750);
   expect(authenticatedRequests).toEqual([]);
-  await demoPage.getByRole('button', { name: 'Category' }).click();
+  await demoPage.getByRole('button', { name: 'Settings' }).click();
+  await expectSemanticText(demoPage, 'Resource Management');
+  await demoPage
+    .getByRole('button', { name: 'Category Management' })
+    .click();
   await expect(demoPage).toHaveURL(/#\/categories$/);
   const createCategory = demoPage.getByRole('button', {
     name: 'Create New Category',
