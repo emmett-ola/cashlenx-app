@@ -6,6 +6,17 @@ state.
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-12
+
+### Changed
+
+- Promoted Transactions into the primary Home navigation while moving Category
+  Management under Settings > Resource Management.
+- Routed Home's recent-activity See All action to the same Transactions tab and
+  kept the bottom navigation visible.
+- Replaced the dashboard category chart with a compact Financial Insights entry
+  that opens the expanded Statistics page.
+
 ### Fixed
 
 - Reconciled authenticated cash flows with the user's category list so legacy
