@@ -87,7 +87,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   var _selectedTab = _HomeTab.home;
-  var _showTransactions = false;
+  var _showCategories = false;
   var _showMoreStats = false;
   String? _selectedTransactionId;
 
@@ -107,12 +107,13 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _applySection(HomeSection section) {
     _selectedTab = switch (section) {
-      HomeSection.categories => _HomeTab.stats,
+      HomeSection.transactions => _HomeTab.transactions,
+      HomeSection.categories => _HomeTab.settings,
       HomeSection.budget => _HomeTab.budget,
       HomeSection.settings => _HomeTab.settings,
       _ => _HomeTab.home,
     };
-    _showTransactions = section == HomeSection.transactions;
+    _showCategories = section == HomeSection.categories;
     _showMoreStats = section == HomeSection.statistics;
     _selectedTransactionId = null;
   }
@@ -141,11 +142,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onDeleted: _handleTransactionDeleted,
                 onUpdated: _handleTransactionUpdated,
               )
-            : _showTransactions
-            ? _TransactionsScreen(
-                onBack: _closeTransactions,
-                onTransactionTap: _openTransactionDetail,
-              )
+            : _showCategories
+            ? _CategoryTab(onBack: _closeCategories)
             : _showMoreStats
             ? StatisticsPage(onBack: _closeMoreStats)
             : IndexedStack(
@@ -163,7 +161,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                         .read(analyticsRangeProvider.notifier)
                         .setRange,
                   ),
-                  const _CategoryTab(),
+                  _selectedTab == _HomeTab.transactions
+                      ? _TransactionsScreen(
+                          onTransactionTap: _openTransactionDetail,
+                        )
+                      : const SizedBox.shrink(),
                   const SizedBox.shrink(),
                   _selectedTab == _HomeTab.budget
                       ? const BudgetTab()
@@ -173,12 +175,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                     email: isDemo ? 'demo@cashlenx.com' : user?.username ?? '',
                     avatarUrl: avatarUrl,
                     onProfileTap: _openProfile,
+                    onCategoryManagement: _openCategories,
                   ),
                 ],
               ),
       ),
       bottomNavigationBar:
-          _showTransactions || _showMoreStats || _selectedTransactionId != null
+          _showCategories || _showMoreStats || _selectedTransactionId != null
           ? null
           : _BottomNav(
               selectedTab: _selectedTab,
@@ -189,7 +192,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 }
                 final section = switch (tab) {
                   _HomeTab.home => HomeSection.dashboard,
-                  _HomeTab.stats => HomeSection.categories,
+                  _HomeTab.transactions => HomeSection.transactions,
                   _HomeTab.budget => HomeSection.budget,
                   _HomeTab.settings => HomeSection.settings,
                   _HomeTab.add => HomeSection.dashboard,
@@ -221,9 +224,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     _navigate(HomeSection.transactions);
   }
 
-  void _closeTransactions() {
-    _navigate(HomeSection.dashboard);
-    ref.invalidate(_dashboardProvider);
+  void _openCategories() {
+    _navigate(HomeSection.categories);
+  }
+
+  void _closeCategories() {
+    _navigate(HomeSection.settings);
   }
 
   void _openMoreStats() {
@@ -253,7 +259,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _handleTransactionDeleted() {
     setState(() {
       _selectedTransactionId = null;
-      _showTransactions = false;
     });
     ref.invalidate(_dashboardProvider);
   }

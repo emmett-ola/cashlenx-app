@@ -49,10 +49,7 @@ class _DashboardTab extends ConsumerWidget {
             onSeeAll: onSeeAllTransactions,
             onTransactionTap: onTransactionTap,
           ),
-          _SpendingByCategoryCard(
-            categories: data.categoryBreakdown(selectedRange),
-            onMoreStats: onMoreStats,
-          ),
+          _FinancialInsightsEntry(onTap: onMoreStats),
         ],
       ),
     );
@@ -121,10 +118,11 @@ class _DashboardHeader extends StatelessWidget {
 }
 
 class _StandardHeader extends StatelessWidget {
-  const _StandardHeader({required this.title, this.subtitle});
+  const _StandardHeader({required this.title, this.subtitle, this.onBack});
 
   final String title;
   final String? subtitle;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +134,13 @@ class _StandardHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (onBack != null) ...[
+            IconButton.filledTonal(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back),
+            ),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,151 +538,146 @@ class _TransactionTile extends StatelessWidget {
   }
 }
 
-class _SpendingByCategoryCard extends StatelessWidget {
-  const _SpendingByCategoryCard({
-    required this.categories,
-    required this.onMoreStats,
-  });
+class _FinancialInsightsEntry extends StatelessWidget {
+  const _FinancialInsightsEntry({required this.onTap});
 
-  final List<_CategoryBreakdownItem> categories;
-  final VoidCallback onMoreStats;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final visibleCategories = categories.take(5).toList(growable: false);
     final themeColor = _themeColor(context);
+    final darkThemeColor = Color.lerp(themeColor, Colors.black, 0.22)!;
+    final lightThemeColor = Color.lerp(
+      themeColor,
+      AppTheme.secondaryColor,
+      0.45,
+    )!;
 
-    return _Card(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            appT(context, 'spending_by_category'),
-            style: _sectionTitle(context),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          appT(context, 'financial_insights'),
+          style: _sectionTitle(context),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: darkThemeColor.withValues(alpha: 0.2),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 200,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _CategoryDonutPainter(visibleCategories),
-              child: visibleCategories.isEmpty
-                  ? Center(
-                      child: Text(
-                        appT(context, 'no_statistics_data'),
-                        style: const TextStyle(
-                          color: _AppShellColors.mutedText,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            clipBehavior: Clip.antiAlias,
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [darkThemeColor, themeColor, lightThemeColor],
+                ),
+              ),
+              child: InkWell(
+                key: const ValueKey('financial-insights-entry'),
+                onTap: onTap,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 174),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -30,
+                        right: -16,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.13),
+                              width: 3,
+                            ),
+                          ),
                         ),
                       ),
-                    )
-                  : const SizedBox.expand(),
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...visibleCategories.map(
-            (category) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: category.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      category.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
-                        fontSize: 14,
+                      Positioned(
+                        top: 4,
+                        right: 8,
+                        child: Container(
+                          width: 58,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
-                    ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 20,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appT(context, 'financial_insights_title'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    appT(
+                                      context,
+                                      'financial_insights_description',
+                                    ),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                      height: 1.65,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.chevron_right,
+                                color: themeColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    _money(category.amount, decimals: 0),
-                    style: const TextStyle(
-                      color: _AppShellColors.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onMoreStats,
-              iconAlignment: IconAlignment.end,
-              icon: const Icon(Icons.chevron_right, size: 18),
-              label: Text(appT(context, 'more_statistics')),
-              style: FilledButton.styleFrom(
-                backgroundColor: themeColor.withValues(alpha: 0.1),
-                foregroundColor: themeColor,
-                elevation: 0,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-}
-
-class _CategoryDonutPainter extends CustomPainter {
-  const _CategoryDonutPainter(this.categories);
-
-  final List<_CategoryBreakdownItem> categories;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 18;
-    final strokeWidth = math.min(20.0, radius * 0.28);
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    final total = categories.fold<double>(
-      0,
-      (sum, category) => sum + category.amount.abs(),
-    );
-
-    final backgroundPaint = Paint()
-      ..color = _AppShellColors.softGray
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    if (total == 0) return;
-
-    var startAngle = -math.pi / 2;
-    for (final category in categories) {
-      final sweepAngle = (category.amount.abs() / total) * math.pi * 2;
-      final paint = Paint()
-        ..color = category.color
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeWidth = strokeWidth;
-
-      canvas.drawArc(rect, startAngle, sweepAngle - 0.08, false, paint);
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CategoryDonutPainter oldDelegate) {
-    return oldDelegate.categories != categories;
   }
 }

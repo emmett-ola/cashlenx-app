@@ -1,7 +1,9 @@
 part of '../home_page.dart';
 
 class _CategoryTab extends ConsumerStatefulWidget {
-  const _CategoryTab();
+  const _CategoryTab({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   ConsumerState<_CategoryTab> createState() => _CategoryTabState();
@@ -43,8 +45,11 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
-      title: appT(context, 'categories'),
-      subtitle: appT(context, 'categories_subtitle'),
+      header: _StandardHeader(
+        title: appT(context, 'category_management'),
+        subtitle: appT(context, 'categories_subtitle'),
+        onBack: widget.onBack,
+      ),
       children: [
         _CategoryTypeSwitcher(
           activeType: _activeType,

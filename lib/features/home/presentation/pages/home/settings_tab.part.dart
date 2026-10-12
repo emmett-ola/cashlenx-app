@@ -6,12 +6,14 @@ class _SettingsTab extends ConsumerStatefulWidget {
     required this.email,
     required this.avatarUrl,
     required this.onProfileTap,
+    required this.onCategoryManagement,
   });
 
   final String username;
   final String email;
   final String? avatarUrl;
   final VoidCallback onProfileTap;
+  final VoidCallback onCategoryManagement;
 
   @override
   ConsumerState<_SettingsTab> createState() => _SettingsTabState();
@@ -33,6 +35,17 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
           email: widget.email,
           avatarUrl: widget.avatarUrl,
           onTap: widget.onProfileTap,
+        ),
+        _SettingsSection(
+          title: appT(context, 'resource_management'),
+          children: [
+            _SettingsTile(
+              icon: Icons.category_outlined,
+              color: AppTheme.accentColor,
+              label: appT(context, 'category_management'),
+              onTap: widget.onCategoryManagement,
+            ),
+          ],
         ),
         _SettingsSection(
           title: appT(context, 'preferences'),
@@ -143,9 +156,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                       const SizedBox(height: 28),
                       Theme(
                         data: Theme.of(context).copyWith(
-                          colorScheme: Theme.of(
-                            context,
-                          ).colorScheme.copyWith(primary: draftColor),
+                          colorScheme: Theme.of(context).colorScheme
+                              .copyWith(primary: draftColor),
                         ),
                         child: AppColorPicker(
                           colors: _categoryColorChoices,

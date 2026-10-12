@@ -98,7 +98,10 @@ growing global folders.
   language selected on the unauthenticated screen in the new demo
   configuration, while finance, profile, currency, and theme data return to
   their demo defaults.
-- Home shell has Home, Category, Add, Budget, and Settings tabs.
+- Home shell has Home, Transactions, Add, Budget, and Settings tabs. Home's
+  recent-activity `See All` action opens the same Transactions destination.
+- Category administration is available under Settings > Resource Management >
+  Category Management rather than primary bottom navigation.
 - Dashboard data uses the real API for normal users and `DemoDataStore` for demo
   users.
 - Add Transaction and Edit Transaction share the same design language for amount
@@ -352,6 +355,7 @@ scripts/start.sh
 - Avatar selection should be implemented as a fixed preset picker using
   `assets/images/avatars/`, not file upload.
 - Dashboard/statistics/budget surfaces still need continued real API coverage
-  and deeper tests.
+  and deeper tests. The dashboard uses a compact Financial Insights entry for
+  expanded Statistics instead of duplicating a category chart.
 - Some README/architecture text may still be aspirational; prefer current code,
   server implementation, and OpenAPI when they disagree.

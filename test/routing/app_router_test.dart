@@ -59,7 +59,7 @@ void main() {
       router.go(scenario.$1);
       await tester.pumpAndSettle();
       expect(router.routeInformationProvider.value.uri.path, scenario.$1);
-      expect(find.text(scenario.$2), findsOneWidget);
+      expect(find.text(scenario.$2), findsAtLeastNWidgets(1));
       expect(tester.takeException(), isNull);
     }
 

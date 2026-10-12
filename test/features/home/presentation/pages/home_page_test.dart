@@ -48,7 +48,7 @@ void main() {
     await tester.tap(find.text('See All'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Transactions'), findsOneWidget);
+    expect(find.text('Transactions'), findsNWidgets(2));
     expect(find.byIcon(Icons.filter_list), findsOneWidget);
     expect(find.text('Coffee beans'), findsOneWidget);
     expect(find.text('+\$3,500.00'), findsOneWidget);
@@ -56,8 +56,9 @@ void main() {
     expect(find.text('\u{1F4BC}'), findsOneWidget);
     final allTransactionsIncome = tester.widget<Text>(find.text('+\$3,500.00'));
     expect(allTransactionsIncome.style?.color, AppTheme.successColor);
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Total'));
@@ -79,14 +80,35 @@ void main() {
     expect(find.text(r'$4,225.50'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Spending by Category'),
+      find.text('Financial Insights'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Spending by Category'), findsOneWidget);
-    expect(find.text('More Statistics Charts'), findsOneWidget);
+    expect(find.text('Financial Insights'), findsOneWidget);
+    expect(find.text('Spending by Category'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('financial-insights-entry')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.text('Category').last);
+    await tester.tap(find.text('Budget').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Manage your spending limits'), findsOneWidget);
+    expect(find.text('Category Budgets'), findsOneWidget);
+
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('Resource Management'), findsOneWidget);
+    expect(find.text('Category Management'), findsOneWidget);
+    expect(find.text('Currency'), findsOneWidget);
+    expect(find.text('Support'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('More Setting'), findsNothing);
+
+    await tester.tap(find.text('Category Management'));
     await tester.pumpAndSettle();
 
     expect(find.text('Manage your categories'), findsOneWidget);
@@ -104,30 +126,21 @@ void main() {
     expect(find.text('Salary'), findsOneWidget);
     expect(find.text('Bonus'), findsOneWidget);
 
-    await tester.tap(find.text('Budget').last);
+    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-
-    expect(find.text('Manage your spending limits'), findsOneWidget);
-    expect(find.text('Category Budgets'), findsOneWidget);
-
-    await tester.tap(find.text('Settings').last);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Preferences'), findsOneWidget);
-    expect(find.text('Currency'), findsOneWidget);
-    expect(find.text('Support'), findsOneWidget);
-    expect(find.text('About'), findsOneWidget);
-    expect(find.text('More Setting'), findsNothing);
+    expect(find.text('Resource Management'), findsOneWidget);
 
     await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('More Statistics Charts'),
+      find.text('Financial Insights'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('More Statistics Charts'));
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -180));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('See where every dollar goes'));
     await tester.pumpAndSettle();
 
     expect(find.text('More Statistics'), findsOneWidget);
@@ -146,10 +159,12 @@ void main() {
 
     expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
     expect(find.text('Amount'), findsOneWidget);
+    await tester.tap(find.text('Show Details'));
+    await tester.pumpAndSettle();
     expect(find.text('Category'), findsAtLeastNWidgets(1));
   });
 
-  testWidgets('dashboard category breakdown follows the summary range', (
+  testWidgets('dashboard financial insights replaces the category breakdown', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -171,17 +186,22 @@ void main() {
     expect(find.text('Month Balance'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Spending by Category'),
+      find.text('Financial Insights'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('No data for this period'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('financial-insights-entry')),
+      findsOneWidget,
+    );
+    expect(find.text('Spending by Category'), findsNothing);
+    expect(find.text('No data for this period'), findsNothing);
     expect(find.text('Day Category'), findsNothing);
   });
 
   for (final scenario in <(HomeSection, String)>[
     (HomeSection.dashboard, 'Today Balance'),
-    (HomeSection.categories, 'Manage your categories'),
+    (HomeSection.categories, 'Category Management'),
     (HomeSection.budget, 'Manage your spending limits'),
     (HomeSection.settings, 'Preferences'),
     (HomeSection.transactions, 'Transactions'),
@@ -205,7 +225,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
 
-      expect(find.text(scenario.$2), findsOneWidget);
+      expect(find.text(scenario.$2), findsAtLeastNWidgets(1));
       expect(tester.takeException(), isNull);
     });
   }
@@ -237,7 +257,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    for (final label in ['Home', 'Category', 'Add', 'Budget', 'Settings']) {
+    for (final label in ['Home', 'Transactions', 'Add', 'Budget', 'Settings']) {
       expect(find.bySemanticsLabel(label), findsOneWidget);
     }
     expect(tester.takeException(), isNull);

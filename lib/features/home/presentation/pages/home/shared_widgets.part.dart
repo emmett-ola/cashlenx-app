@@ -153,15 +153,14 @@ class _BottomNav extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.child, this.onTap, this.padding});
+  const _Card({required this.child, this.onTap});
 
   final Widget child;
   final VoidCallback? onTap;
-  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(onTap: onTap, padding: padding, child: child);
+    return AppCard(onTap: onTap, child: child);
   }
 }
 

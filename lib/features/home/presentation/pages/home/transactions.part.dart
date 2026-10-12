@@ -1,12 +1,8 @@
 part of '../home_page.dart';
 
 class _TransactionsScreen extends ConsumerStatefulWidget {
-  const _TransactionsScreen({
-    required this.onBack,
-    required this.onTransactionTap,
-  });
+  const _TransactionsScreen({required this.onTransactionTap});
 
-  final VoidCallback onBack;
   final ValueChanged<_Transaction> onTransactionTap;
 
   @override
@@ -75,7 +71,6 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
         SliverToBoxAdapter(
           child: _NavigationHeader(
             title: appT(context, 'transactions'),
-            onBack: widget.onBack,
             trailing: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -1865,14 +1860,10 @@ class _TransactionAmountPad extends StatelessWidget {
 }
 
 class _NavigationHeader extends StatelessWidget {
-  const _NavigationHeader({
-    required this.title,
-    required this.onBack,
-    this.trailing,
-  });
+  const _NavigationHeader({required this.title, this.onBack, this.trailing});
 
   final String title;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
   final Widget? trailing;
 
   @override
@@ -1885,11 +1876,13 @@ class _NavigationHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton.filledTonal(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
-          ),
-          const SizedBox(width: 12),
+          if (onBack != null) ...[
+            IconButton.filledTonal(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back),
+            ),
+            const SizedBox(width: 12),
+          ],
           Expanded(child: Text(title, style: _pageTitle(context))),
           ?trailing,
         ],

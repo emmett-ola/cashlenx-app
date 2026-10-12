@@ -2,7 +2,7 @@ part of '../home_page.dart';
 
 enum _HomeTab {
   home('nav_home', Icons.home_outlined),
-  stats('nav_category', Icons.grid_view_outlined),
+  transactions('nav_transactions', Icons.receipt_long_outlined),
   add('nav_add', Icons.add),
   budget('nav_budget', Icons.account_balance_wallet_outlined),
   settings('nav_settings', Icons.settings_outlined);
@@ -157,12 +157,6 @@ class _DashboardApi {
         total: totalSummary,
       ),
       recentTransactions: recentTransactions,
-      categoryBreakdowns: {
-        AnalyticsRange.day: _categoryBreakdownFromSummary(daySummary),
-        AnalyticsRange.month: _categoryBreakdownFromSummary(monthSummary),
-        AnalyticsRange.year: _categoryBreakdownFromSummary(yearSummary),
-        AnalyticsRange.total: _categoryBreakdownFromSummary(totalSummary),
-      },
     );
   }
 
@@ -177,55 +171,20 @@ class _DashboardApi {
   }
 
   static String _yearToken(DateTime date) => date.year.toString();
-
-  static List<_CategoryBreakdownItem> _categoryBreakdownFromSummary(
-    _CashSummary summary,
-  ) {
-    if (summary.categoryBreakdown.isEmpty) {
-      return const [];
-    }
-
-    final total = summary.categoryBreakdown.values.fold<double>(
-      0,
-      (sum, amount) => sum + amount,
-    );
-    final entries = summary.categoryBreakdown.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return entries.indexed.map((entry) {
-      final index = entry.$1;
-      final category = entry.$2;
-      final percent = total == 0 ? 0.0 : (category.value / total) * 100;
-
-      return _CategoryBreakdownItem(
-        name: category.key,
-        amount: category.value,
-        percent: percent,
-        color: _categoryColors[index % _categoryColors.length],
-      );
-    }).toList();
-  }
 }
 
 class _DashboardResponse {
   const _DashboardResponse({
     required this.summary,
     required this.recentTransactions,
-    required this.categoryBreakdowns,
   });
 
   final _Summary summary;
   final List<_Transaction> recentTransactions;
-  final Map<AnalyticsRange, List<_CategoryBreakdownItem>> categoryBreakdowns;
-
-  List<_CategoryBreakdownItem> categoryBreakdown(AnalyticsRange range) {
-    return categoryBreakdowns[range] ?? const [];
-  }
 
   factory _DashboardResponse.mock({
     _Summary? summary,
     List<_Transaction>? recentTransactions,
-    Map<AnalyticsRange, List<_CategoryBreakdownItem>>? categoryBreakdowns,
   }) {
     summary ??= const _Summary(
       dayBalance: 185.50,
@@ -241,49 +200,9 @@ class _DashboardResponse {
       totalIncome: 6380,
       totalExpense: 3485.70,
     );
-    const fallbackCategoryBreakdown = [
-      _CategoryBreakdownItem(
-        name: 'Food',
-        amount: 450,
-        percent: 33,
-        color: Color(0xFFFF8A65),
-      ),
-      _CategoryBreakdownItem(
-        name: 'Shopping',
-        amount: 320,
-        percent: 24,
-        color: AppTheme.secondaryColor,
-      ),
-      _CategoryBreakdownItem(
-        name: 'Transport',
-        amount: 180,
-        percent: 13,
-        color: Color(0xFFFFB74D),
-      ),
-      _CategoryBreakdownItem(
-        name: 'Home',
-        amount: 280,
-        percent: 21,
-        color: Color(0xFF9575CD),
-      ),
-      _CategoryBreakdownItem(
-        name: 'Others',
-        amount: 120,
-        percent: 9,
-        color: Color(0xFF90A4AE),
-      ),
-    ];
-    final resolvedCategoryBreakdowns =
-        categoryBreakdowns ??
-        {
-          for (final range in AnalyticsRange.values)
-            range: fallbackCategoryBreakdown,
-        };
-
     return _DashboardResponse(
       summary: summary,
       recentTransactions: recentTransactions ?? const [],
-      categoryBreakdowns: resolvedCategoryBreakdowns,
     );
   }
 }
@@ -416,13 +335,11 @@ class _CashSummary {
     required this.totalIncome,
     required this.totalExpense,
     required this.balance,
-    required this.categoryBreakdown,
   });
 
   final double totalIncome;
   final double totalExpense;
   final double balance;
-  final Map<String, double> categoryBreakdown;
 
   factory _CashSummary.fromResponse(ApiJson response) {
     final wrapper = ResponseWrapper<_CashSummary>.fromJson(
@@ -442,7 +359,6 @@ class _CashSummary {
       totalIncome: _jsonDouble(json['total_income']),
       totalExpense: _jsonDouble(json['total_expense']),
       balance: _jsonDouble(json['balance']),
-      categoryBreakdown: _jsonDoubleMap(json['category_breakdown']),
     );
   }
 }
@@ -590,20 +506,6 @@ class _Transaction {
   }
 }
 
-class _CategoryBreakdownItem {
-  const _CategoryBreakdownItem({
-    required this.name,
-    required this.amount,
-    required this.percent,
-    required this.color,
-  });
-
-  final String name;
-  final double amount;
-  final double percent;
-  final Color color;
-}
-
 class _AppShellColors {
   const _AppShellColors._();
 
@@ -611,18 +513,8 @@ class _AppShellColors {
   static const border = Color(0xFFE5E7EB);
   static const mutedText = Color(0xFF6B7280);
   static const navMuted = Color(0xFF9CA3AF);
-  static const softGray = Color(0xFFE5E7EB);
   static const text = Color(0xFF111827);
 }
-
-const _categoryColors = [
-  Color(0xFFFF8A65),
-  AppTheme.secondaryColor,
-  Color(0xFFFFB74D),
-  Color(0xFF9575CD),
-  Color(0xFF90A4AE),
-  Color(0xFF2563EB),
-];
 
 const _defaultCategoryEmoji = '🙂';
 const _defaultCategoryColor = Color(0xFFE5E7EB);
@@ -918,26 +810,12 @@ double _jsonDouble(Object? value) {
   };
 }
 
-Map<String, double> _jsonDoubleMap(Object? value) {
-  if (value is! Map) {
-    return const {};
-  }
-
-  return value.map(
-    (key, amount) => MapEntry(key.toString(), _jsonDouble(amount)),
-  );
-}
-
 TextStyle _pageTitle(BuildContext context) {
-  return Theme.of(context).textTheme.headlineSmall!.copyWith(
-    color: _AppShellColors.text,
-    fontWeight: FontWeight.w800,
-  );
+  return Theme.of(context).textTheme.headlineSmall!
+      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
 }
 
 TextStyle _sectionTitle(BuildContext context) {
-  return Theme.of(context).textTheme.titleMedium!.copyWith(
-    color: _AppShellColors.text,
-    fontWeight: FontWeight.w800,
-  );
+  return Theme.of(context).textTheme.titleMedium!
+      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
 }
