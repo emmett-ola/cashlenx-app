@@ -82,6 +82,10 @@ growing global folders.
 
 - Splash and auth flows exist for login, registration, password reset, and demo
   mode.
+- Registration email verification presents the destination as read-only context,
+  accepts a six-digit numeric code, retains the resend countdown, and uses
+  localized Confirm and Return to edit email actions without changing the
+  verification API contract.
 - Auth persistence uses `SecureStorageService` for access token, refresh token,
   and remember-me state.
 - Session writes persist the rotating refresh credential before the access

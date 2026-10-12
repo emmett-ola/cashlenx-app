@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -130,31 +131,38 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           key: _verifyFormKey,
           child: Column(
             children: [
-              CustomInput(
-                label: t('email'),
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
-                enabled: false,
+              _VerificationDestination(
+                email: _emailController.text.trim(),
+                title: t('verification_code_sent_to'),
+                description: t('verification_code_instructions'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               CustomInput(
                 label: '${t('verification_code')} *',
                 controller: _verificationCodeController,
                 placeholder: t('enter_code'),
                 keyboardType: TextInputType.number,
-                prefixIcon: Icon(Icons.error_outline, color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.verified_user_outlined,
+                  color: Colors.grey[500],
+                ),
+                autofocus: true,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _verifyCode(),
                 validator: (value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return t('please_enter_code');
+                  if (!RegExp(r'^\d{6}$').hasMatch((value ?? '').trim())) {
+                    return t('please_enter_valid_code');
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.center,
                 child: TextButton(
                   onPressed: _resendCountdown > 0 ? null : _resendCode,
                   style: TextButton.styleFrom(
@@ -364,6 +372,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Future<void> _verifyCode() async {
+    if (_isVerifying) return;
     if (!_verifyFormKey.currentState!.validate()) return;
 
     setState(() {
@@ -495,6 +504,75 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return t('password_min_error');
     }
     return null;
+  }
+}
+
+class _VerificationDestination extends StatelessWidget {
+  const _VerificationDestination({
+    required this.email,
+    required this.title,
+    required this.description,
+  });
+
+  final String email;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesignTokens.space4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.mark_email_read_outlined, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppDesignTokens.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            email,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppDesignTokens.mutedText,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

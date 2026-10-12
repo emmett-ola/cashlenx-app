@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 
@@ -12,7 +13,13 @@ class CustomInput extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final void Function(String)? onChanged;
+  final void Function(String)? onSubmitted;
   final bool enabled;
+  final bool autofocus;
+  final int? maxLength;
+  final TextAlign textAlign;
+  final TextInputAction? textInputAction;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomInput({
     super.key,
@@ -25,7 +32,13 @@ class CustomInput extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.onChanged,
+    this.onSubmitted,
     this.enabled = true,
+    this.autofocus = false,
+    this.maxLength,
+    this.textAlign = TextAlign.start,
+    this.textInputAction,
+    this.inputFormatters,
   });
 
   @override
@@ -61,7 +74,13 @@ class CustomInput extends StatelessWidget {
           validator: validator,
           keyboardType: keyboardType,
           onChanged: onChanged,
+          onFieldSubmitted: onSubmitted,
           enabled: enabled,
+          autofocus: autofocus,
+          maxLength: maxLength,
+          textAlign: textAlign,
+          textInputAction: textInputAction,
+          inputFormatters: inputFormatters,
           style: TextStyle(
             color: enabled
                 ? inputTextColor
@@ -70,6 +89,7 @@ class CustomInput extends StatelessWidget {
           ),
           decoration: InputDecoration(
             hintText: placeholder,
+            counterText: maxLength == null ? null : '',
             hintStyle: TextStyle(color: hintTextColor, fontSize: 16),
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,

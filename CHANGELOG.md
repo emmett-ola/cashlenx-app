@@ -6,6 +6,14 @@ state.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-12
+
+### Changed
+
+- Redesigned registration email verification around a clear read-only delivery
+  destination, focused six-digit code entry, resend feedback, and localized
+  Confirm and Return to edit email actions.
+
 ## [1.0.10] - 2026-10-12
 
 ### Changed
