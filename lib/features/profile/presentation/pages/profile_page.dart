@@ -11,7 +11,6 @@ import '../../../../theme/app_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../demo/data/demo_data_store.dart';
 import '../../../home/presentation/providers/currency_provider.dart';
-import '../../../settings/data/user_configuration_sync.dart';
 import '../../domain/user_profile.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -36,14 +35,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String? _phoneError;
   String? _locationError;
   String? _birthDateError;
-  late CurrencyOption _selectedCurrency;
 
   bool get _isDemo => ref.read(authNotifierProvider).value?.role == 'demo';
 
   @override
   void initState() {
     super.initState();
-    _selectedCurrency = ref.read(currencyProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadProfile();
     });
@@ -61,6 +58,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     ref.watch(i18nProvider);
+    final currency = ref.watch(currencyProvider);
     final profile = _profile;
 
     return Scaffold(
@@ -112,15 +110,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               phoneError: _phoneError,
                               locationError: _locationError,
                               birthDateError: _birthDateError,
-                              currency: _selectedCurrency,
                               onPhoneChanged: (_) => _clearPhoneError(),
                               onLocationChanged: (_) => _clearLocationError(),
                               onBirthDateChanged: (_) => _clearBirthDateError(),
-                              onCurrencyTap: _showCurrencyPicker,
                               onBirthDateTap: _selectBirthDate,
                             ),
                             const SizedBox(height: 18),
-                            _AccountStatsCard(currency: _selectedCurrency),
+                            _AccountStatsCard(currency: currency),
                             const SizedBox(height: 18),
                             OutlinedButton.icon(
                               onPressed: _isSaving
@@ -221,9 +217,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final optionalBirthDate = _optionalProfileValue(birthDate);
 
     try {
-      await ref.read(currencyProvider.notifier).setCurrency(_selectedCurrency);
-      await ref.read(persistUserConfigurationProvider)();
-
       final profileDraft = profile.copyWith(
         nickname: optionalNickname,
         avatarUrl: optionalAvatarUrl,
@@ -278,7 +271,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _locationController.text = profile.location ?? '';
     _birthDateController.text = profile.birthDate ?? '';
     _avatarValue = profile.avatarUrl ?? '';
-    _selectedCurrency = ref.read(currencyProvider);
     _clearValidationErrors();
   }
 
@@ -347,85 +339,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           '${selected.year}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
       _birthDateError = null;
     });
-  }
-
-  void _showCurrencyPicker() {
-    if (!_isEditing) return;
-
-    var query = '';
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filtered = CurrencyOption.values.where((currency) {
-              final search = query.trim().toLowerCase();
-              return search.isEmpty ||
-                  currency.code.toLowerCase().contains(search) ||
-                  currency.name.toLowerCase().contains(search);
-            }).toList();
-
-            return _ProfileModal(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppPanelHeader(
-                    title: appT(context, 'profile_currency_modal_title'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: appT(
-                        context,
-                        'profile_currency_search_placeholder',
-                      ),
-                      prefixIcon: const Icon(Icons.search),
-                    ),
-                    onChanged: (value) => setModalState(() => query = value),
-                  ),
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final currency = filtered[index];
-                        final selected = currency == _selectedCurrency;
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: AppIconCircle(
-                            icon: Icons.attach_money,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          title: Text(
-                            currency.code,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          subtitle: Text(currency.name),
-                          trailing: selected
-                              ? Icon(
-                                  Icons.check,
-                                  color: Theme.of(context).colorScheme.primary,
-                                )
-                              : null,
-                          onTap: () {
-                            setState(() => _selectedCurrency = currency);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   void _showAvatarPicker() {
@@ -754,11 +667,9 @@ class _PersonalInformationCard extends StatelessWidget {
     required this.phoneError,
     required this.locationError,
     required this.birthDateError,
-    required this.currency,
     required this.onPhoneChanged,
     required this.onLocationChanged,
     required this.onBirthDateChanged,
-    required this.onCurrencyTap,
     required this.onBirthDateTap,
   });
 
@@ -771,11 +682,9 @@ class _PersonalInformationCard extends StatelessWidget {
   final String? phoneError;
   final String? locationError;
   final String? birthDateError;
-  final CurrencyOption currency;
   final ValueChanged<String> onPhoneChanged;
   final ValueChanged<String> onLocationChanged;
   final ValueChanged<String> onBirthDateChanged;
-  final VoidCallback onCurrencyTap;
   final VoidCallback onBirthDateTap;
 
   @override
@@ -856,23 +765,6 @@ class _PersonalInformationCard extends StatelessWidget {
                     _formatReadableDate(context, birthDateController.text),
                   ),
           ),
-          _ProfileField(
-            label: appT(context, 'profile_currency'),
-            icon: Icons.attach_money,
-            child: isEditing
-                ? InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: onCurrencyTap,
-                    child: _ReadOnlyValue(
-                      '${currency.name} (${currency.symbol})',
-                      trailing: const Icon(
-                        Icons.attach_money,
-                        color: Colors.black38,
-                      ),
-                    ),
-                  )
-                : _ReadOnlyValue('${currency.name} (${currency.symbol})'),
-          ),
         ],
       ),
     );
@@ -899,31 +791,33 @@ class _AccountStatsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: 1.35,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _StatTile(
-                value: '--',
-                label: appT(context, 'profile_transactions'),
-              ),
-              _StatTile(
-                value: '--',
-                label: appT(context, 'profile_active_budgets'),
-              ),
-              _StatTile(
-                value: '--',
-                label: appT(context, 'profile_months_active'),
-              ),
-              _StatTile(
-                value: '${currency.symbol}--',
-                label: appT(context, 'profile_saved_stat'),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) => GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: constraints.maxWidth < 280 ? 1 : 1.35,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _StatTile(
+                  value: '--',
+                  label: appT(context, 'profile_transactions'),
+                ),
+                _StatTile(
+                  value: '--',
+                  label: appT(context, 'profile_active_budgets'),
+                ),
+                _StatTile(
+                  value: '--',
+                  label: appT(context, 'profile_months_active'),
+                ),
+                _StatTile(
+                  value: '${currency.symbol}--',
+                  label: appT(context, 'profile_saved_stat'),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1074,10 +968,9 @@ String? _birthDateValidationError(BuildContext context, String value) {
 }
 
 class _ReadOnlyValue extends StatelessWidget {
-  const _ReadOnlyValue(this.value, {this.trailing});
+  const _ReadOnlyValue(this.value);
 
   final String value;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1088,20 +981,13 @@ class _ReadOnlyValue extends StatelessWidget {
         color: AppSurfaceTokens.softFillColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppSurfaceTokens.textColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ?trailing,
-        ],
+      child: Text(
+        value,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppSurfaceTokens.textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

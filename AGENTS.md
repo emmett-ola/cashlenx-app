@@ -50,8 +50,8 @@ is uncertain.
   transaction, settings, shared-widget, and model presentation parts. These
   files share Home-private types through `part of` and are not imported
   independently.
-- `lib/features/profile/presentation/pages/profile_page.dart`: profile page and
-  avatar/currency controls.
+- `lib/features/profile/presentation/pages/profile_page.dart`: account profile,
+  avatar selection, and presentation-only account statistics.
 - `lib/features/demo/data/demo_data_store.dart`: editable demo-mode data store.
 - `lib/theme/app_theme.dart`: theme mode and theme color providers.
 - `lib/shared/widgets/app_surface.dart`: shared panels, cards, list tiles.
@@ -127,8 +127,9 @@ growing global folders.
   brand-stable unless the user explicitly asks otherwise.
 - Profile uses `GET /user/profile` and `PUT /user/profile`. It currently saves
   API-supported fields: `nickname`, `avatar_url`, and `gender`.
-- Profile currency preference is app-local through `currencyProvider`; backend
-  does not currently persist preferred currency.
+- Settings is the sole UI owner of currency, theme, and language preferences.
+  Profile does not edit or persist them; its account-statistics placeholders may
+  display the active currency symbol as read-only presentation.
 - Avatars are fixed presets from `assets/images/avatars/`. User-uploaded avatars
   are intentionally not planned. The app saves the selected preset asset path in
   `avatar_url`. If no avatar is set or loading fails, use

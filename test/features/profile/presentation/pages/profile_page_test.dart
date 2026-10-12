@@ -12,32 +12,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('renders demo profile without requesting the api', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+  for (final layout in <String, Size>{
+    'compact': const Size(320, 844),
+    'wide': const Size(1200, 844),
+  }.entries) {
+    testWidgets(
+      'keeps Profile focused on account information on ${layout.key} layouts',
+      (tester) async {
+        await tester.binding.setSurfaceSize(layout.value);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authNotifierProvider.overrideWith(_DemoAuthNotifier.new),
-          cashlenxApiProvider.overrideWithValue(_ThrowingCashlenxApi()),
-        ],
-        child: const MaterialApp(home: ProfilePage()),
-      ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authNotifierProvider.overrideWith(_DemoAuthNotifier.new),
+              cashlenxApiProvider.overrideWithValue(_ThrowingCashlenxApi()),
+            ],
+            child: const MaterialApp(home: ProfilePage()),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Profile'), findsOneWidget);
+        expect(find.text('Demo User'), findsWidgets);
+        expect(find.text('demo@cashlenx.com'), findsWidgets);
+        expect(find.text('Personal Information'), findsOneWidget);
+        expect(find.text('Account Statistics'), findsOneWidget);
+        expect(find.text('Currency'), findsNothing);
+        expect(find.text('Theme'), findsNothing);
+        expect(find.text('Language'), findsNothing);
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Edit'));
+        await tester.pump();
+
+        expect(find.text('Currency'), findsNothing);
+        expect(find.text('Theme'), findsNothing);
+        expect(find.text('Language'), findsNothing);
+        expect(find.text('Log Out'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
     );
-
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.text('Profile'), findsOneWidget);
-    expect(find.text('Demo User'), findsWidgets);
-    expect(find.text('demo@cashlenx.com'), findsWidgets);
-    expect(find.text('Personal Information'), findsOneWidget);
-    expect(find.text('Account Statistics'), findsOneWidget);
-    expect(find.text('Log Out'), findsOneWidget);
-  });
+  }
 
   testWidgets('selects and persists an image-backed avatar preset', (
     tester,
@@ -182,6 +199,17 @@ void main() {
     expect(find.text('Birth date cannot be in the future.'), findsOneWidget);
     expect(api.profileUpdateCalls, 0);
     expect(api.configurationUpdateCalls, 0);
+
+    await tester.enterText(_textFieldWithHint('YYYY-MM-DD'), '1995-03-15');
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(api.profileUpdateCalls, 1);
+    expect(api.configurationUpdateCalls, 0);
+    expect(
+      (await SharedPreferences.getInstance()).getString('currency'),
+      isNull,
+    );
   });
 
   test('demo profile ignores blank optional updates', () async {

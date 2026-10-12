@@ -16,6 +16,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
+  for (final layout in <String, Size>{
+    'compact': const Size(320, 844),
+    'wide': const Size(1200, 844),
+  }.entries) {
+    testWidgets(
+      'keeps preferences owned by Settings on ${layout.key} layouts',
+      (tester) async {
+        await tester.binding.setSurfaceSize(layout.value);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+              cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+            ],
+            child: const MaterialApp(home: HomePage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Settings').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Preferences'), findsOneWidget);
+        expect(find.text('Theme'), findsOneWidget);
+        expect(find.text('Currency'), findsOneWidget);
+        expect(find.text('Language'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

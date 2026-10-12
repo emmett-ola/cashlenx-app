@@ -6,6 +6,22 @@ state.
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-10-12
+
+### Changed
+
+- Applied the selected currency symbol consistently across Home, Transactions,
+  transaction entry and editing, Statistics, and Budget without converting
+  stored values.
+- Kept Currency, Theme, and Language preferences exclusively in Settings while
+  retaining account identity, information, and statistics in Profile.
+
+### Fixed
+
+- Kept multi-character currency symbols responsive on compact finance surfaces.
+- Removed preference persistence from Profile saves so editing account details
+  cannot overwrite Settings-owned configuration.
+
 ## [1.0.9] - 2026-10-12
 
 ### Changed
