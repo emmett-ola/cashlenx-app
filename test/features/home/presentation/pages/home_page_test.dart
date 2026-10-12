@@ -200,6 +200,69 @@ void main() {
     expect(find.text('Day Category'), findsNothing);
   });
 
+  testWidgets('dashboard range survives scrolling rebuild refresh and stats', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today Balance'), findsOneWidget);
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+    expect(find.text('Month Balance'), findsOneWidget);
+
+    final dashboardScroll = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.text('Financial Insights'),
+      300,
+      scrollable: dashboardScroll,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Month Balance'),
+      -300,
+      scrollable: dashboardScroll,
+    );
+    expect(find.text('Month Balance'), findsOneWidget);
+
+    await tester.binding.setSurfaceSize(const Size(391, 844));
+    await tester.pumpAndSettle();
+    expect(find.text('Month Balance'), findsOneWidget);
+
+    await tester.tap(find.text('Transactions').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Month Balance'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Financial Insights'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('See where every dollar goes'));
+    await tester.pumpAndSettle();
+
+    final rangeSelector = tester.widget<SegmentedButton<AnalyticsRange>>(
+      find.byKey(const ValueKey('statistics-range-selector')),
+    );
+    expect(rangeSelector.selected, {AnalyticsRange.month});
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('Month Balance'), findsOneWidget);
+  });
+
   for (final scenario in <(HomeSection, String)>[
     (HomeSection.dashboard, 'Today Balance'),
     (HomeSection.categories, 'Category Management'),
