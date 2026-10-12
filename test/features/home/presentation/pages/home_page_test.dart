@@ -9,6 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
@@ -262,6 +263,90 @@ void main() {
     }
     expect(tester.takeException(), isNull);
     semantics.dispose();
+  });
+
+  testWidgets('about dialog stays within the mobile content viewport', (
+    tester,
+  ) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'CashLenX',
+      packageName: 'cashlenx',
+      version: '1.0.8',
+      buildNumber: '14',
+      buildSignature: '',
+    );
+
+    for (final scenario in <(Size, double)>[
+      (const Size(1280, 900), 1),
+      (const Size(320, 568), 1),
+      (const Size(320, 568), 1.8),
+    ]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await tester.binding.setSurfaceSize(scenario.$1);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+            cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+          ],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(scenario.$2)),
+              child: child!,
+            ),
+            home: HomePage(
+              key: ValueKey('about-${scenario.$1}-${scenario.$2}'),
+              section: HomeSection.settings,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (
+        var attempt = 0;
+        attempt < 4 && find.text('About').evaluate().isEmpty;
+        attempt++
+      ) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -360));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('About'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('About'));
+      await tester.pumpAndSettle();
+
+      final dialog = find.byType(Dialog);
+      expect(dialog, findsOneWidget);
+      final dialogSize = tester.getSize(
+        find.byKey(const ValueKey('about-dialog-surface')),
+      );
+      expect(dialogSize.width, lessThanOrEqualTo(382));
+      expect(dialogSize.height, lessThanOrEqualTo(scenario.$1.height - 48));
+      expect(tester.takeException(), isNull);
+
+      final dialogScroll = find.descendant(
+        of: dialog,
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(dialogScroll, findsOneWidget);
+      final dialogScrollable = find.descendant(
+        of: dialogScroll,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Close'),
+        160,
+        scrollable: dialogScrollable,
+      );
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(dialog, findsNothing);
+    }
+
+    addTearDown(() => tester.binding.setSurfaceSize(null));
   });
 
   testWidgets('transaction filters expose feedback and empty recovery', (

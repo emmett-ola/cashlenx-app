@@ -352,97 +352,108 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
       context: context,
       builder: (context) {
         return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        appT(context, 'about_title'),
-                        style: _sectionTitle(context),
+          child: ConstrainedBox(
+            key: const ValueKey('about-dialog-surface'),
+            constraints: BoxConstraints(
+              maxWidth: 382,
+              maxHeight: MediaQuery.sizeOf(context).height - 48,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          appT(context, 'about_title'),
+                          style: _sectionTitle(context),
+                        ),
                       ),
-                    ),
-                    IconButton.filledTonal(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  width: 80,
-                  height: 80,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
+                      IconButton.filledTonal(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
                       ),
                     ],
                   ),
-                  child: Image.asset('assets/images/app_icon.png'),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  appT(context, 'app_name'),
-                  style: const TextStyle(
-                    color: _AppShellColors.text,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  appT(context, 'app_tagline'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: _AppShellColors.mutedText),
-                ),
-                const SizedBox(height: 20),
-                const _AboutVersionCard(),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          ToastUtils.showInfo(
-                            context,
-                            appT(context, 'latest_version'),
-                          );
-                        },
-                        icon: const Icon(Icons.refresh, size: 18),
-                        label: Text(appT(context, 'check_update')),
-                      ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(appT(context, 'close')),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  '© 2026 CashLenX. All rights reserved.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _AppShellColors.navMuted,
-                    fontSize: 12,
+                    child: Image.asset('assets/images/app_icon.png'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    appT(context, 'app_name'),
+                    style: const TextStyle(
+                      color: _AppShellColors.text,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    appT(context, 'app_tagline'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _AppShellColors.mutedText),
+                  ),
+                  const SizedBox(height: 20),
+                  const _AboutVersionCard(),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            ToastUtils.showInfo(
+                              context,
+                              appT(context, 'latest_version'),
+                            );
+                          },
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: Text(appT(context, 'check_update')),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(appT(context, 'close')),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    '© 2026 CashLenX. All rights reserved.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _AppShellColors.navMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
