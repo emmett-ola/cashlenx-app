@@ -193,7 +193,7 @@ test('built client completes authenticated and demo journeys', async ({ page }) 
   for (const destination of [
     ['categories', 'Manage your categories'],
     ['transactions', 'Browser acceptance expense'],
-    ['statistics', 'Monthly Comparison'],
+    ['statistics', 'More Statistics'],
     ['budgets', 'Manage your spending limits'],
     ['settings', 'Preferences'],
   ]) {
