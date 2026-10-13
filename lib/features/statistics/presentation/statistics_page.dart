@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/i18n/app_i18n.dart';
 import '../../../shared/formatters/money_formatter.dart';
+import '../../../shared/formatters/period_formatter.dart';
 import '../../../theme/app_theme.dart';
 import '../../home/presentation/providers/currency_provider.dart';
 import '../data/statistics_repository.dart';
@@ -539,13 +540,16 @@ DateTime _periodStart(DateTime date, AnalyticsRange range) {
 }
 
 String _periodLabel(BuildContext context, AnalyticsRange range, DateTime date) {
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  return switch (range) {
-    AnalyticsRange.day => DateFormat.yMMMMd(locale).format(date),
-    AnalyticsRange.month => DateFormat.yMMMM(locale).format(date),
-    AnalyticsRange.year ||
-    AnalyticsRange.total => DateFormat.y(locale).format(date),
+  final granularity = switch (range) {
+    AnalyticsRange.day => PeriodLabelGranularity.day,
+    AnalyticsRange.month => PeriodLabelGranularity.month,
+    AnalyticsRange.year || AnalyticsRange.total => PeriodLabelGranularity.year,
   };
+  return localizedPeriodLabel(
+    date,
+    locale: Localizations.localeOf(context),
+    granularity: granularity,
+  );
 }
 
 String _seriesLabel(BuildContext context, StatisticsSnapshot data, int index) {

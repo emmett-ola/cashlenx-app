@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/i18n/app_i18n.dart';
 import '../../../shared/formatters/money_formatter.dart';
+import '../../../shared/formatters/period_formatter.dart';
 import '../../../theme/app_theme.dart';
 import '../../demo/data/demo_data_store.dart';
 import '../../home/presentation/providers/currency_provider.dart';
@@ -11,17 +12,25 @@ import '../data/budget_repository.dart';
 import '../domain/budget_models.dart';
 
 class BudgetTab extends ConsumerStatefulWidget {
-  const BudgetTab({super.key});
+  const BudgetTab({this.initialMonth, super.key});
+
+  final DateTime? initialMonth;
 
   @override
   ConsumerState<BudgetTab> createState() => _BudgetTabState();
 }
 
 class _BudgetTabState extends ConsumerState<BudgetTab> {
-  late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+  late DateTime _month;
 
-  String get _period =>
-      '${_month.year}-${_month.month.toString().padLeft(2, '0')}';
+  @override
+  void initState() {
+    super.initState();
+    final initialMonth = widget.initialMonth ?? DateTime.now();
+    _month = DateTime(initialMonth.year, initialMonth.month);
+  }
+
+  String get _period => canonicalMonthPeriod(_month);
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +249,11 @@ class _MonthSelector extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            '${month.year}-${month.month.toString().padLeft(2, '0')}',
+            localizedPeriodLabel(
+              month,
+              locale: Localizations.localeOf(context),
+              granularity: PeriodLabelGranularity.month,
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),

@@ -3,10 +3,53 @@ import 'package:cashlenx/features/budget/domain/budget_models.dart';
 import 'package:cashlenx/features/budget/presentation/budget_tab.dart';
 import 'package:cashlenx/features/home/presentation/providers/currency_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('localizes month labels without changing budget query periods', (
+    tester,
+  ) async {
+    final requestedPeriods = <String>[];
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          monthlyBudgetsProvider.overrideWith((ref, period) async {
+            requestedPeriods.add(period);
+            return const [];
+          }),
+        ],
+        child: MaterialApp(
+          locale: const Locale('zh', 'TW'),
+          supportedLocales: const [Locale('en'), Locale('zh', 'TW')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          home: Scaffold(body: BudgetTab(initialMonth: DateTime(2026, 12))),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2026年12月'), findsOneWidget);
+    expect(requestedPeriods.last, '2026-12');
+
+    await tester.tap(find.bySemanticsLabel('Next month'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2027年1月'), findsOneWidget);
+    expect(requestedPeriods.last, '2027-01');
+
+    await tester.tap(find.bySemanticsLabel('Previous month'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2026年12月'), findsOneWidget);
+    expect(requestedPeriods, ['2026-12', '2027-01']);
+  });
+
   test('uses ISO minor-unit precision for supported currencies', () {
     expect(CurrencyOption.usd.minorUnitDigits, 2);
     expect(CurrencyOption.sgd.minorUnitDigits, 2);
