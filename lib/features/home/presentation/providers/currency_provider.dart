@@ -32,7 +32,7 @@ enum CurrencyOption {
   usd('USD', 'US Dollar', r'$'),
   eur('EUR', 'Euro', '€'),
   gbp('GBP', 'British Pound', '£'),
-  jpy('JPY', 'Japanese Yen', '¥'),
+  jpy('JPY', 'Japanese Yen', '¥', 0),
   cny('CNY', 'Chinese Yuan', '\u00A5'),
   inr('INR', 'Indian Rupee', '₹'),
   aud('AUD', 'Australian Dollar', r'A$'),
@@ -40,7 +40,7 @@ enum CurrencyOption {
   chf('CHF', 'Swiss Franc', 'Fr'),
   hkd('HKD', 'Hong Kong Dollar', r'HK$'),
   sgd('SGD', 'Singapore Dollar', r'S$'),
-  krw('KRW', 'South Korean Won', '₩'),
+  krw('KRW', 'South Korean Won', '₩', 0),
   brl('BRL', 'Brazilian Real', r'R$'),
   mxn('MXN', 'Mexican Peso', r'Mex$'),
   zar('ZAR', 'South African Rand', 'R'),
@@ -49,13 +49,19 @@ enum CurrencyOption {
   idr('IDR', 'Indonesian Rupiah', 'Rp'),
   myr('MYR', 'Malaysian Ringgit', 'RM'),
   php('PHP', 'Philippine Peso', '₱'),
-  vnd('VND', 'Vietnamese Dong', '₫');
+  vnd('VND', 'Vietnamese Dong', '₫', 0);
 
-  const CurrencyOption(this.code, this.name, this.symbol);
+  const CurrencyOption(
+    this.code,
+    this.name,
+    this.symbol, [
+    this.minorUnitDigits = 2,
+  ]);
 
   final String code;
   final String name;
   final String symbol;
+  final int minorUnitDigits;
 
   static CurrencyOption? fromCode(String? code) {
     for (final currency in values) {
