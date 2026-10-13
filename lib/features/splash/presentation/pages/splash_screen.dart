@@ -13,13 +13,12 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
+  var _hasStarted = false;
+  var _reduceMotion = false;
 
   @override
   void initState() {
@@ -27,35 +26,43 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: AppMotion.entranceDuration,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutBack),
+    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: AppMotion.strongEaseOut,
+      ),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _entranceController, curve: Curves.easeIn),
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: AppMotion.strongEaseOut,
+      ),
     );
+  }
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_hasStarted && reduceMotion == _reduceMotion) return;
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    _entranceController.forward().then((_) {
-      _pulseController.repeat(reverse: true);
-    });
+    _reduceMotion = reduceMotion;
+    if (!_hasStarted) {
+      _hasStarted = true;
+      _entranceController.duration = reduceMotion
+          ? AppMotion.reducedMotionFadeDuration
+          : AppMotion.entranceDuration;
+      _entranceController.forward();
+    }
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -76,19 +83,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         ),
         child: Center(
           child: ScaleTransition(
-            scale: _scaleAnimation,
+            key: const ValueKey('splash-entrance-scale'),
+            scale: _reduceMotion
+                ? const AlwaysStoppedAnimation(1)
+                : _scaleAnimation,
             child: FadeTransition(
+              key: const ValueKey('splash-entrance-fade'),
               opacity: _fadeAnimation,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ScaleTransition(
-                    scale: _pulseAnimation,
-                    child: const BrandLogo(
-                      height: 112,
-                      width: 112,
-                      tone: BrandLogoTone.white,
-                    ),
+                  const BrandLogo(
+                    height: 112,
+                    width: 112,
+                    tone: BrandLogoTone.white,
                   ),
                   const SizedBox(height: 24),
                   Text(

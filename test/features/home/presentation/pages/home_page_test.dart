@@ -224,6 +224,57 @@ void main() {
     }
   });
 
+  for (final reduceMotion in [false, true]) {
+    testWidgets(
+      'validation ${reduceMotion ? 'removes movement' : 'uses brief feedback'}',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+              cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+            ],
+            child: MaterialApp(
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(disableAnimations: reduceMotion),
+                child: child!,
+              ),
+              home: const HomePage(),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        await tester.tap(find.text('Add').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Add Transaction'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 30));
+
+        expect(find.text('Enter an amount greater than zero.'), findsOneWidget);
+        final feedback = tester.widget<Container>(
+          find.byKey(const ValueKey('validation-feedback')),
+        );
+        expect((feedback.decoration! as BoxDecoration).border, isNotNull);
+
+        final shake = find.byKey(const ValueKey('validation-shake'));
+        if (reduceMotion) {
+          expect(shake, findsNothing);
+        } else {
+          expect(shake, findsOneWidget);
+          final transform = tester.widget<Transform>(shake);
+          expect(transform.transform.getTranslation().x.abs(), greaterThan(0));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

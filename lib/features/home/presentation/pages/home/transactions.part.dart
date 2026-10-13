@@ -2356,7 +2356,7 @@ class _ValidationFieldState extends State<_ValidationField>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: AppMotion.feedbackDuration,
     );
   }
 
@@ -2365,7 +2365,12 @@ class _ValidationFieldState extends State<_ValidationField>
     super.didUpdateWidget(oldWidget);
     if (widget.errorText != null &&
         widget.shakeTrigger != oldWidget.shakeTrigger) {
-      _controller.forward(from: 0);
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.stop();
+        _controller.value = 0;
+      } else {
+        _controller.forward(from: 0);
+      }
     }
   }
 
@@ -2379,6 +2384,17 @@ class _ValidationFieldState extends State<_ValidationField>
   Widget build(BuildContext context) {
     const errorColor = Color(0xFFFF2A2A);
     final hasError = widget.errorText != null;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final field = Container(
+      key: const ValueKey('validation-feedback'),
+      width: double.infinity,
+      padding: hasError ? const EdgeInsets.all(8) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: hasError ? Border.all(color: errorColor, width: 2) : null,
+      ),
+      child: widget.child,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2394,23 +2410,23 @@ class _ValidationFieldState extends State<_ValidationField>
           ),
           const SizedBox(height: 8),
         ],
-        AnimatedBuilder(
-          animation: _controller,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: double.infinity,
-            padding: hasError ? const EdgeInsets.all(8) : EdgeInsets.zero,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: hasError ? Border.all(color: errorColor, width: 2) : null,
-            ),
-            child: widget.child,
+        if (reduceMotion)
+          field
+        else
+          AnimatedBuilder(
+            animation: _controller,
+            child: field,
+            builder: (context, child) {
+              final progress = _controller.value;
+              final offset =
+                  math.sin(progress * math.pi * 6) * 5 * (1 - progress);
+              return Transform.translate(
+                key: const ValueKey('validation-shake'),
+                offset: Offset(offset, 0),
+                child: child,
+              );
+            },
           ),
-          builder: (context, child) {
-            final offset = math.sin(_controller.value * math.pi * 6) * 7;
-            return Transform.translate(offset: Offset(offset, 0), child: child);
-          },
-        ),
       ],
     );
   }

@@ -78,6 +78,15 @@ class AppDesignTokens {
   static const mobileCanvasMaxWidth = 430.0;
 }
 
+class AppMotion {
+  const AppMotion._();
+
+  static const entranceDuration = Duration(milliseconds: 240);
+  static const feedbackDuration = Duration(milliseconds: 240);
+  static const reducedMotionFadeDuration = Duration(milliseconds: 160);
+  static const strongEaseOut = Cubic(0.23, 1, 0.32, 1);
+}
+
 @immutable
 class AppSurfaceColors extends ThemeExtension<AppSurfaceColors> {
   const AppSurfaceColors({
