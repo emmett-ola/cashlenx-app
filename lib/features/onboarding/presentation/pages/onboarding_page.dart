@@ -22,24 +22,21 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     _OnboardingSlide(
       titleKey: 'onboarding_slide1_title',
       descriptionKey: 'onboarding_slide1_desc',
-      imageUrl:
-          'https://images.unsplash.com/photo-1758522484692-efa6ce38a25f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjBwbGFubmluZyUyMHdvbWFuJTIwc21hcnRwaG9uZXxlbnwxfHx8fDE3NzAzNzIzNTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
+      imageUrl: 'https://images.unsplash.com/photo-1758522484692-efa6ce38a25f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjBwbGFubmluZyUyMHdvbWFuJTIwc21hcnRwaG9uZXxlbnwxfHx8fDE3NzAzNzIzNTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
       fallbackIcon: Icons.trending_up_rounded,
       fallbackColor: AppDesignTokens.primary,
     ),
     _OnboardingSlide(
       titleKey: 'onboarding_slide2_title',
       descriptionKey: 'onboarding_slide2_desc',
-      imageUrl:
-          'https://images.unsplash.com/photo-1652422485224-102f6784c149?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidWRnZXQlMjB0cmFja2luZyUyMGlsbHVzdHJhdGlvbnxlbnwxfHx8fDE3NzAzMTU0MzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+      imageUrl: 'https://images.unsplash.com/photo-1652422485224-102f6784c149?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidWRnZXQlMjB0cmFja2luZyUyMGlsbHVzdHJhdGlvbnxlbnwxfHx8fDE3NzAzMTU0MzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
       fallbackIcon: Icons.pie_chart_rounded,
       fallbackColor: AppDesignTokens.accent,
     ),
     _OnboardingSlide(
       titleKey: 'onboarding_slide3_title',
       descriptionKey: 'onboarding_slide3_desc',
-      imageUrl:
-          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXRhJTIwYW5hbHl0aWNzJTIwZGFzaGJvYXJkfGVufDF8fHx8MTc3MDI5MTc1M3ww&ixlib=rb-4.1.0&q=80&w=1080',
+      imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYXRhJTIwYW5hbHl0aWNzJTIwZGFzaGJvYXJkfGVufDF8fHx8MTc3MDI5MTc1M3ww&ixlib=rb-4.1.0&q=80&w=1080',
       fallbackIcon: Icons.track_changes_rounded,
       fallbackColor: AppDesignTokens.success,
     ),
@@ -78,13 +75,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: AppDesignTokens.background,
+      backgroundColor: context.appColors.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppDesignTokens.background, Colors.white],
+            colors: [context.appColors.background, context.appColors.surface],
           ),
         ),
         child: SafeArea(
@@ -136,7 +133,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                 appT(context, slide.descriptionKey),
                                 textAlign: TextAlign.center,
                                 style: textTheme.bodyLarge?.copyWith(
-                                  color: AppDesignTokens.mutedText,
+                                  color: context.appColors.mutedText,
                                   height: 1.4,
                                 ),
                               ),
@@ -162,7 +159,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               decoration: BoxDecoration(
                                 color: isActive
                                     ? AppDesignTokens.primary
-                                    : AppDesignTokens.border,
+                                    : context.appColors.border,
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             );

@@ -77,6 +77,92 @@ class AppDesignTokens {
   static const radiusHero = 24.0;
 }
 
+@immutable
+class AppSurfaceColors extends ThemeExtension<AppSurfaceColors> {
+  const AppSurfaceColors({
+    required this.background,
+    required this.surface,
+    required this.softFill,
+    required this.border,
+    required this.text,
+    required this.mutedText,
+    required this.navMuted,
+  });
+
+  static const light = AppSurfaceColors(
+    background: AppDesignTokens.background,
+    surface: AppDesignTokens.surface,
+    softFill: AppDesignTokens.softFill,
+    border: AppDesignTokens.border,
+    text: AppDesignTokens.text,
+    mutedText: AppDesignTokens.mutedText,
+    navMuted: Color(0xFF9CA3AF),
+  );
+
+  static const dark = AppSurfaceColors(
+    background: Color(0xFF0B1114),
+    surface: Color(0xFF11191D),
+    softFill: Color(0xFF1A252A),
+    border: Color(0xFF34434A),
+    text: Color(0xFFF3F4F6),
+    mutedText: Color(0xFFB0BBC0),
+    navMuted: Color(0xFF95A3AA),
+  );
+
+  final Color background;
+  final Color surface;
+  final Color softFill;
+  final Color border;
+  final Color text;
+  final Color mutedText;
+  final Color navMuted;
+
+  @override
+  AppSurfaceColors copyWith({
+    Color? background,
+    Color? surface,
+    Color? softFill,
+    Color? border,
+    Color? text,
+    Color? mutedText,
+    Color? navMuted,
+  }) {
+    return AppSurfaceColors(
+      background: background ?? this.background,
+      surface: surface ?? this.surface,
+      softFill: softFill ?? this.softFill,
+      border: border ?? this.border,
+      text: text ?? this.text,
+      mutedText: mutedText ?? this.mutedText,
+      navMuted: navMuted ?? this.navMuted,
+    );
+  }
+
+  @override
+  AppSurfaceColors lerp(covariant AppSurfaceColors? other, double t) {
+    if (other == null) return this;
+    return AppSurfaceColors(
+      background: Color.lerp(background, other.background, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      softFill: Color.lerp(softFill, other.softFill, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      text: Color.lerp(text, other.text, t)!,
+      mutedText: Color.lerp(mutedText, other.mutedText, t)!,
+      navMuted: Color.lerp(navMuted, other.navMuted, t)!,
+    );
+  }
+}
+
+extension AppThemeContext on BuildContext {
+  AppSurfaceColors get appColors {
+    final theme = Theme.of(this);
+    return theme.extension<AppSurfaceColors>() ??
+        (theme.brightness == Brightness.dark
+            ? AppSurfaceColors.dark
+            : AppSurfaceColors.light);
+  }
+}
+
 class AppTheme {
   static const primaryColor = AppDesignTokens.primary;
   static const secondaryColor = AppDesignTokens.primaryLight;
@@ -101,6 +187,7 @@ class AppTheme {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: colorScheme,
+        extensions: const [AppSurfaceColors.light],
         scaffoldBackgroundColor: AppDesignTokens.background,
         cardTheme: const CardThemeData(
           color: AppDesignTokens.surface,
@@ -137,7 +224,13 @@ class AppTheme {
             ),
           ),
           filled: true,
+          fillColor: AppDesignTokens.softFill,
         ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: AppDesignTokens.surface,
+          surfaceTintColor: Colors.transparent,
+        ),
+        dividerTheme: const DividerThemeData(color: AppDesignTokens.border),
       ),
       language,
     );
@@ -159,10 +252,17 @@ class AppTheme {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: colorScheme,
-        cardTheme: const CardThemeData(surfaceTintColor: Colors.transparent),
-        dialogTheme: const DialogThemeData(
+        extensions: const [AppSurfaceColors.dark],
+        scaffoldBackgroundColor: AppSurfaceColors.dark.background,
+        canvasColor: AppSurfaceColors.dark.surface,
+        cardTheme: CardThemeData(
+          color: AppSurfaceColors.dark.surface,
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: AppSurfaceColors.dark.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
               Radius.circular(AppDesignTokens.radiusCard),
             ),
@@ -178,14 +278,20 @@ class AppTheme {
             ),
           ),
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(
+        inputDecorationTheme: InputDecorationTheme(
+          border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(
               Radius.circular(AppDesignTokens.radiusField),
             ),
           ),
           filled: true,
+          fillColor: AppSurfaceColors.dark.softFill,
         ),
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: AppSurfaceColors.dark.surface,
+          surfaceTintColor: Colors.transparent,
+        ),
+        dividerTheme: DividerThemeData(color: AppSurfaceColors.dark.border),
       ),
       language,
     );

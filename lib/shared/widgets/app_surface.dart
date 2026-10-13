@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_i18n.dart';
-
-class AppSurfaceTokens {
-  const AppSurfaceTokens._();
-
-  static const borderColor = Color(0xFFE5E7EB);
-  static const mutedTextColor = Color(0xFF6B7280);
-  static const textColor = Color(0xFF111827);
-  static const softFillColor = Color(0xFFF3F4F6);
-}
+import '../../theme/app_theme.dart';
 
 class AppCard extends StatelessWidget {
   const AppCard({
@@ -28,7 +20,7 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(borderRadius),
       child: InkWell(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -61,8 +53,8 @@ class AppListSection extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
             title,
-            style: const TextStyle(
-              color: AppSurfaceTokens.mutedTextColor,
+            style: TextStyle(
+              color: context.appColors.mutedText,
               fontWeight: FontWeight.w800,
               fontSize: 13,
             ),
@@ -118,13 +110,14 @@ class AppListTile extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: AppSurfaceTokens.textColor,
+                style: TextStyle(
+                  color: context.appColors.text,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            trailing ?? const Icon(Icons.chevron_right, color: Colors.black38),
+            trailing ??
+                Icon(Icons.chevron_right, color: context.appColors.navMuted),
           ],
         ),
       ),
@@ -173,7 +166,7 @@ class AppPanelHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: AppSurfaceTokens.textColor,
+              color: context.appColors.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -188,17 +181,17 @@ class AppPanelHeader extends StatelessWidget {
             onTap: () => Navigator.pop(context),
             excludeSemantics: true,
             child: Material(
-              color: AppSurfaceTokens.softFillColor,
+              color: context.appColors.softFill,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () => Navigator.pop(context),
-                child: const SizedBox(
+                child: SizedBox(
                   width: 32,
                   height: 32,
                   child: Icon(
                     Icons.close,
-                    color: AppSurfaceTokens.mutedTextColor,
+                    color: context.appColors.mutedText,
                     size: 20,
                   ),
                 ),
@@ -232,10 +225,7 @@ class AppPanelActions extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
-              side: const BorderSide(
-                color: AppSurfaceTokens.borderColor,
-                width: 2,
-              ),
+              side: BorderSide(color: context.appColors.border, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

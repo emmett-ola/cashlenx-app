@@ -26,13 +26,13 @@ class AuthLayout extends ConsumerWidget {
     final displaySubtitle = subtitle ?? t('auth_subtitle');
 
     return Scaffold(
-      backgroundColor: AppDesignTokens.background,
+      backgroundColor: context.appColors.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppDesignTokens.background, Colors.white],
+            colors: [context.appColors.background, context.appColors.surface],
           ),
         ),
         child: SafeArea(
@@ -48,19 +48,19 @@ class AuthLayout extends ConsumerWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Material(
-                        color: Colors.white,
+                        color: context.appColors.surface,
                         elevation: 1,
                         shadowColor: Colors.black12,
                         shape: const CircleBorder(),
                         child: InkWell(
                           customBorder: const CircleBorder(),
                           onTap: onBack,
-                          child: const SizedBox(
+                          child: SizedBox(
                             width: 40,
                             height: 40,
                             child: Icon(
                               Icons.arrow_back,
-                              color: Color(0xFF4B5563),
+                              color: context.appColors.mutedText,
                               size: 20,
                             ),
                           ),
@@ -84,7 +84,7 @@ class AuthLayout extends ConsumerWidget {
                               height: 96,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.appColors.surface,
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
@@ -100,10 +100,10 @@ class AuthLayout extends ConsumerWidget {
                             Text(
                               displayTitle,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                color: context.appColors.text,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -112,7 +112,7 @@ class AuthLayout extends ConsumerWidget {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey[600],
+                                color: context.appColors.mutedText,
                               ),
                             ),
                             const SizedBox(height: 34),

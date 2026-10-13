@@ -96,7 +96,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: _emailController,
                 placeholder: 'email@example.com',
                 keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.mail_outline,
+                  color: context.appColors.mutedText,
+                ),
                 onChanged: (_) => setState(() {}),
                 validator: _validateEmail,
               ),
@@ -144,7 +147,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 keyboardType: TextInputType.number,
                 prefixIcon: Icon(
                   Icons.verified_user_outlined,
-                  color: Colors.grey[500],
+                  color: context.appColors.mutedText,
                 ),
                 autofocus: true,
                 maxLength: 6,
@@ -219,7 +222,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 label: '${t('username')} *',
                 controller: _usernameController,
                 placeholder: t('choose_username'),
-                prefixIcon: Icon(Icons.person_outline, color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.person_outline,
+                  color: context.appColors.mutedText,
+                ),
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if ((value ?? '').trim().isEmpty) {
@@ -234,7 +240,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: _passwordController,
                 placeholder: t('password_min_chars'),
                 obscureText: !_isPasswordVisible,
-                prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                  color: context.appColors.mutedText,
+                ),
                 suffixIcon: IconButton(
                   tooltip: _isPasswordVisible
                       ? t('hide_password')
@@ -243,7 +252,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     _isPasswordVisible
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.grey[500],
+                    color: context.appColors.mutedText,
                   ),
                   onPressed: () {
                     setState(() {
@@ -260,7 +269,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 controller: _confirmPasswordController,
                 placeholder: t('reenter_password'),
                 obscureText: !_isConfirmPasswordVisible,
-                prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
+                prefixIcon: Icon(
+                  Icons.lock_outline,
+                  color: context.appColors.mutedText,
+                ),
                 suffixIcon: IconButton(
                   tooltip: _isConfirmPasswordVisible
                       ? t('hide_password')
@@ -269,7 +281,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     _isConfirmPasswordVisible
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.grey[500],
+                    color: context.appColors.mutedText,
                   ),
                   onPressed: () {
                     setState(() {
@@ -544,8 +556,8 @@ class _VerificationDestination extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppDesignTokens.text,
+            style: TextStyle(
+              color: context.appColors.text,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -564,8 +576,8 @@ class _VerificationDestination extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppDesignTokens.mutedText,
+            style: TextStyle(
+              color: context.appColors.mutedText,
               fontSize: 13,
               height: 1.4,
             ),
@@ -591,7 +603,7 @@ class _SignInPrompt extends ConsumerWidget {
       children: [
         Text(
           '${t('have_account')} ',
-          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          style: TextStyle(color: context.appColors.mutedText, fontSize: 14),
         ),
         TextButton(
           onPressed: onPressed,

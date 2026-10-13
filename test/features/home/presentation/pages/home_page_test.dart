@@ -49,6 +49,110 @@ void main() {
     );
   }
 
+  testWidgets('keeps supported shell routes and overlays dark', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final darkTheme = AppTheme.darkTheme(AppTheme.primaryColor);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme(AppTheme.primaryColor),
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const HomePage(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    final colors = darkTheme.extension<AppSurfaceColors>()!;
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      colors.background,
+    );
+    var surface = tester.widget<Container>(
+      find.byKey(const ValueKey('home-bottom-navigation-surface')),
+    );
+    expect((surface.decoration! as BoxDecoration).color, colors.surface);
+
+    await tester.tap(find.text('Transactions').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Transactions'), findsNWidgets(2));
+    await tester.tap(find.text('Coffee beans'));
+    await tester.pumpAndSettle();
+    expect(find.text('Transaction Detail'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Budget').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is ColoredBox && widget.color == colors.background,
+      ),
+      findsWidgets,
+    );
+
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Theme'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Dialog>(find.byType(Dialog)).backgroundColor,
+      colors.surface,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Category Management'));
+    await tester.pumpAndSettle();
+    expect(find.text('Manage your categories'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Material && widget.color == colors.surface,
+      ),
+      findsWidgets,
+    );
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Financial Insights'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('See where every dollar goes'));
+    await tester.pumpAndSettle();
+    expect(find.text('More Statistics'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is ColoredBox && widget.color == colors.background,
+      ),
+      findsWidgets,
+    );
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    surface = tester.widget<Container>(
+      find.byKey(const ValueKey('add-transaction-sheet-surface')),
+    );
+    expect((surface.decoration! as BoxDecoration).color, colors.surface);
+    expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
+    await tester.tap(find.bySemanticsLabel('Close'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

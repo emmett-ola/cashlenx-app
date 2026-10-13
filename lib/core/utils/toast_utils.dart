@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../infrastructure/errors/error_message_resolver.dart';
 import '../../theme/app_theme.dart';
 
@@ -52,11 +53,11 @@ class ToastUtils {
         elevation: 10,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         padding: EdgeInsets.zero,
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surface,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Color(0xFFE5E7EB)),
+          side: BorderSide(color: context.appColors.border),
         ),
         content: _ToastContent(
           message: message,
@@ -100,8 +101,8 @@ class _ToastContent extends StatelessWidget {
               message,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF111827),
+              style: TextStyle(
+                color: context.appColors.text,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1.3,

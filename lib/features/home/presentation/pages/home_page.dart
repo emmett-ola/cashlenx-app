@@ -143,7 +143,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final analyticsRange = ref.watch(analyticsRangeProvider);
 
     return Scaffold(
-      backgroundColor: _AppShellColors.background,
+      backgroundColor: context.appColors.background,
       body: SafeArea(
         bottom: false,
         child: _selectedTransactionId != null

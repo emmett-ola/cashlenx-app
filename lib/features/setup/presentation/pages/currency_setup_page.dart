@@ -52,7 +52,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
         .toList(growable: false);
 
     return Scaffold(
-      backgroundColor: AppDesignTokens.background,
+      backgroundColor: context.appColors.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -91,7 +91,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                               ? 'setup_currency_description'
                               : 'currency_setup_subtitle',
                         ),
-                        style: const TextStyle(color: Color(0xFF6B7280)),
+                        style: TextStyle(color: context.appColors.mutedText),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -100,7 +100,7 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                           prefixIcon: const Icon(Icons.search),
                           hintText: appT(context, 'setup_search_placeholder'),
                           filled: true,
-                          fillColor: AppDesignTokens.softFill,
+                          fillColor: context.appColors.softFill,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                               AppDesignTokens.radiusField,
@@ -176,8 +176,8 @@ class _CurrencySetupPageState extends ConsumerState<CurrencySetupPage> {
                           Text(
                             appT(context, 'setup_change_settings_note'),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF6B7280),
+                            style: TextStyle(
+                              color: context.appColors.mutedText,
                               fontSize: 13,
                             ),
                           ),
@@ -232,7 +232,7 @@ class _WelcomeHeader extends StatelessWidget {
           height: 96,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.appColors.surface,
             borderRadius: BorderRadius.circular(24),
             boxShadow: const [
               BoxShadow(
@@ -255,7 +255,7 @@ class _WelcomeHeader extends StatelessWidget {
         Text(
           appT(context, 'welcome_subtitle'),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFF6B7280)),
+          style: TextStyle(color: context.appColors.mutedText),
         ),
       ],
     );
@@ -272,19 +272,19 @@ class _SimpleHeader extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
-        color: Colors.white,
+        color: context.appColors.surface,
         elevation: 1,
         shadowColor: Colors.black12,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onBack,
-          child: const SizedBox(
+          child: SizedBox(
             width: 40,
             height: 40,
             child: Icon(
               Icons.arrow_back,
-              color: AppDesignTokens.mutedText,
+              color: context.appColors.mutedText,
               size: 20,
             ),
           ),

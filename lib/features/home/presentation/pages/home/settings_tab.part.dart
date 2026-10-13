@@ -63,8 +63,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
               label: appT(context, 'currency'),
               trailing: Text(
                 '${currency.code} (${currency.symbol})',
-                style: const TextStyle(
-                  color: _AppShellColors.mutedText,
+                style: TextStyle(
+                  color: context.appColors.mutedText,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -76,8 +76,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
               label: appT(context, 'language'),
               trailing: Text(
                 language.nativeName,
-                style: const TextStyle(
-                  color: _AppShellColors.mutedText,
+                style: TextStyle(
+                  color: context.appColors.mutedText,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -113,7 +113,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                 horizontal: 24,
                 vertical: 24,
               ),
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surface,
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -148,8 +148,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                       const SizedBox(height: 16),
                       Text(
                         '${appT(context, 'selected')}: ${AppTheme.hexColor(draftColor)}',
-                        style: const TextStyle(
-                          color: _AppShellColors.mutedText,
+                        style: TextStyle(
+                          color: context.appColors.mutedText,
                           fontSize: 13,
                         ),
                       ),
@@ -175,7 +175,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: context.appColors.softFill,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -189,8 +189,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                             Expanded(
                               child: Text(
                                 appT(context, 'theme_note'),
-                                style: const TextStyle(
-                                  color: _AppShellColors.text,
+                                style: TextStyle(
+                                  color: context.appColors.text,
                                   fontSize: 13,
                                   height: 1.45,
                                 ),
@@ -206,10 +206,10 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: _AppShellColors.text,
+                                foregroundColor: context.appColors.text,
                                 minimumSize: const Size.fromHeight(52),
-                                side: const BorderSide(
-                                  color: Color(0xFFD1D5DB),
+                                side: BorderSide(
+                                  color: context.appColors.border,
                                   width: 1.5,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -390,7 +390,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                     height: 80,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.appColors.surface,
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
@@ -405,8 +405,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                   const SizedBox(height: 16),
                   Text(
                     appT(context, 'app_name'),
-                    style: const TextStyle(
-                      color: _AppShellColors.text,
+                    style: TextStyle(
+                      color: context.appColors.text,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
@@ -415,7 +415,7 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                   Text(
                     appT(context, 'app_tagline'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: _AppShellColors.mutedText),
+                    style: TextStyle(color: context.appColors.mutedText),
                   ),
                   const SizedBox(height: 20),
                   const _AboutVersionCard(),
@@ -444,11 +444,11 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
+                  Text(
                     '© 2026 CashLenX. All rights reserved.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: _AppShellColors.navMuted,
+                      color: context.appColors.navMuted,
                       fontSize: 12,
                     ),
                   ),
@@ -474,7 +474,7 @@ class _AboutVersionCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: context.appColors.softFill,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -528,16 +528,16 @@ class _AboutVersionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelText = Text(
       label,
-      style: const TextStyle(
-        color: _AppShellColors.mutedText,
+      style: TextStyle(
+        color: context.appColors.mutedText,
         fontWeight: FontWeight.w600,
       ),
     );
     final valueText = Text(
       value,
       textAlign: TextAlign.end,
-      style: const TextStyle(
-        color: _AppShellColors.text,
+      style: TextStyle(
+        color: context.appColors.text,
         fontWeight: FontWeight.w800,
       ),
     );
@@ -626,8 +626,8 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   username,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _AppShellColors.text,
+                  style: TextStyle(
+                    color: context.appColors.text,
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                   ),
@@ -636,12 +636,12 @@ class _ProfileCard extends StatelessWidget {
                 Text(
                   email,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _AppShellColors.mutedText),
+                  style: TextStyle(color: context.appColors.mutedText),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.black38),
+          Icon(Icons.chevron_right, color: context.appColors.navMuted),
         ],
       ),
     );

@@ -2,8 +2,10 @@ import 'dart:ui' show SemanticsValidationResult;
 
 import 'package:cashlenx/shared/widgets/custom_button.dart';
 import 'package:cashlenx/shared/widgets/custom_input.dart';
+import 'package:cashlenx/features/auth/presentation/widgets/auth_layout.dart';
 import 'package:cashlenx/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -122,5 +124,36 @@ void main() {
       ),
     );
     semantics.dispose();
+  });
+
+  testWidgets('shared auth layout uses dark semantic surfaces', (tester) async {
+    final darkTheme = AppTheme.darkTheme(AppTheme.primaryColor);
+    final colors = darkTheme.extension<AppSurfaceColors>()!;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const AuthLayout(child: Text('Form')),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      colors.background,
+    );
+    final layout = find.byType(AuthLayout);
+    final decoratedBox = tester.widget<DecoratedBox>(
+      find.descendant(of: layout, matching: find.byType(DecoratedBox)).first,
+    );
+    final gradient = (decoratedBox.decoration as BoxDecoration).gradient;
+    expect(gradient, isA<LinearGradient>());
+    expect((gradient! as LinearGradient).colors, [
+      colors.background,
+      colors.surface,
+    ]);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -52,7 +52,10 @@ class AuthLanguageButton extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   t('language_description'),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(
+                    color: context.appColors.mutedText,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -63,7 +66,9 @@ class AuthLanguageButton extends ConsumerWidget {
                     isSelected
                         ? Icons.radio_button_checked
                         : Icons.radio_button_unchecked,
-                    color: isSelected ? AppTheme.primaryColor : Colors.grey,
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : context.appColors.mutedText,
                   ),
                   title: Text(language.nativeName),
                   subtitle: Text(language.name),
@@ -96,15 +101,15 @@ class AuthDivider extends ConsumerWidget {
 
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.grey[300])),
+        Expanded(child: Divider(color: context.appColors.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             t('or'),
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(color: context.appColors.mutedText, fontSize: 14),
           ),
         ),
-        Expanded(child: Divider(color: Colors.grey[300])),
+        Expanded(child: Divider(color: context.appColors.border)),
       ],
     );
   }
@@ -144,8 +149,8 @@ class AuthOutlinedActionButton extends StatelessWidget {
         icon: Icon(icon, size: 20),
         label: Text(text),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.grey.shade300, width: 2),
-          foregroundColor: Colors.grey.shade700,
+          side: BorderSide(color: context.appColors.border, width: 2),
+          foregroundColor: context.appColors.text,
           fixedSize: const Size.fromHeight(48),
           minimumSize: const Size(0, 48),
           padding: const EdgeInsets.symmetric(horizontal: 16),

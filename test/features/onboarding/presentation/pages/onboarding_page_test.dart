@@ -41,4 +41,45 @@ void main() {
     expect(find.byKey(const ValueKey('onboarding-artwork-1')), findsOneWidget);
     expect(find.text('Plan Your Budgets'), findsOneWidget);
   });
+
+  testWidgets('uses dark semantic surfaces without changing brand artwork', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(430, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final darkTheme = AppTheme.darkTheme(AppDesignTokens.primary);
+    final colors = darkTheme.extension<AppSurfaceColors>()!;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const OnboardingPage(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      colors.background,
+    );
+    final decoratedBox = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byType(OnboardingPage),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    final gradient = (decoratedBox.decoration as BoxDecoration).gradient;
+    expect((gradient! as LinearGradient).colors, [
+      colors.background,
+      colors.surface,
+    ]);
+    expect(find.byKey(const ValueKey('onboarding-artwork-0')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

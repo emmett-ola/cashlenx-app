@@ -28,7 +28,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     final budgets = ref.watch(monthlyBudgetsProvider(_period));
     final currency = ref.watch(currencyProvider);
     return ColoredBox(
-      color: const Color(0xFFF9FAFB),
+      color: context.appColors.background,
       child: RefreshIndicator(
         onRefresh: () async =>
             ref.refresh(monthlyBudgetsProvider(_period).future),
@@ -181,7 +181,7 @@ class _Header extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               appT(context, 'budget_subtitle'),
-              style: const TextStyle(color: Color(0xFF6B7280)),
+              style: TextStyle(color: context.appColors.mutedText),
             ),
           ],
         ),
@@ -217,9 +217,9 @@ class _MonthSelector extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFE5E7EB)),
+      border: Border.all(color: context.appColors.border),
     ),
     child: Row(
       children: [
@@ -364,7 +364,7 @@ class _BudgetTile extends StatelessWidget {
         ? const Color(0xFFF59E0B)
         : AppTheme.successColor;
     return Material(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onEdit,
@@ -394,7 +394,7 @@ class _BudgetTile extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           '${formatMoney(item.spent, symbol: currency.symbol, fractionDigits: currency.minorUnitDigits)} / ${formatMoney(item.limit, symbol: currency.symbol, fractionDigits: currency.minorUnitDigits)}',
-                          style: const TextStyle(color: Color(0xFF6B7280)),
+                          style: TextStyle(color: context.appColors.mutedText),
                         ),
                       ],
                     ),
@@ -420,7 +420,7 @@ class _BudgetTile extends StatelessWidget {
                 value: item.progress.clamp(0, 1),
                 minHeight: 8,
                 borderRadius: BorderRadius.circular(99),
-                backgroundColor: const Color(0xFFF3F4F6),
+                backgroundColor: context.appColors.softFill,
                 valueColor: AlwaysStoppedAnimation(color),
               ),
               const SizedBox(height: 7),
@@ -450,12 +450,16 @@ class _EmptyBudget extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(28),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(16),
     ),
     child: Column(
       children: [
-        const Icon(Icons.savings_outlined, size: 42, color: Color(0xFF6B7280)),
+        Icon(
+          Icons.savings_outlined,
+          size: 42,
+          color: context.appColors.mutedText,
+        ),
         const SizedBox(height: 10),
         Text(
           appT(context, 'no_budgets_yet'),

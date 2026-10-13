@@ -175,9 +175,11 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.sizeOf(context).height * 0.9,
                 ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: context.appColors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -225,7 +227,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             const SizedBox(height: 24),
                             Text(
                               appT(context, 'name'),
-                              style: _fieldLabelStyle,
+                              style: _fieldLabelStyle(context),
                             ),
                             const SizedBox(height: 8),
                             _ValidationField(
@@ -244,12 +246,12 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                                     context,
                                     'enter_category_name',
                                   ),
-                                  hintStyle: const TextStyle(
-                                    color: _AppShellColors.navMuted,
+                                  hintStyle: TextStyle(
+                                    color: context.appColors.navMuted,
                                     fontSize: 14,
                                   ),
-                                  counterStyle: const TextStyle(
-                                    color: _AppShellColors.navMuted,
+                                  counterStyle: TextStyle(
+                                    color: context.appColors.navMuted,
                                     fontSize: 12,
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
@@ -258,14 +260,14 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFD1D5DB),
+                                    borderSide: BorderSide(
+                                      color: context.appColors.border,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFD1D5DB),
+                                    borderSide: BorderSide(
+                                      color: context.appColors.border,
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
@@ -281,7 +283,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             const SizedBox(height: 6),
                             Text(
                               appT(context, 'icon'),
-                              style: _fieldLabelStyle,
+                              style: _fieldLabelStyle(context),
                             ),
                             const SizedBox(height: 8),
                             _EmojiPickerButton(
@@ -306,7 +308,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             const SizedBox(height: 24),
                             Text(
                               appT(context, 'color'),
-                              style: _fieldLabelStyle,
+                              style: _fieldLabelStyle(context),
                             ),
                             const SizedBox(height: 12),
                             _CategoryColorPicker(
@@ -318,14 +320,14 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             const SizedBox(height: 24),
                             Text(
                               appT(context, 'parent_category_optional'),
-                              style: _fieldLabelStyle,
+                              style: _fieldLabelStyle(context),
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String?>(
                               initialValue: selectedParentId,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: const Color(0xFFF3F4F6),
+                                fillColor: context.appColors.softFill,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -358,8 +360,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                             const SizedBox(height: 4),
                             Text(
                               appT(context, 'select_parent_hint'),
-                              style: const TextStyle(
-                                color: _AppShellColors.navMuted,
+                              style: TextStyle(
+                                color: context.appColors.navMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -371,10 +373,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                       top: false,
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: context.appColors.surface,
                           border: Border(
-                            top: BorderSide(color: _AppShellColors.border),
+                            top: BorderSide(color: context.appColors.border),
                           ),
                         ),
                         child: AppPanelActions(
@@ -491,7 +493,7 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                 const SizedBox(height: 12),
                 Text(
                   appT(context, 'moving'),
-                  style: const TextStyle(color: _AppShellColors.mutedText),
+                  style: TextStyle(color: context.appColors.mutedText),
                 ),
                 const SizedBox(height: 8),
                 _MoveCategoryOption(
@@ -503,7 +505,10 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                   onTap: null,
                 ),
                 const SizedBox(height: 18),
-                Text(appT(context, 'move_to'), style: _fieldLabelStyle),
+                Text(
+                  appT(context, 'move_to'),
+                  style: _fieldLabelStyle(context),
+                ),
                 const SizedBox(height: 8),
                 _MoveCategoryOption(
                   icon: '*',
@@ -540,8 +545,8 @@ class _CategoryTabState extends ConsumerState<_CategoryTab> {
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
-                      side: const BorderSide(
-                        color: _AppShellColors.border,
+                      side: BorderSide(
+                        color: context.appColors.border,
                         width: 2,
                       ),
                     ),
@@ -751,7 +756,7 @@ class _CategoryTypeSwitcher extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -796,7 +801,7 @@ class _CategoryTypeSwitcher extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : _AppShellColors.mutedText,
+                        : context.appColors.mutedText,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -833,7 +838,7 @@ class _CategoryListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: parentCategories.isEmpty
@@ -842,7 +847,7 @@ class _CategoryListCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   appT(context, 'no_categories'),
-                  style: const TextStyle(color: _AppShellColors.mutedText),
+                  style: TextStyle(color: context.appColors.mutedText),
                 ),
               ),
             )
@@ -867,7 +872,7 @@ class _CategoryListCard extends StatelessWidget {
                     ),
                     if (children.isNotEmpty && isExpanded)
                       Container(
-                        color: const Color(0xFFF9FAFB),
+                        color: context.appColors.background,
                         child: Column(
                           children: children.map((child) {
                             return _CategoryRow(
@@ -884,7 +889,7 @@ class _CategoryListCard extends StatelessWidget {
                         ),
                       ),
                     if (index != parentCategories.length - 1)
-                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      Divider(height: 1, color: context.appColors.softFill),
                   ],
                 );
               }).toList(),
@@ -987,8 +992,8 @@ class _CategoryRow extends StatelessWidget {
               child: Text(
                 category.name,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _AppShellColors.text,
+                style: TextStyle(
+                  color: context.appColors.text,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1028,7 +1033,7 @@ class _CategoryRow extends StatelessWidget {
               color: Colors.grey[500],
               style: IconButton.styleFrom(
                 backgroundColor: isMenuOpen
-                    ? const Color(0xFFE5E7EB)
+                    ? context.appColors.border
                     : Colors.transparent,
               ),
             ),
@@ -1103,7 +1108,7 @@ class _EmojiPickerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -1113,7 +1118,7 @@ class _EmojiPickerButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFD1D5DB)),
+            border: Border.all(color: context.appColors.border),
           ),
           child: Row(
             children: [
@@ -1122,7 +1127,7 @@ class _EmojiPickerButton extends StatelessWidget {
               Expanded(
                 child: Text(
                   appT(context, 'tap_change_emoji'),
-                  style: const TextStyle(color: _AppShellColors.mutedText),
+                  style: TextStyle(color: context.appColors.mutedText),
                 ),
               ),
             ],
@@ -1144,30 +1149,30 @@ class _CategoryEmojiPicker extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: _AppShellColors.border),
+          border: Border.all(color: context.appColors.border),
           borderRadius: BorderRadius.circular(12),
         ),
         child: EmojiPicker(
           onEmojiSelected: (_, emoji) => onEmojiSelected(emoji.emoji),
           config: Config(
             height: 400,
-            emojiViewConfig: const EmojiViewConfig(
+            emojiViewConfig: EmojiViewConfig(
               columns: 8,
               emojiSizeMax: 28,
-              backgroundColor: Colors.white,
-              gridPadding: EdgeInsets.all(8),
+              backgroundColor: context.appColors.surface,
+              gridPadding: const EdgeInsets.all(8),
             ),
             searchViewConfig: SearchViewConfig(
               hintText: appT(context, 'search_emoji'),
-              backgroundColor: const Color(0xFFF3F4F6),
+              backgroundColor: context.appColors.softFill,
             ),
             categoryViewConfig: CategoryViewConfig(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surface,
               indicatorColor: _themeColor(context),
               iconColorSelected: _themeColor(context),
             ),
             bottomActionBarConfig: BottomActionBarConfig(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surface,
               buttonColor: _themeColor(context),
             ),
           ),
@@ -1218,7 +1223,9 @@ class _MoveCategoryOption extends StatelessWidget {
     final themeColor = _themeColor(context);
 
     return Material(
-      color: selected ? themeColor.withValues(alpha: 0.08) : Colors.white,
+      color: selected
+          ? themeColor.withValues(alpha: 0.14)
+          : context.appColors.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -1227,7 +1234,7 @@ class _MoveCategoryOption extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             border: Border.all(
-              color: selected ? themeColor : _AppShellColors.border,
+              color: selected ? themeColor : context.appColors.border,
               width: 2,
             ),
             borderRadius: BorderRadius.circular(14),
@@ -1253,8 +1260,8 @@ class _MoveCategoryOption extends StatelessWidget {
                     Text(
                       title,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
+                      style: TextStyle(
+                        color: context.appColors.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1262,8 +1269,8 @@ class _MoveCategoryOption extends StatelessWidget {
                     Text(
                       subtitle,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
+                      style: TextStyle(
+                        color: context.appColors.mutedText,
                         fontSize: 12,
                       ),
                     ),

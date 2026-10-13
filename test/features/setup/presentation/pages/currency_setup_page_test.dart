@@ -51,6 +51,39 @@ void main() {
     expect(find.text('USD'), findsNothing);
   });
 
+  testWidgets('currency setup uses dark semantic surfaces', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(430, 932));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final darkTheme = AppTheme.darkTheme(AppTheme.primaryColor);
+    final colors = darkTheme.extension<AppSurfaceColors>()!;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const CurrencySetupPage(firstLoginSetup: true),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      colors.background,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Material && widget.color == colors.surface,
+      ),
+      findsWidgets,
+    );
+    final search = tester.widget<TextField>(find.byType(TextField));
+    expect(search.decoration?.fillColor, colors.softFill);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('persists first-login currency before completing setup', (
     tester,
   ) async {

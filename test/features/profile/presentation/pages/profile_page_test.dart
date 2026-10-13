@@ -5,6 +5,7 @@ import 'package:cashlenx/features/profile/presentation/pages/profile_page.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
 import 'package:cashlenx/shared/avatar_presets.dart';
+import 'package:cashlenx/theme/app_theme.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,6 +57,56 @@ void main() {
       },
     );
   }
+
+  testWidgets('uses dark semantic surfaces for profile and its modal', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final darkTheme = AppTheme.darkTheme(AppTheme.primaryColor);
+    final colors = darkTheme.extension<AppSurfaceColors>()!;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_DemoAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_ThrowingCashlenxApi()),
+        ],
+        child: MaterialApp(
+          darkTheme: darkTheme,
+          themeMode: ThemeMode.dark,
+          home: const ProfilePage(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
+      colors.background,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Container &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration! as BoxDecoration).color == colors.surface,
+      ),
+      findsWidgets,
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Edit'));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+    final modal = tester.widget<Container>(
+      find.byKey(const ValueKey('profile-modal-surface')),
+    );
+    expect((modal.decoration! as BoxDecoration).color, colors.surface);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('selects and persists an image-backed avatar preset', (
     tester,

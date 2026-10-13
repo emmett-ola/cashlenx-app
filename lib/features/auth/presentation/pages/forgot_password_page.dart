@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/i18n/app_i18n.dart';
 import '../../../../core/utils/toast_utils.dart';
 import '../../../../shared/widgets/custom_button.dart';
@@ -137,7 +138,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             controller: _emailController,
             placeholder: 'email@example.com',
             keyboardType: TextInputType.emailAddress,
-            prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+            prefixIcon: Icon(
+              Icons.mail_outline,
+              color: context.appColors.mutedText,
+            ),
             onChanged: (_) => setState(() {}),
             validator: (value) {
               final email = value?.trim() ?? '';
@@ -187,7 +191,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             controller: _emailController,
             placeholder: 'email@example.com',
             keyboardType: TextInputType.emailAddress,
-            prefixIcon: Icon(Icons.mail_outline, color: Colors.grey[500]),
+            prefixIcon: Icon(
+              Icons.mail_outline,
+              color: context.appColors.mutedText,
+            ),
             onChanged: (_) => setState(() {}),
             validator: (value) {
               final email = value?.trim() ?? '';
@@ -206,7 +213,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             label: t('verification_code'),
             controller: _tokenController,
             placeholder: t('enter_code'),
-            prefixIcon: Icon(Icons.key_outlined, color: Colors.grey[500]),
+            prefixIcon: Icon(
+              Icons.key_outlined,
+              color: context.appColors.mutedText,
+            ),
             onChanged: (_) => setState(() {}),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -221,14 +231,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             controller: _passwordController,
             placeholder: t('password_min_chars'),
             obscureText: !_isPasswordVisible,
-            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
+            prefixIcon: Icon(
+              Icons.lock_outline,
+              color: context.appColors.mutedText,
+            ),
             suffixIcon: IconButton(
               tooltip: _isPasswordVisible
                   ? t('hide_password')
                   : t('show_password'),
               icon: Icon(
                 _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey[500],
+                color: context.appColors.mutedText,
               ),
               onPressed: () {
                 setState(() {
@@ -253,7 +266,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             controller: _confirmPasswordController,
             placeholder: t('reenter_password'),
             obscureText: !_isConfirmPasswordVisible,
-            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
+            prefixIcon: Icon(
+              Icons.lock_outline,
+              color: context.appColors.mutedText,
+            ),
             suffixIcon: IconButton(
               tooltip: _isConfirmPasswordVisible
                   ? t('hide_password')
@@ -262,7 +278,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 _isConfirmPasswordVisible
                     ? Icons.visibility_off
                     : Icons.visibility,
-                color: Colors.grey[500],
+                color: context.appColors.mutedText,
               ),
               onPressed: () {
                 setState(() {

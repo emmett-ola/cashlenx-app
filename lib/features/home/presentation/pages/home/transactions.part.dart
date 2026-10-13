@@ -138,8 +138,8 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                   filtered: _activeFilterCount > 0,
                 ),
                 key: const ValueKey('transaction-result-summary'),
-                style: const TextStyle(
-                  color: _AppShellColors.mutedText,
+                style: TextStyle(
+                  color: context.appColors.mutedText,
                   fontSize: 14,
                 ),
               ),
@@ -192,8 +192,8 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
                                 context,
                                 transaction.belongsDate,
                               ),
-                              style: const TextStyle(
-                                color: _AppShellColors.mutedText,
+                              style: TextStyle(
+                                color: context.appColors.mutedText,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12,
                               ),
@@ -677,7 +677,7 @@ class _TransactionDetailScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(appT(context, 'type'), style: _fieldLabelStyle),
+                Text(appT(context, 'type'), style: _fieldLabelStyle(context)),
                 const SizedBox(height: 8),
                 _isEditing
                     ? _CategoryTypeSwitcher(
@@ -717,7 +717,7 @@ class _TransactionDetailScreenState
                             'add_transaction_description_placeholder',
                           ),
                           filled: true,
-                          fillColor: const Color(0xFFF3F4F6),
+                          fillColor: context.appColors.softFill,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -731,7 +731,10 @@ class _TransactionDetailScreenState
                             : transaction.description,
                       ),
                 const SizedBox(height: 20),
-                Text(appT(context, 'category'), style: _fieldLabelStyle),
+                Text(
+                  appT(context, 'category'),
+                  style: _fieldLabelStyle(context),
+                ),
                 const SizedBox(height: 8),
                 _isEditing
                     ? _CategoryChoiceGrid(
@@ -750,7 +753,7 @@ class _TransactionDetailScreenState
                         value: transaction.category,
                       ),
                 const SizedBox(height: 20),
-                Text(appT(context, 'date'), style: _fieldLabelStyle),
+                Text(appT(context, 'date'), style: _fieldLabelStyle(context)),
                 const SizedBox(height: 8),
                 _isEditing
                     ? _DateSelector(
@@ -780,7 +783,7 @@ class _TransactionDetailScreenState
                         'add_transaction_remark_placeholder',
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF3F4F6),
+                      fillColor: context.appColors.softFill,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -791,7 +794,7 @@ class _TransactionDetailScreenState
                 ],
                 Text(
                   appT(context, 'transaction_attachments'),
-                  style: _fieldLabelStyle,
+                  style: _fieldLabelStyle(context),
                 ),
                 const SizedBox(height: 8),
                 _DetailValue(
@@ -826,9 +829,7 @@ class _TransactionDetailScreenState
                         Text(
                           appT(context, 'transaction_delete_warning'),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: _AppShellColors.mutedText,
-                          ),
+                          style: TextStyle(color: context.appColors.mutedText),
                         ),
                         const SizedBox(height: 14),
                         Row(
@@ -1156,18 +1157,20 @@ class _DetailValue extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: context.appColors.softFill,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, color: _AppShellColors.mutedText, size: 19),
+          Icon(icon, color: context.appColors.mutedText, size: 19),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               value,
               style: TextStyle(
-                color: muted ? _AppShellColors.mutedText : _AppShellColors.text,
+                color: muted
+                    ? context.appColors.mutedText
+                    : context.appColors.text,
                 fontWeight: muted ? FontWeight.w500 : FontWeight.w700,
               ),
             ),
@@ -1268,12 +1271,13 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
+        key: const ValueKey('add-transaction-sheet-surface'),
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.9,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.appColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1354,10 +1358,10 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
               top: false,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: context.appColors.surface,
                   border: Border(
-                    top: BorderSide(color: _AppShellColors.border),
+                    top: BorderSide(color: context.appColors.border),
                   ),
                 ),
                 child: FilledButton(
@@ -1533,7 +1537,7 @@ class _DetailsToggleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF3F4F6),
+      color: context.appColors.softFill,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -1546,7 +1550,7 @@ class _DetailsToggleButton extends StatelessWidget {
               Icon(
                 expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 size: 18,
-                color: _AppShellColors.mutedText,
+                color: context.appColors.mutedText,
               ),
               const SizedBox(width: 4),
               Text(
@@ -1556,8 +1560,8 @@ class _DetailsToggleButton extends StatelessWidget {
                       ? 'add_transaction_hide_details'
                       : 'add_transaction_show_details',
                 ),
-                style: const TextStyle(
-                  color: _AppShellColors.text,
+                style: TextStyle(
+                  color: context.appColors.text,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1600,10 +1604,7 @@ class _TransactionAmountDisplay extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
-              color: _AppShellColors.mutedText,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: context.appColors.mutedText, fontSize: 14),
           ),
           const SizedBox(height: 12),
         ],
@@ -1683,8 +1684,8 @@ class _AddTransactionDetails extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 18),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: _AppShellColors.border)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.appColors.border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1703,7 +1704,7 @@ class _AddTransactionDetails extends StatelessWidget {
                 'add_transaction_description_placeholder',
               ),
               filled: true,
-              fillColor: const Color(0xFFF3F4F6),
+              fillColor: context.appColors.softFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -1713,7 +1714,7 @@ class _AddTransactionDetails extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             appT(context, 'add_transaction_category_label'),
-            style: _fieldLabelStyle,
+            style: _fieldLabelStyle(context),
           ),
           const SizedBox(height: 10),
           if (isLoading)
@@ -1749,7 +1750,7 @@ class _AddTransactionDetails extends StatelessWidget {
             decoration: InputDecoration(
               hintText: appT(context, 'add_transaction_remark_placeholder'),
               filled: true,
-              fillColor: const Color(0xFFF3F4F6),
+              fillColor: context.appColors.softFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -1766,22 +1767,22 @@ class _AddTransactionDetails extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              border: Border.all(color: _AppShellColors.border),
+              border: Border.all(color: context.appColors.border),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.attach_file,
                   size: 18,
-                  color: _AppShellColors.mutedText,
+                  color: context.appColors.mutedText,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     appT(context, 'transaction_attach_coming_soon'),
-                    style: const TextStyle(
-                      color: _AppShellColors.mutedText,
+                    style: TextStyle(
+                      color: context.appColors.mutedText,
                       fontSize: 13,
                     ),
                   ),
@@ -1805,9 +1806,9 @@ class _AddTransactionFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: _AppShellColors.mutedText),
+        Icon(icon, size: 16, color: context.appColors.mutedText),
         const SizedBox(width: 5),
-        Text(text, style: _fieldLabelStyle),
+        Text(text, style: _fieldLabelStyle(context)),
       ],
     );
   }
@@ -1829,7 +1830,7 @@ class _TransactionAmountPad extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
+      color: context.appColors.surface,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: GridView.count(
         crossAxisCount: 3,
@@ -1855,21 +1856,21 @@ class _TransactionAmountPad extends StatelessWidget {
                   onTap: () => onKeyPressed(key),
                   excludeSemantics: true,
                   child: Material(
-                    color: const Color(0xFFF3F4F6),
+                    color: context.appColors.softFill,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () => onKeyPressed(key),
                       child: Center(
                         child: key == 'backspace'
-                            ? const Icon(
+                            ? Icon(
                                 Icons.backspace_outlined,
-                                color: _AppShellColors.mutedText,
+                                color: context.appColors.mutedText,
                               )
                             : Text(
                                 key,
-                                style: const TextStyle(
-                                  color: Colors.black,
+                                style: TextStyle(
+                                  color: context.appColors.text,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1896,9 +1897,9 @@ class _NavigationHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _AppShellColors.border)),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        border: Border(bottom: BorderSide(color: context.appColors.border)),
       ),
       child: Row(
         children: [
@@ -1989,7 +1990,7 @@ class _TransactionFiltersCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(appT(context, 'type'), style: _fieldLabelStyle),
+          Text(appT(context, 'type'), style: _fieldLabelStyle(context)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -2001,26 +2002,26 @@ class _TransactionFiltersCard extends StatelessWidget {
                 onSelected: (_) => onTypeChanged(type),
                 showCheckmark: false,
                 selectedColor: Theme.of(context).colorScheme.primary,
-                backgroundColor: AppDesignTokens.softFill,
+                backgroundColor: context.appColors.softFill,
                 side: BorderSide.none,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppDesignTokens.mutedText,
+                  color: selected ? Colors.white : context.appColors.mutedText,
                   fontWeight: FontWeight.w600,
                 ),
               );
             }).toList(),
           ),
           const SizedBox(height: 16),
-          Text(appT(context, 'category'), style: _fieldLabelStyle),
+          Text(appT(context, 'category'), style: _fieldLabelStyle(context)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String?>(
             initialValue: selectedCategoryId,
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFFF3F4F6),
+              fillColor: context.appColors.softFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -2041,7 +2042,7 @@ class _TransactionFiltersCard extends StatelessWidget {
             onChanged: onCategoryChanged,
           ),
           const SizedBox(height: 16),
-          Text(appT(context, 'date_range'), style: _fieldLabelStyle),
+          Text(appT(context, 'date_range'), style: _fieldLabelStyle(context)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -2065,7 +2066,7 @@ class _TransactionFiltersCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(appT(context, 'search'), style: _fieldLabelStyle),
+          Text(appT(context, 'search'), style: _fieldLabelStyle(context)),
           const SizedBox(height: 8),
           TextField(
             controller: searchController,
@@ -2073,7 +2074,7 @@ class _TransactionFiltersCard extends StatelessWidget {
               prefixIcon: const Icon(Icons.search),
               hintText: appT(context, 'search_transactions'),
               filled: true,
-              fillColor: const Color(0xFFF3F4F6),
+              fillColor: context.appColors.softFill,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -2111,10 +2112,10 @@ class _DateFilterButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppDesignTokens.text,
-        backgroundColor: AppDesignTokens.softFill,
+        foregroundColor: context.appColors.text,
+        backgroundColor: context.appColors.softFill,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        side: const BorderSide(color: AppDesignTokens.border),
+        side: BorderSide(color: context.appColors.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Row(
@@ -2210,11 +2211,11 @@ class _RemovableFilterChip extends StatelessWidget {
       label: Text(label),
       onDeleted: onDeleted,
       deleteIcon: const Icon(Icons.close, size: 16),
-      backgroundColor: Colors.white,
-      side: const BorderSide(color: AppDesignTokens.border),
+      backgroundColor: context.appColors.surface,
+      side: BorderSide(color: context.appColors.border),
       shape: const StadiumBorder(),
-      labelStyle: const TextStyle(
-        color: AppDesignTokens.text,
+      labelStyle: TextStyle(
+        color: context.appColors.text,
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
@@ -2272,8 +2273,8 @@ class _TransactionPaginationControls extends StatelessWidget {
         Text(
           '$page / $pageCount',
           key: const ValueKey('transaction-page-status'),
-          style: const TextStyle(
-            color: _AppShellColors.mutedText,
+          style: TextStyle(
+            color: context.appColors.mutedText,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -2435,7 +2436,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
         child: Center(
           child: Text(
             appT(context, 'no_categories_available'),
-            style: const TextStyle(color: _AppShellColors.mutedText),
+            style: TextStyle(color: context.appColors.mutedText),
           ),
         ),
       );
@@ -2482,7 +2483,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: selected
                         ? _themeColor(context)
-                        : const Color(0xFFF3F4F6),
+                        : context.appColors.softFill,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Stack(
@@ -2498,7 +2499,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
                             size: 15,
                             color: selected
                                 ? Colors.white70
-                                : _AppShellColors.mutedText,
+                                : context.appColors.mutedText,
                           ),
                         ),
                       Center(
@@ -2521,7 +2522,7 @@ class _CategoryChoiceGrid extends StatelessWidget {
                                   style: TextStyle(
                                     color: selected
                                         ? Colors.white
-                                        : _AppShellColors.text,
+                                        : context.appColors.text,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     height: 1.05,
@@ -2544,8 +2545,8 @@ class _CategoryChoiceGrid extends StatelessWidget {
           Text.rich(
             TextSpan(
               text: '${appT(context, 'selected')}: ',
-              style: const TextStyle(
-                color: _AppShellColors.mutedText,
+              style: TextStyle(
+                color: context.appColors.mutedText,
                 fontSize: 13,
               ),
               children: [
@@ -2598,7 +2599,7 @@ class _DateSelectorState extends State<_DateSelector> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              color: context.appColors.softFill,
               borderRadius: BorderRadius.circular(22),
             ),
             child: Row(
@@ -2606,16 +2607,16 @@ class _DateSelectorState extends State<_DateSelector> {
                 Expanded(
                   child: Text(
                     _shortDateLabel(context, widget.date),
-                    style: const TextStyle(
-                      color: _AppShellColors.text,
+                    style: TextStyle(
+                      color: context.appColors.text,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.calendar_today_outlined,
                   size: 20,
-                  color: _AppShellColors.mutedText,
+                  color: context.appColors.mutedText,
                 ),
               ],
             ),
@@ -2679,9 +2680,9 @@ class _InlineCalendar extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _AppShellColors.border),
+        border: Border.all(color: context.appColors.border),
       ),
       child: Column(
         children: [
@@ -2695,8 +2696,8 @@ class _InlineCalendar extends StatelessWidget {
                 child: Text(
                   _monthYearLabel(context, visibleMonth),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: _AppShellColors.text,
+                  style: TextStyle(
+                    color: context.appColors.text,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -2715,8 +2716,8 @@ class _InlineCalendar extends StatelessWidget {
                   child: Text(
                     weekday,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: _AppShellColors.mutedText,
+                    style: TextStyle(
+                      color: context.appColors.mutedText,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -2755,7 +2756,7 @@ class _InlineCalendar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: _AppShellColors.border),
+          Divider(height: 1, color: context.appColors.border),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -2767,8 +2768,8 @@ class _InlineCalendar extends StatelessWidget {
                 onMonthChanged(DateTime(today.year, today.month));
               },
               style: TextButton.styleFrom(
-                foregroundColor: _AppShellColors.text,
-                backgroundColor: const Color(0xFFF3F4F6),
+                foregroundColor: context.appColors.text,
+                backgroundColor: context.appColors.softFill,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -2807,7 +2808,7 @@ class _CalendarIconButton extends StatelessWidget {
     return IconButton(
       onPressed: onTap,
       icon: Icon(icon),
-      color: _AppShellColors.text,
+      color: context.appColors.text,
       iconSize: 22,
       visualDensity: VisualDensity.compact,
       style: IconButton.styleFrom(
@@ -2864,7 +2865,7 @@ class _CalendarDayCell extends StatelessWidget {
             child: Text(
               '$day',
               style: TextStyle(
-                color: isSelected ? Colors.white : _AppShellColors.text,
+                color: isSelected ? Colors.white : context.appColors.text,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
@@ -2895,7 +2896,7 @@ class _SelectionDialog<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ConstrainedBox(
@@ -2910,8 +2911,8 @@ class _SelectionDialog<T> extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 description,
-                style: const TextStyle(
-                  color: _AppShellColors.mutedText,
+                style: TextStyle(
+                  color: context.appColors.mutedText,
                   fontSize: 14,
                 ),
               ),
@@ -2931,9 +2932,9 @@ class _SelectionDialog<T> extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _AppShellColors.text,
-                    side: const BorderSide(
-                      color: Color(0xFFD1D5DB),
+                    foregroundColor: context.appColors.text,
+                    side: BorderSide(
+                      color: context.appColors.border,
                       width: 1.5,
                     ),
                     shape: RoundedRectangleBorder(
@@ -2982,7 +2983,7 @@ class _SelectionOptionTile<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFFF3F4F6) : Colors.white,
+      color: selected ? context.appColors.softFill : context.appColors.surface,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -3015,16 +3016,16 @@ class _SelectionOptionTile<T> extends StatelessWidget {
                   children: [
                     Text(
                       option.title,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
+                      style: TextStyle(
+                        color: context.appColors.text,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       option.subtitle,
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
+                      style: TextStyle(
+                        color: context.appColors.mutedText,
                         fontSize: 13,
                       ),
                     ),

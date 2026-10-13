@@ -64,7 +64,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final profile = _profile;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: context.appColors.background,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -593,7 +593,7 @@ class _AvatarCard extends StatelessWidget {
             displayName,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: AppSurfaceTokens.textColor,
+              color: context.appColors.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -601,7 +601,7 @@ class _AvatarCard extends StatelessWidget {
           Text(
             profile.displayEmail,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppSurfaceTokens.mutedTextColor),
+            style: TextStyle(color: context.appColors.mutedText),
           ),
         ],
       ),
@@ -710,7 +710,7 @@ class _PersonalInformationCard extends StatelessWidget {
           Text(
             appT(context, 'profile_personal_info'),
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: AppSurfaceTokens.textColor,
+              color: context.appColors.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -799,7 +799,7 @@ class _AccountStatsCard extends StatelessWidget {
           Text(
             appT(context, 'profile_account_stats'),
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: AppSurfaceTokens.textColor,
+              color: context.appColors.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -872,8 +872,8 @@ class _StatTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppSurfaceTokens.mutedTextColor,
+            style: TextStyle(
+              color: context.appColors.mutedText,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -901,13 +901,13 @@ class _ProfileField extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 16, color: AppSurfaceTokens.mutedTextColor),
+                Icon(icon, size: 16, color: context.appColors.mutedText),
                 const SizedBox(width: 5),
               ],
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF374151),
+                style: TextStyle(
+                  color: context.appColors.text,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -991,14 +991,14 @@ class _ReadOnlyValue extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: AppSurfaceTokens.softFillColor,
+        color: context.appColors.softFill,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         value,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppSurfaceTokens.textColor,
+        style: TextStyle(
+          color: context.appColors.text,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1023,7 +1023,7 @@ class _DesignCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -1063,7 +1063,7 @@ class _ProfileModal extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.surface,
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
@@ -1156,9 +1156,9 @@ class _ProfileError extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Please try again.',
-              style: TextStyle(color: AppSurfaceTokens.mutedTextColor),
+              style: TextStyle(color: context.appColors.mutedText),
             ),
             const SizedBox(height: 16),
             FilledButton(

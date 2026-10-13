@@ -45,9 +45,10 @@ class _BottomNav extends StatelessWidget {
     final themeColor = _themeColor(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: _AppShellColors.border)),
+      key: const ValueKey('home-bottom-navigation-surface'),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        border: Border(top: BorderSide(color: context.appColors.border)),
       ),
       padding: EdgeInsets.only(
         left: 6,
@@ -124,7 +125,7 @@ class _BottomNav extends StatelessWidget {
                         tab.icon,
                         color: isSelected
                             ? themeColor
-                            : _AppShellColors.navMuted,
+                            : context.appColors.navMuted,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -133,7 +134,7 @@ class _BottomNav extends StatelessWidget {
                         style: TextStyle(
                           color: isSelected
                               ? themeColor
-                              : _AppShellColors.navMuted,
+                              : context.appColors.navMuted,
                           fontSize: 11,
                           fontWeight: isSelected
                               ? FontWeight.w700
@@ -327,7 +328,7 @@ class _ColorDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: _AppShellColors.border, width: 2),
+        border: Border.all(color: context.appColors.border, width: 2),
       ),
     );
   }
@@ -374,7 +375,7 @@ class _EmptyStateCard extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _AppShellColors.mutedText),
+            style: TextStyle(color: context.appColors.mutedText),
           ),
           const SizedBox(height: 18),
           if (onAction != null)

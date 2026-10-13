@@ -129,7 +129,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     : t('show_password'),
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey[500],
+                  color: context.appColors.mutedText,
                 ),
                 onPressed: () {
                   setState(() {
@@ -187,7 +187,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.grey[600],
+                                  color: context.appColors.mutedText,
                                 ),
                               ),
                             ),
@@ -227,7 +227,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: [
                 Text(
                   '${t('dont_have_account')} ',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: context.appColors.mutedText),
                 ),
                 TextButton(
                   onPressed: () => context.go('/register'),

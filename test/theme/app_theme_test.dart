@@ -47,6 +47,28 @@ void main() {
     );
   });
 
+  test('dark theme provides coordinated semantic surfaces', () {
+    final theme = AppTheme.darkTheme(const Color(0xFF42A5F5));
+    final colors = theme.extension<AppSurfaceColors>()!;
+
+    expect(theme.brightness, Brightness.dark);
+    expect(theme.colorScheme.primary, const Color(0xFF42A5F5));
+    expect(theme.scaffoldBackgroundColor, colors.background);
+    expect(theme.cardTheme.color, colors.surface);
+    expect(theme.dialogTheme.backgroundColor, colors.surface);
+    expect(theme.bottomSheetTheme.backgroundColor, colors.surface);
+    expect(theme.inputDecorationTheme.fillColor, colors.softFill);
+    expect(theme.dividerTheme.color, colors.border);
+    expect(
+      colors.text.computeLuminance(),
+      greaterThan(colors.surface.computeLuminance()),
+    );
+    expect(
+      colors.mutedText.computeLuminance(),
+      greaterThan(colors.surface.computeLuminance()),
+    );
+  });
+
   testWidgets('bundled Chinese interface fonts load before app startup', (
     tester,
   ) async {

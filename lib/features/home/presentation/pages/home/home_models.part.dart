@@ -506,16 +506,6 @@ class _Transaction {
   }
 }
 
-class _AppShellColors {
-  const _AppShellColors._();
-
-  static const background = Color(0xFFF9FAFB);
-  static const border = Color(0xFFE5E7EB);
-  static const mutedText = Color(0xFF6B7280);
-  static const navMuted = Color(0xFF9CA3AF);
-  static const text = Color(0xFF111827);
-}
-
 const _defaultCategoryEmoji = '🙂';
 const _defaultCategoryColor = Color(0xFFE5E7EB);
 
@@ -534,10 +524,10 @@ const _categoryColorChoices = [
   Color(0xFF42A5F5),
 ];
 
-const _fieldLabelStyle = TextStyle(
+TextStyle _fieldLabelStyle(BuildContext context) => TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.w600,
-  color: _AppShellColors.text,
+  color: context.appColors.text,
 );
 
 Object? _unwrapData(ApiJson response) {
@@ -794,10 +784,10 @@ double _jsonDouble(Object? value) {
 
 TextStyle _pageTitle(BuildContext context) {
   return Theme.of(context).textTheme.headlineSmall!
-      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
+      .copyWith(color: context.appColors.text, fontWeight: FontWeight.w800);
 }
 
 TextStyle _sectionTitle(BuildContext context) {
   return Theme.of(context).textTheme.titleMedium!
-      .copyWith(color: _AppShellColors.text, fontWeight: FontWeight.w800);
+      .copyWith(color: context.appColors.text, fontWeight: FontWeight.w800);
 }

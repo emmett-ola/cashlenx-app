@@ -75,9 +75,9 @@ class _DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _AppShellColors.border)),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        border: Border(bottom: BorderSide(color: context.appColors.border)),
       ),
       child: Row(
         children: [
@@ -91,8 +91,8 @@ class _DashboardHeader extends StatelessWidget {
                     username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _AppShellColors.text,
+                    style: TextStyle(
+                      color: context.appColors.text,
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
                       height: 1.2,
@@ -102,8 +102,8 @@ class _DashboardHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   _greeting(context),
-                  style: const TextStyle(
-                    color: _AppShellColors.mutedText,
+                  style: TextStyle(
+                    color: context.appColors.mutedText,
                     fontSize: 14,
                   ),
                 ),
@@ -132,9 +132,9 @@ class _StandardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: _AppShellColors.border)),
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        border: Border(bottom: BorderSide(color: context.appColors.border)),
       ),
       child: Row(
         children: [
@@ -156,9 +156,7 @@ class _StandardHeader extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           subtitle!,
-                          style: const TextStyle(
-                            color: _AppShellColors.mutedText,
-                          ),
+                          style: TextStyle(color: context.appColors.mutedText),
                         ),
                       ],
               ],
@@ -474,7 +472,7 @@ class _TransactionTile extends ConsumerWidget {
     );
 
     return Material(
-      color: Colors.white,
+      color: context.appColors.surface,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -506,16 +504,16 @@ class _TransactionTile extends ConsumerWidget {
                       transaction.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _AppShellColors.text,
+                      style: TextStyle(
+                        color: context.appColors.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _transactionDateLabel(context, transaction.belongsDate),
-                      style: const TextStyle(
-                        color: _AppShellColors.mutedText,
+                      style: TextStyle(
+                        color: context.appColors.mutedText,
                         fontSize: 13,
                       ),
                     ),
