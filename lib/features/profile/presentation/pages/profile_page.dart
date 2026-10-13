@@ -464,12 +464,23 @@ class _ProfileHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton.filledTonal(
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.20),
-                  foregroundColor: Colors.white,
+              Tooltip(
+                message: appT(context, 'back'),
+                excludeFromSemantics: true,
+                child: Semantics(
+                  container: true,
+                  label: appT(context, 'back'),
+                  button: true,
+                  onTap: onBack,
+                  excludeSemantics: true,
+                  child: IconButton.filledTonal(
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.20),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 22),

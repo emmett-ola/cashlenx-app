@@ -10,6 +10,7 @@ void main() {
   testWidgets('uses the selected multi-character symbol on compact layouts', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     await tester.binding.setSurfaceSize(const Size(320, 568));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -38,6 +39,9 @@ void main() {
     expect(find.text(r'S$1,000'), findsOneWidget);
     expect(find.text(r'Spent: S$250'), findsOneWidget);
     expect(find.text(r'Remaining: S$750'), findsOneWidget);
+    expect(find.bySemanticsLabel('Add budget'), findsOneWidget);
+    expect(find.bySemanticsLabel('Previous month'), findsOneWidget);
+    expect(find.bySemanticsLabel('Next month'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text(r'S$250 / S$1,000'),
       160,
@@ -45,6 +49,7 @@ void main() {
     );
     expect(find.text(r'S$250 / S$1,000'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 }
 

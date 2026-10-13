@@ -102,6 +102,58 @@ void main() {
     },
   );
 
+  testWidgets('exposes remember me as one localized checkable control', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'app_language': 'en'});
+    final semantics = tester.ensureSemantics();
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageServiceProvider.overrideWithValue(
+          SecureStorageService(MemoryKeyValueStore()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: LoginPage())),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+
+    final rememberMe = find.bySemanticsLabel('Remember me');
+    expect(rememberMe, findsOneWidget);
+    expect(
+      tester.getSemantics(rememberMe),
+      matchesSemantics(
+        label: 'Remember me',
+        hint: 'We will keep you signed in for 30 days',
+        hasCheckedState: true,
+        isChecked: false,
+        hasTapAction: true,
+      ),
+    );
+
+    await tester.tap(rememberMe);
+    await tester.pump();
+
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Remember me')),
+      matchesSemantics(
+        label: 'Remember me',
+        hint: 'We will keep you signed in for 30 days',
+        hasCheckedState: true,
+        isChecked: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   for (final (languageIndex, language) in AppLanguage.values.indexed) {
     testWidgets(
       'keeps ${language.name} from login through the first demo screen',

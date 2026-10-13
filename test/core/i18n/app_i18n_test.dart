@@ -16,4 +16,25 @@ void main() {
       expect(translations('auth_subtitle'), entry.value);
     });
   }
+
+  test('accessibility control labels are localized in every language', () {
+    const keys = [
+      'back',
+      'filter_transactions',
+      'add_budget',
+      'previous_month',
+      'next_month',
+      'previous_period',
+      'next_period',
+      'delete_digit',
+      'close',
+    ];
+
+    for (final language in AppLanguage.values) {
+      final translations = AppTranslations(language);
+      for (final key in keys) {
+        expect(translations(key), isNot(key), reason: '${language.code}:$key');
+      }
+    }
+  });
 }

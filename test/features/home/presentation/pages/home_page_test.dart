@@ -88,6 +88,7 @@ void main() {
 
     expect(find.text('Transactions'), findsNWidgets(2));
     expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    expect(find.bySemanticsLabel('Filter transactions'), findsOneWidget);
     expect(find.text('Coffee beans'), findsOneWidget);
     expect(find.text('+\$3,500.00'), findsOneWidget);
     expect(find.text('\u{1F35C}'), findsOneWidget);
@@ -197,6 +198,8 @@ void main() {
 
     expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
     expect(find.text('Amount'), findsOneWidget);
+    expect(find.bySemanticsLabel('Close'), findsOneWidget);
+    expect(find.bySemanticsLabel('Delete digit'), findsOneWidget);
     await tester.tap(find.text('Show Details'));
     await tester.pumpAndSettle();
     expect(find.text('Category'), findsAtLeastNWidgets(1));

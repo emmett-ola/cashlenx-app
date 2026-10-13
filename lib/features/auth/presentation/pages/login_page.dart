@@ -54,6 +54,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _identifierController.text.trim().isNotEmpty &&
       _passwordController.text.isNotEmpty;
 
+  void _toggleRememberMe() {
+    setState(() => _rememberMe = !_rememberMe);
+  }
+
   Future<void> _handleLogin() async {
     if (_isSubmitting || !_formKey.currentState!.validate()) return;
 
@@ -149,46 +153,48 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
-                  child: Row(
-                    children: [
-                      Tooltip(
-                        message: t('remember_me_tooltip'),
-                        child: SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: Checkbox(
-                            value: _rememberMe,
-                            activeColor: AppTheme.primaryColor,
-                            onChanged: (value) {
-                              setState(() {
-                                _rememberMe = value ?? false;
-                              });
-                            },
+                  child: Tooltip(
+                    message: t('remember_me_tooltip'),
+                    excludeFromSemantics: true,
+                    child: Semantics(
+                      container: true,
+                      label: t('remember_me'),
+                      hint: t('remember_me_tooltip'),
+                      checked: _rememberMe,
+                      onTap: _toggleRememberMe,
+                      excludeSemantics: true,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              activeColor: AppTheme.primaryColor,
+                              onChanged: (value) {
+                                setState(() {
+                                  _rememberMe = value ?? false;
+                                });
+                              },
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _rememberMe = !_rememberMe;
-                            });
-                          },
-                          child: Tooltip(
-                            message: t('remember_me_tooltip'),
-                            child: Text(
-                              t('remember_me'),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: _toggleRememberMe,
+                              child: Text(
+                                t('remember_me'),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 TextButton(

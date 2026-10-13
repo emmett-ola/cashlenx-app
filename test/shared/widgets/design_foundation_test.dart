@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsValidationResult;
+
 import 'package:cashlenx/shared/widgets/custom_button.dart';
 import 'package:cashlenx/shared/widgets/custom_input.dart';
 import 'package:cashlenx/theme/app_theme.dart';
@@ -88,5 +90,37 @@ void main() {
       field.decoration?.fillColor,
       darkTheme.colorScheme.surfaceContainerHighest,
     );
+  });
+
+  testWidgets('auth input exposes its visible label on the text field', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme(AppTheme.primaryColor),
+        home: const Scaffold(
+          body: CustomInput(label: 'Email', placeholder: 'Enter email'),
+        ),
+      ),
+    );
+
+    final emailField = find.bySemanticsLabel(RegExp(r'^Email'));
+    expect(emailField, findsOneWidget);
+    expect(
+      tester.getSemantics(emailField),
+      matchesSemantics(
+        label: 'Email\nEnter email',
+        isTextField: true,
+        isFocusable: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+        validationResult: SemanticsValidationResult.valid,
+      ),
+    );
+    semantics.dispose();
   });
 }

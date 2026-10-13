@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/i18n/app_i18n.dart';
+
 class AppSurfaceTokens {
   const AppSurfaceTokens._();
 
@@ -176,19 +178,30 @@ class AppPanelHeader extends StatelessWidget {
             ),
           ),
         ),
-        Material(
-          color: AppSurfaceTokens.softFillColor,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
+        Tooltip(
+          message: appT(context, 'close'),
+          excludeFromSemantics: true,
+          child: Semantics(
+            container: true,
+            label: appT(context, 'close'),
+            button: true,
             onTap: () => Navigator.pop(context),
-            child: const SizedBox(
-              width: 32,
-              height: 32,
-              child: Icon(
-                Icons.close,
-                color: AppSurfaceTokens.mutedTextColor,
-                size: 20,
+            excludeSemantics: true,
+            child: Material(
+              color: AppSurfaceTokens.softFillColor,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.pop(context),
+                child: const SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: Icon(
+                    Icons.close,
+                    color: AppSurfaceTokens.mutedTextColor,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           ),

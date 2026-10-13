@@ -43,6 +43,7 @@ void main() {
         expect(find.text('Currency'), findsNothing);
         expect(find.text('Theme'), findsNothing);
         expect(find.text('Language'), findsNothing);
+        expect(find.bySemanticsLabel('Back'), findsOneWidget);
 
         await tester.tap(find.widgetWithText(FilledButton, 'Edit'));
         await tester.pump();

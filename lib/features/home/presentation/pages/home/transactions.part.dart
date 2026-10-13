@@ -76,6 +76,7 @@ class _TransactionsScreenState extends ConsumerState<_TransactionsScreen> {
               children: [
                 _RoundIconButton(
                   icon: Icons.filter_list,
+                  tooltip: appT(context, 'filter_transactions'),
                   onPressed: () {
                     setState(() => _showFilters = !_showFilters);
                   },
@@ -1840,26 +1841,41 @@ class _TransactionAmountPad extends StatelessWidget {
         children: [
           for (final row in _keys)
             for (final key in row)
-              Material(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
+              Tooltip(
+                message: key == 'backspace'
+                    ? appT(context, 'delete_digit')
+                    : key,
+                excludeFromSemantics: true,
+                child: Semantics(
+                  container: true,
+                  label: key == 'backspace'
+                      ? appT(context, 'delete_digit')
+                      : key,
+                  button: true,
                   onTap: () => onKeyPressed(key),
-                  child: Center(
-                    child: key == 'backspace'
-                        ? const Icon(
-                            Icons.backspace_outlined,
-                            color: _AppShellColors.mutedText,
-                          )
-                        : Text(
-                            key,
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                  excludeSemantics: true,
+                  child: Material(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => onKeyPressed(key),
+                      child: Center(
+                        child: key == 'backspace'
+                            ? const Icon(
+                                Icons.backspace_outlined,
+                                color: _AppShellColors.mutedText,
+                              )
+                            : Text(
+                                key,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1887,9 +1903,20 @@ class _NavigationHeader extends StatelessWidget {
       child: Row(
         children: [
           if (onBack != null) ...[
-            IconButton.filledTonal(
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back),
+            Tooltip(
+              message: appT(context, 'back'),
+              excludeFromSemantics: true,
+              child: Semantics(
+                container: true,
+                label: appT(context, 'back'),
+                button: true,
+                onTap: onBack,
+                excludeSemantics: true,
+                child: IconButton.filledTonal(
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back),
+                ),
+              ),
             ),
             const SizedBox(width: 12),
           ],

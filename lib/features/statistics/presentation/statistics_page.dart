@@ -45,9 +45,20 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           children: [
             Row(
               children: [
-                IconButton(
-                  onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back),
+                Tooltip(
+                  message: appT(context, 'back'),
+                  excludeFromSemantics: true,
+                  child: Semantics(
+                    container: true,
+                    label: appT(context, 'back'),
+                    button: true,
+                    onTap: widget.onBack,
+                    excludeSemantics: true,
+                    child: IconButton(
+                      onPressed: widget.onBack,
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -163,10 +174,22 @@ class _PeriodSelector extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            key: const ValueKey('statistics-previous-period'),
-            onPressed: canMoveBack ? () => onChanged(-1) : null,
-            icon: const Icon(Icons.chevron_left),
+          Tooltip(
+            message: appT(context, 'previous_period'),
+            excludeFromSemantics: true,
+            child: Semantics(
+              container: true,
+              label: appT(context, 'previous_period'),
+              button: true,
+              enabled: canMoveBack,
+              onTap: canMoveBack ? () => onChanged(-1) : null,
+              excludeSemantics: true,
+              child: IconButton(
+                key: const ValueKey('statistics-previous-period'),
+                onPressed: canMoveBack ? () => onChanged(-1) : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -175,10 +198,22 @@ class _PeriodSelector extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
-          IconButton(
-            key: const ValueKey('statistics-next-period'),
-            onPressed: canMoveForward ? () => onChanged(1) : null,
-            icon: const Icon(Icons.chevron_right),
+          Tooltip(
+            message: appT(context, 'next_period'),
+            excludeFromSemantics: true,
+            child: Semantics(
+              container: true,
+              label: appT(context, 'next_period'),
+              button: true,
+              enabled: canMoveForward,
+              onTap: canMoveForward ? () => onChanged(1) : null,
+              excludeSemantics: true,
+              child: IconButton(
+                key: const ValueKey('statistics-next-period'),
+                onPressed: canMoveForward ? () => onChanged(1) : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ),
           ),
         ],
       ),

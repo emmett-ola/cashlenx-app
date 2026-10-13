@@ -280,19 +280,35 @@ class _DefaultAvatarImage extends StatelessWidget {
 }
 
 class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({required this.icon, required this.onPressed});
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
 
   final IconData icon;
+  final String tooltip;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filled(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      style: IconButton.styleFrom(
-        backgroundColor: _themeColor(context),
-        foregroundColor: Colors.white,
+    return Tooltip(
+      message: tooltip,
+      excludeFromSemantics: true,
+      child: Semantics(
+        container: true,
+        label: tooltip,
+        button: true,
+        onTap: onPressed,
+        excludeSemantics: true,
+        child: IconButton.filled(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          style: IconButton.styleFrom(
+            backgroundColor: _themeColor(context),
+            foregroundColor: Colors.white,
+          ),
+        ),
       ),
     );
   }

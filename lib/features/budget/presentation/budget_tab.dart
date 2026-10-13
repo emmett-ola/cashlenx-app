@@ -187,12 +187,23 @@ class _Header extends StatelessWidget {
           ],
         ),
       ),
-      IconButton.filled(
-        onPressed: onAdd,
-        icon: const Icon(Icons.add),
-        style: IconButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
+      Tooltip(
+        message: appT(context, 'add_budget'),
+        excludeFromSemantics: true,
+        child: Semantics(
+          container: true,
+          label: appT(context, 'add_budget'),
+          button: true,
+          onTap: onAdd,
+          excludeSemantics: true,
+          child: IconButton.filled(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add),
+            style: IconButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
         ),
       ),
     ],
@@ -213,9 +224,20 @@ class _MonthSelector extends StatelessWidget {
     ),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => onChanged(-1),
-          icon: const Icon(Icons.chevron_left),
+        Tooltip(
+          message: appT(context, 'previous_month'),
+          excludeFromSemantics: true,
+          child: Semantics(
+            container: true,
+            label: appT(context, 'previous_month'),
+            button: true,
+            onTap: () => onChanged(-1),
+            excludeSemantics: true,
+            child: IconButton(
+              onPressed: () => onChanged(-1),
+              icon: const Icon(Icons.chevron_left),
+            ),
+          ),
         ),
         Expanded(
           child: Text(
@@ -224,9 +246,20 @@ class _MonthSelector extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
         ),
-        IconButton(
-          onPressed: () => onChanged(1),
-          icon: const Icon(Icons.chevron_right),
+        Tooltip(
+          message: appT(context, 'next_month'),
+          excludeFromSemantics: true,
+          child: Semantics(
+            container: true,
+            label: appT(context, 'next_month'),
+            button: true,
+            onTap: () => onChanged(1),
+            excludeSemantics: true,
+            child: IconButton(
+              onPressed: () => onChanged(1),
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ),
         ),
       ],
     ),

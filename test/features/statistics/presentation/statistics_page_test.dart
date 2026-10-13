@@ -11,6 +11,7 @@ void main() {
   testWidgets('changes range and preserves twelve months on compact layouts', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     await tester.binding.setSurfaceSize(const Size(320, 568));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -49,6 +50,9 @@ void main() {
       find.byKey(const ValueKey('statistics-period-selector')),
       findsOneWidget,
     );
+    expect(find.bySemanticsLabel('Back'), findsOneWidget);
+    expect(find.bySemanticsLabel('Previous period'), findsOneWidget);
+    expect(find.bySemanticsLabel('Next period'), findsOneWidget);
 
     await tester.tap(find.text('Year'));
     await tester.pumpAndSettle();
@@ -75,6 +79,7 @@ void main() {
       expect(find.text(month), findsOneWidget);
     }
     expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('period navigation reloads the selected range', (tester) async {
