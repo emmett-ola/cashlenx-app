@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -31,7 +32,6 @@ const _authRedirectPolicy = AuthRedirectPolicy(
 GoRouter router(Ref ref) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   final listenable = ValueNotifier<Object>(Object());
-  String? pendingProtectedLocation;
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = Object();
   });
@@ -78,8 +78,9 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/currency-setup',
         name: 'currency-setup',
-        builder: (context, state) =>
-            const MobilePageShell(child: CurrencySetupPage()),
+        builder: (context, state) => const _ProtectedRoute(
+          child: MobilePageShell(child: CurrencySetupPage()),
+        ),
       ),
       GoRoute(
         path: '/setup',
@@ -93,8 +94,10 @@ GoRouter router(Ref ref) {
         name: 'home',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.dashboard),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.dashboard),
+            ),
           ),
         ),
       ),
@@ -103,8 +106,10 @@ GoRouter router(Ref ref) {
         name: 'categories',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.categories),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.categories),
+            ),
           ),
         ),
       ),
@@ -113,8 +118,10 @@ GoRouter router(Ref ref) {
         name: 'budgets',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.budget),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.budget),
+            ),
           ),
         ),
       ),
@@ -123,8 +130,10 @@ GoRouter router(Ref ref) {
         name: 'settings',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.settings),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.settings),
+            ),
           ),
         ),
       ),
@@ -133,8 +142,10 @@ GoRouter router(Ref ref) {
         name: 'transactions',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.transactions),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.transactions),
+            ),
           ),
         ),
       ),
@@ -147,10 +158,12 @@ GoRouter router(Ref ref) {
               : HomeSection.transactions;
           return NoTransitionPage<void>(
             key: state.pageKey,
-            child: MobilePageShell(
-              child: HomePage(
-                section: origin,
-                transactionId: state.pathParameters['transactionId'],
+            child: _ProtectedRoute(
+              child: MobilePageShell(
+                child: HomePage(
+                  section: origin,
+                  transactionId: state.pathParameters['transactionId'],
+                ),
               ),
             ),
           );
@@ -161,8 +174,10 @@ GoRouter router(Ref ref) {
         name: 'statistics',
         pageBuilder: (context, state) => NoTransitionPage<void>(
           key: state.pageKey,
-          child: const MobilePageShell(
-            child: HomePage(section: HomeSection.statistics),
+          child: const _ProtectedRoute(
+            child: MobilePageShell(
+              child: HomePage(section: HomeSection.statistics),
+            ),
           ),
         ),
       ),
@@ -173,12 +188,17 @@ GoRouter router(Ref ref) {
           final returnPath = state.uri.queryParameters['from'] == 'settings'
               ? '/settings'
               : '/home';
-          return MobilePageShell(child: ProfilePage(returnPath: returnPath));
+          return _ProtectedRoute(
+            child: MobilePageShell(child: ProfilePage(returnPath: returnPath)),
+          );
         },
       ),
     ],
-    errorBuilder: (context, state) =>
-        MobilePageShell(child: _UnknownRoutePage(location: state.uri.path)),
+    errorBuilder: (context, state) => _ProtectedRoute(
+      child: MobilePageShell(
+        child: _UnknownRoutePage(location: state.uri.path),
+      ),
+    ),
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
       final onboardingState = ref.read(onboardingSeenProvider);
@@ -192,24 +212,11 @@ GoRouter router(Ref ref) {
           location != _authRedirectPolicy.setupPath &&
           !_authRedirectPolicy.publicAuthPaths.contains(location);
       if (authState.isLoading && isProtectedDestination) {
-        pendingProtectedLocation = state.uri.toString();
+        return null;
       }
 
       if (hasSeenOnboarding == null) return null;
       if (authState.value != null && setupState.value == null) return null;
-
-      if (!authState.isLoading && authState.value == null) {
-        pendingProtectedLocation = null;
-      }
-
-      if (authState.value != null &&
-          (setupState.value ?? true) &&
-          location == _authRedirectPolicy.splashPath &&
-          pendingProtectedLocation != null) {
-        final target = pendingProtectedLocation;
-        pendingProtectedLocation = null;
-        return target;
-      }
 
       return _authRedirectPolicy.redirect(
         authStatus: authState.isLoading
@@ -223,6 +230,24 @@ GoRouter router(Ref ref) {
       );
     },
   );
+}
+
+class _ProtectedRoute extends ConsumerWidget {
+  const _ProtectedRoute({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final setupState = ref.watch(setupCompletedProvider);
+
+    if (authState.value == null || setupState.value != true) {
+      return const SplashScreen();
+    }
+
+    return child;
+  }
 }
 
 class _UnknownRoutePage extends StatelessWidget {

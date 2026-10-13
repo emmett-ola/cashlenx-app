@@ -4,6 +4,7 @@ import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/onboarding/data/onboarding_service.dart';
 import 'package:cashlenx/features/setup/data/setup_service.dart';
+import 'package:cashlenx/features/splash/presentation/pages/splash_screen.dart';
 import 'package:cashlenx/main.dart';
 import 'package:cashlenx/network/api_client.dart';
 import 'package:cashlenx/network/cashlenx_api.dart';
@@ -43,7 +44,13 @@ void main() {
     final router = container.read(routerProvider);
     router.go('/profile?from=settings');
     await tester.pump();
-    expect(router.routeInformationProvider.value.uri.path, '/');
+    expect(router.routeInformationProvider.value.uri.path, '/profile');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      'settings',
+    );
+    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.text('Personal Information'), findsNothing);
 
     _DelayedAuthNotifier.result.complete(_demoUser());
     await tester.pumpAndSettle();
