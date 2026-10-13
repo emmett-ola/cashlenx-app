@@ -6,6 +6,33 @@ state.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-13
+
+### Added
+
+- Added URL-addressable Profile and transaction-detail destinations with
+  refresh, history, and source-context restoration.
+- Added focused accessibility, light/dark theme, reduced-motion, large-text,
+  responsive modal, and localized-period regression coverage.
+
+### Changed
+
+- Applied coherent semantic light and dark surfaces across authenticated,
+  authentication, setup, dialog, sheet, toast, and empty/error states.
+- Constrained add-transaction sheets to the 430 px mobile canvas on tablet and
+  desktop hosts while retaining phone width, safe areas, and keyboard access.
+- Localized Budget month labels through the same locale-aware period boundary
+  used by Statistics while retaining canonical `YYYY-MM` API periods.
+- Replaced persistent startup motion with a brief entrance and made startup and
+  validation feedback honor reduced-motion preferences.
+
+### Fixed
+
+- Restored localized semantics for icon-only navigation and actions, auth
+  inputs, and composite controls without duplicate announcements or actions.
+- Preserved currency minor-unit precision when aggregating and presenting
+  Budget totals, spent values, remaining values, and progress.
+
 ## [1.1.0] - 2026-10-12
 
 ### Changed
