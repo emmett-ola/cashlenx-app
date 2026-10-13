@@ -154,6 +154,49 @@ void main() {
     semantics.dispose();
   });
 
+  for (final language in AppLanguage.values) {
+    testWidgets('localizes auth control semantics in ${language.name}', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      await tester.binding.setSurfaceSize(const Size(430, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final semantics = tester.ensureSemantics();
+
+      final container = ProviderContainer(
+        overrides: [
+          secureStorageServiceProvider.overrideWithValue(
+            SecureStorageService(MemoryKeyValueStore()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(i18nProvider.notifier).setLanguage(language);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Scaffold(body: LoginPage())),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+
+      final translations = AppTranslations(language);
+      expect(
+        find.bySemanticsLabel(translations('remember_me')),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(translations('sign_in')), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(translations('continue_demo')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    });
+  }
+
   for (final (languageIndex, language) in AppLanguage.values.indexed) {
     testWidgets(
       'keeps ${language.name} from login through the first demo screen',

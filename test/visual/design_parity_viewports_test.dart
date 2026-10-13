@@ -61,6 +61,36 @@ void main() {
       matchesGoldenFile('goldens/profile-shell-430.png'),
     );
   });
+
+  testWidgets('representative routes retain coherent dark surfaces', (
+    tester,
+  ) async {
+    await _pumpDemoPage(
+      tester,
+      viewports['phone-390']!,
+      const HomePage(),
+      themeMode: ThemeMode.dark,
+    );
+    expect(find.text('Today Balance'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(const ValueKey('visual-root')),
+      matchesGoldenFile('goldens/dashboard-dark-phone-390.png'),
+    );
+
+    await _pumpDemoPage(
+      tester,
+      viewports['shell-430']!,
+      const ProfilePage(),
+      themeMode: ThemeMode.dark,
+    );
+    expect(find.text('Personal Information'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(const ValueKey('visual-root')),
+      matchesGoldenFile('goldens/profile-dark-shell-430.png'),
+    );
+  });
 }
 
 // Flutter's software renderer has small platform- and engine-specific
@@ -96,7 +126,12 @@ class _TolerantGoldenFileComparator extends LocalFileComparator {
   }
 }
 
-Future<void> _pumpDemoPage(WidgetTester tester, Size size, Widget page) async {
+Future<void> _pumpDemoPage(
+  WidgetTester tester,
+  Size size,
+  Widget page, {
+  ThemeMode themeMode = ThemeMode.light,
+}) async {
   SharedPreferences.setMockInitialValues({});
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -113,6 +148,8 @@ Future<void> _pumpDemoPage(WidgetTester tester, Size size, Widget page) async {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme(AppDesignTokens.primary),
+        darkTheme: AppTheme.darkTheme(AppDesignTokens.primary),
+        themeMode: themeMode,
         home: RepaintBoundary(
           key: const ValueKey('visual-root'),
           child: MobilePageShell(child: page),

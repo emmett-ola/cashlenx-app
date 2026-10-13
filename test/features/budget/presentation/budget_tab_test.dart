@@ -1,3 +1,4 @@
+import 'package:cashlenx/core/i18n/app_i18n.dart';
 import 'package:cashlenx/features/budget/data/budget_repository.dart';
 import 'package:cashlenx/features/budget/domain/budget_models.dart';
 import 'package:cashlenx/features/budget/presentation/budget_tab.dart';
@@ -6,8 +7,55 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({'app_language': 'en'}));
+
+  for (final language in AppLanguage.values) {
+    testWidgets('localizes core budget icon semantics in ${language.name}', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final container = ProviderContainer(
+        overrides: [
+          monthlyBudgetsProvider.overrideWith((ref, period) async => const []),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(i18nProvider.notifier).setLanguage(language);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: language.locale,
+            supportedLocales: AppLanguage.values.map(
+              (language) => language.locale,
+            ),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            home: Scaffold(body: BudgetTab(initialMonth: DateTime(2026, 10))),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final translations = AppTranslations(language);
+      for (final key in ['add_budget', 'previous_month', 'next_month']) {
+        expect(
+          find.bySemanticsLabel(translations(key)),
+          findsAtLeastNWidgets(1),
+        );
+      }
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    });
+  }
+
   testWidgets('localizes month labels without changing budget query periods', (
     tester,
   ) async {
