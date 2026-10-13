@@ -297,6 +297,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(
+        maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
+      ),
       builder: (context) => const _AddTransactionSheet(),
     ).then((created) {
       if (created == true) ref.invalidate(_dashboardProvider);

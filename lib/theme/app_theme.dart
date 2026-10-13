@@ -75,6 +75,7 @@ class AppDesignTokens {
   static const radiusField = 8.0;
   static const radiusCard = 16.0;
   static const radiusHero = 24.0;
+  static const mobileCanvasMaxWidth = 430.0;
 }
 
 @immutable

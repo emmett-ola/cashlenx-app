@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
@@ -151,6 +152,76 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Close'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bounds the add sheet to the mobile canvas across viewports', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    for (final scenario in <(Size, double, double)>[
+      (const Size(320, 568), 1, 0),
+      (const Size(768, 1024), 1, 0),
+      (const Size(1440, 900), 1, 0),
+      (const Size(390, 844), 1.8, 280),
+    ]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await tester.binding.setSurfaceSize(scenario.$1);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+            cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+          ],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scenario.$2),
+                viewInsets: EdgeInsets.only(bottom: scenario.$3),
+              ),
+              child: child!,
+            ),
+            home: HomePage(
+              key: ValueKey('add-sheet-${scenario.$1}-${scenario.$2}'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+
+      await tester.tap(find.text('Add').last);
+      await tester.pumpAndSettle();
+
+      final sheet = find.byKey(const ValueKey('add-transaction-sheet-surface'));
+      final size = tester.getSize(sheet);
+      expect(
+        size.width,
+        moreOrLessEquals(
+          math.min(scenario.$1.width, AppDesignTokens.mobileCanvasMaxWidth),
+        ),
+      );
+      final sheetMediaQuery = MediaQuery.of(tester.element(sheet));
+      expect(size.height, lessThanOrEqualTo(sheetMediaQuery.size.height * 0.9));
+      if (scenario.$3 > 0) {
+        expect(
+          tester.getBottomLeft(sheet).dy,
+          lessThanOrEqualTo(scenario.$1.height - scenario.$3),
+        );
+      }
+      expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
+      expect(find.bySemanticsLabel('Delete digit'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      if (scenario.$1.width > AppDesignTokens.mobileCanvasMaxWidth) {
+        await tester.tapAt(const Offset(8, 8));
+      } else {
+        await tester.tap(find.bySemanticsLabel('Close'));
+      }
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+    }
   });
 
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
