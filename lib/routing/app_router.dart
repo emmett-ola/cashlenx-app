@@ -29,6 +29,7 @@ const _authRedirectPolicy = AuthRedirectPolicy(
 
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
+  GoRouter.optionURLReflectsImperativeAPIs = true;
   final listenable = ValueNotifier<Object>(Object());
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = Object();
@@ -137,6 +138,24 @@ GoRouter router(Ref ref) {
         ),
       ),
       GoRoute(
+        path: '/transactions/:transactionId',
+        name: 'transaction-detail',
+        pageBuilder: (context, state) {
+          final origin = state.uri.queryParameters['from'] == 'home'
+              ? HomeSection.dashboard
+              : HomeSection.transactions;
+          return NoTransitionPage<void>(
+            key: state.pageKey,
+            child: MobilePageShell(
+              child: HomePage(
+                section: origin,
+                transactionId: state.pathParameters['transactionId'],
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/statistics',
         name: 'statistics',
         pageBuilder: (context, state) => NoTransitionPage<void>(
@@ -149,8 +168,12 @@ GoRouter router(Ref ref) {
       GoRoute(
         path: '/profile',
         name: 'profile',
-        builder: (context, state) =>
-            const MobilePageShell(child: ProfilePage()),
+        builder: (context, state) {
+          final returnPath = state.uri.queryParameters['from'] == 'settings'
+              ? '/settings'
+              : '/home';
+          return MobilePageShell(child: ProfilePage(returnPath: returnPath));
+        },
       ),
     ],
     errorBuilder: (context, state) =>

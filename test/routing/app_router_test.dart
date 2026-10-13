@@ -63,6 +63,56 @@ void main() {
       expect(tester.takeException(), isNull);
     }
 
+    router.go('/home');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coffee beans'));
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      '/transactions/demo-transaction-coffee',
+    );
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      'home',
+    );
+    expect(find.text('Transaction Detail'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+
+    router.go('/settings');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Demo User').first);
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/profile');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      'settings',
+    );
+    expect(find.text('Profile'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings');
+
+    router.go('/transactions/demo-transaction-coffee?from=home');
+    await tester.pumpAndSettle();
+    expect(find.text('Transaction Detail'), findsOneWidget);
+    expect(find.text('Coffee beans'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+
+    router.go('/profile?from=settings');
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Back'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings');
+
+    router.go('/transactions/missing-transaction?from=transactions');
+    await tester.pumpAndSettle();
+    expect(find.text('Transaction detail failed to load'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+
     router.go('/unsupported');
     await tester.pumpAndSettle();
     expect(find.text('Page not found'), findsOneWidget);

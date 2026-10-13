@@ -14,7 +14,9 @@ import '../../../home/presentation/providers/currency_provider.dart';
 import '../../domain/user_profile.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({this.returnPath = '/home', super.key});
+
+  final String returnPath;
 
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
@@ -79,7 +81,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       isSaving: _isSaving,
                       onBack: () => context.canPop()
                           ? context.pop()
-                          : context.go('/home'),
+                          : context.go(widget.returnPath),
                       onEdit: _startEditing,
                       onSave: _saveProfile,
                     ),

@@ -79,9 +79,14 @@ enum HomeSection {
 }
 
 class HomePage extends ConsumerStatefulWidget {
-  const HomePage({this.section = HomeSection.dashboard, super.key});
+  const HomePage({
+    this.section = HomeSection.dashboard,
+    this.transactionId,
+    super.key,
+  });
 
   final HomeSection section;
+  final String? transactionId;
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -96,18 +101,22 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
-    _applySection(widget.section);
+    _applySection(widget.section, transactionId: widget.transactionId);
   }
 
   @override
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.section != widget.section) {
-      setState(() => _applySection(widget.section));
+    if (oldWidget.section != widget.section ||
+        oldWidget.transactionId != widget.transactionId) {
+      setState(
+        () =>
+            _applySection(widget.section, transactionId: widget.transactionId),
+      );
     }
   }
 
-  void _applySection(HomeSection section) {
+  void _applySection(HomeSection section, {String? transactionId}) {
     _selectedTab = switch (section) {
       HomeSection.transactions => _HomeTab.transactions,
       HomeSection.categories => _HomeTab.settings,
@@ -117,7 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     };
     _showCategories = section == HomeSection.categories;
     _showMoreStats = section == HomeSection.statistics;
-    _selectedTransactionId = null;
+    _selectedTransactionId = transactionId;
   }
 
   @override
@@ -218,7 +227,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _openProfile() async {
-    await context.push('/profile');
+    final origin = _selectedTab == _HomeTab.settings ? 'settings' : 'home';
+    await context.push('/profile?from=$origin');
     ref.invalidate(_userProfileProvider);
   }
 
@@ -247,10 +257,29 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _openTransactionDetail(_Transaction transaction) {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      final origin = _selectedTab == _HomeTab.transactions
+          ? 'transactions'
+          : 'home';
+      context.push(
+        '/transactions/${Uri.encodeComponent(transaction.id)}?from=$origin',
+      );
+      return;
+    }
     setState(() => _selectedTransactionId = transaction.id);
   }
 
   void _closeTransactionDetail() {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(widget.section.path);
+      }
+      return;
+    }
     setState(() => _selectedTransactionId = null);
   }
 
@@ -259,9 +288,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _handleTransactionDeleted() {
-    setState(() {
-      _selectedTransactionId = null;
-    });
+    _closeTransactionDetail();
     ref.invalidate(_dashboardProvider);
   }
 

@@ -13,6 +13,7 @@ const testUser = {
 };
 
 let userAccessToken = '';
+let browserTransactionId = '';
 
 async function api(path, { method = 'GET', body, token } = {}) {
   const response = await fetch(`${apiUrl}${path}`, {
@@ -163,7 +164,7 @@ test.beforeAll(async () => {
     token: userAccessToken,
     body: { name: 'Browser Expense', type: 'expense', remark: 'acceptance' },
   });
-  await api('/cash/expense', {
+  const transaction = await api('/cash/expense', {
     method: 'POST',
     token: userAccessToken,
     body: {
@@ -173,6 +174,13 @@ test.beforeAll(async () => {
       description: 'Browser acceptance expense',
     },
   });
+  const transactionId = transaction.data?.id ?? transaction.data?.Id;
+  browserTransactionId = typeof transactionId === 'object'
+    ? transactionId.$oid
+    : transactionId;
+  if (!browserTransactionId) {
+    throw new Error('Created browser transaction did not return an ID.');
+  }
 });
 
 test.afterAll(async () => {
@@ -201,6 +209,30 @@ test('built client completes authenticated and demo journeys', async ({ page }) 
     await enableFlutterSemantics(page);
     await expectSemanticText(page, destination[1]);
   }
+
+  await page.goto(`${appUrl}/#/profile?from=settings`);
+  await enableFlutterSemantics(page);
+  await expect(page).toHaveURL(/#\/profile\?from=settings$/);
+  await expectSemanticText(page, 'Profile');
+  await page.reload();
+  await enableFlutterSemantics(page);
+  await expectSemanticText(page, 'Personal Information');
+
+  const transactionUrl = `${appUrl}/#/transactions/${encodeURIComponent(browserTransactionId)}?from=transactions`;
+  await page.goto(transactionUrl);
+  await enableFlutterSemantics(page);
+  await expect(page).toHaveURL(new RegExp(`#\\/transactions\\/${browserTransactionId}\\?from=transactions$`));
+  await expectSemanticText(page, 'Browser acceptance expense');
+  await page.reload();
+  await enableFlutterSemantics(page);
+  await expectSemanticText(page, 'Transaction Detail');
+
+  await page.goBack();
+  await enableFlutterSemantics(page);
+  await expectSemanticText(page, 'Profile');
+  await page.goForward();
+  await enableFlutterSemantics(page);
+  await expectSemanticText(page, 'Browser acceptance expense');
 
   await page.goto(`${appUrl}/#/unsupported`);
   await enableFlutterSemantics(page);
