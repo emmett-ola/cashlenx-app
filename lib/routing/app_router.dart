@@ -31,6 +31,7 @@ const _authRedirectPolicy = AuthRedirectPolicy(
 GoRouter router(Ref ref) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   final listenable = ValueNotifier<Object>(Object());
+  String? pendingProtectedLocation;
   ref.listen(authNotifierProvider, (previous, next) {
     listenable.value = Object();
   });
@@ -183,9 +184,32 @@ GoRouter router(Ref ref) {
       final onboardingState = ref.read(onboardingSeenProvider);
       final setupState = ref.read(setupCompletedProvider);
       final hasSeenOnboarding = onboardingState.value;
+      final location = state.matchedLocation;
+
+      final isProtectedDestination =
+          location != _authRedirectPolicy.splashPath &&
+          location != _authRedirectPolicy.onboardingPath &&
+          location != _authRedirectPolicy.setupPath &&
+          !_authRedirectPolicy.publicAuthPaths.contains(location);
+      if (authState.isLoading && isProtectedDestination) {
+        pendingProtectedLocation = state.uri.toString();
+      }
 
       if (hasSeenOnboarding == null) return null;
       if (authState.value != null && setupState.value == null) return null;
+
+      if (!authState.isLoading && authState.value == null) {
+        pendingProtectedLocation = null;
+      }
+
+      if (authState.value != null &&
+          (setupState.value ?? true) &&
+          location == _authRedirectPolicy.splashPath &&
+          pendingProtectedLocation != null) {
+        final target = pendingProtectedLocation;
+        pendingProtectedLocation = null;
+        return target;
+      }
 
       return _authRedirectPolicy.redirect(
         authStatus: authState.isLoading
@@ -193,7 +217,7 @@ GoRouter router(Ref ref) {
             : authState.value != null
             ? AuthStatus.authenticated
             : AuthStatus.unauthenticated,
-        location: state.matchedLocation,
+        location: location,
         hasSeenOnboarding: hasSeenOnboarding,
         hasCompletedSetup: setupState.value ?? true,
       );

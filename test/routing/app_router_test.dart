@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cashlenx/features/auth/domain/models/user.dart';
 import 'package:cashlenx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:cashlenx/features/onboarding/data/onboarding_service.dart';
@@ -14,6 +16,47 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('restores a protected deep link after auth startup', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    _DelayedAuthNotifier.result = Completer<User?>();
+
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(_DelayedAuthNotifier.new),
+        onboardingSeenProvider.overrideWith((ref) async => true),
+        setupCompletedProvider.overrideWith((ref) async => true),
+        cashlenxApiProvider.overrideWithValue(_RouterFakeCashlenxApi()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const CashLenXApp(),
+      ),
+    );
+    await tester.pump();
+
+    final router = container.read(routerProvider);
+    router.go('/profile?from=settings');
+    await tester.pump();
+    expect(router.routeInformationProvider.value.uri.path, '/');
+
+    _DelayedAuthNotifier.result.complete(_demoUser());
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/profile');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      'settings',
+    );
+    expect(find.text('Personal Information'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('supported web destinations render directly', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -143,15 +186,24 @@ class _RouterFakeCashlenxApi extends CashlenxApi {
 
 class _DemoAuthNotifier extends AuthNotifier {
   @override
-  Future<User?> build() async {
-    final now = DateTime(2026);
-    return User(
-      id: 'demo-user',
-      username: 'Demo User',
-      isActive: true,
-      role: 'demo',
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
+  Future<User?> build() async => _demoUser();
+}
+
+class _DelayedAuthNotifier extends AuthNotifier {
+  static late Completer<User?> result;
+
+  @override
+  Future<User?> build() => result.future;
+}
+
+User _demoUser() {
+  final now = DateTime(2026);
+  return User(
+    id: 'demo-user',
+    username: 'Demo User',
+    isActive: true,
+    role: 'demo',
+    createdAt: now,
+    updatedAt: now,
+  );
 }
