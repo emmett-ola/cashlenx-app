@@ -166,7 +166,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     for (final scenario in <(Size, double, double)>[
-      (const Size(320, 568), 1, 0),
+      (const Size(320, 568), 1, 240),
       (const Size(768, 1024), 1, 0),
       (const Size(1440, 900), 1, 0),
       (const Size(390, 844), 1.8, 280),
@@ -421,13 +421,131 @@ void main() {
     await tester.tap(find.text('Transportation'));
     await tester.pumpAndSettle();
 
-    await tester.tapAt(const Offset(385, 100));
+    await tester.tapAt(const Offset(385, 250));
     await tester.pumpAndSettle();
 
     expect(
       find.byKey(const ValueKey('transaction-amount-sheet')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('condenses the amount panel while editing the remark', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final keyboardInset = ValueNotifier<double>(0);
+    addTearDown(keyboardInset.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => ValueListenableBuilder<double>(
+            valueListenable: keyboardInset,
+            child: child,
+            builder: (context, inset, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(viewInsets: EdgeInsets.only(bottom: inset)),
+              child: child!,
+            ),
+          ),
+          home: const HomePage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food & Dining'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+    await tester.enterText(
+      find.byKey(const ValueKey('transaction-remark-field')),
+      'Keep this note',
+    );
+
+    keyboardInset.value = 300;
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey('transaction-keyboard-dim-overlay')),
+          )
+          .opacity,
+      1,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-calculator-pad')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet-dismiss-handle')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-calculator-date')),
+      findsNothing,
+    );
+    expect(find.text('Complete'), findsNothing);
+    expect(find.text(r'$5.00'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-remark-field')),
+      findsOneWidget,
+    );
+    expect(find.text('Restaurants'), findsOneWidget);
+
+    await tester.tapAt(const Offset(385, 250));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+    keyboardInset.value = 0;
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    expect(
+      MediaQuery.viewInsetsOf(
+        tester.element(
+          find.byKey(const ValueKey('transaction-amount-sheet')),
+        ),
+      ).bottom,
+      0,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-calculator-pad')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
+    keyboardInset.value = 300;
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Groceries'));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+    keyboardInset.value = 0;
+    await tester.pumpAndSettle();
+
+    expect(find.text('Groceries'), findsAtLeastNWidgets(2));
+    expect(find.text(r'$5.00'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('transaction-remark-field')),
+          )
+          .controller
+          ?.text,
+      'Keep this note',
+    );
+    expect(find.text('Complete'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('entering a parent clears the amount panel draft', (
