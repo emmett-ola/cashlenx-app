@@ -1240,7 +1240,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   Widget build(BuildContext context) {
     final activeParent = _categoryById(_activeCategoryParentId);
     final selectedCategory = _categoryById(_selectedCategoryId);
-    final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return PopScope<bool>(
       canPop: selectedCategory == null,
@@ -1260,43 +1259,20 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
               ),
               child: Stack(
                 children: [
-                  GestureDetector(
-                    key: const ValueKey('transaction-keyboard-dismiss-surface'),
-                    behavior: HitTestBehavior.translucent,
-                    onTap: isKeyboardVisible ? _dismissSystemKeyboard : null,
-                    child: Column(
-                      children: [
-                        _TransactionEntryHeader(
-                          activeType: _type,
-                          onTypeChanged: _switchCategoryType,
-                          onCancel: () => Navigator.pop(context, false),
-                        ),
-                        if (activeParent != null)
-                          _TransactionCategoryBreadcrumb(
-                            name: activeParent.name,
-                            onBack: _showParentCategories,
-                          ),
-                        Expanded(
-                          child: _buildCategoryBody(
-                            isKeyboardVisible: isKeyboardVisible,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: AnimatedOpacity(
-                        key: const ValueKey('transaction-keyboard-dim-overlay'),
-                        duration: const Duration(milliseconds: 160),
-                        opacity: isKeyboardVisible && selectedCategory != null
-                            ? 1
-                            : 0,
-                        child: ColoredBox(
-                          color: Colors.black.withValues(alpha: 0.42),
-                        ),
+                  Column(
+                    children: [
+                      _TransactionEntryHeader(
+                        activeType: _type,
+                        onTypeChanged: _switchCategoryType,
+                        onCancel: () => Navigator.pop(context, false),
                       ),
-                    ),
+                      if (activeParent != null)
+                        _TransactionCategoryBreadcrumb(
+                          name: activeParent.name,
+                          onBack: _showParentCategories,
+                        ),
+                      Expanded(child: _buildCategoryBody()),
+                    ],
                   ),
                   Positioned(
                     left: 0,
@@ -1354,7 +1330,7 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
     );
   }
 
-  Widget _buildCategoryBody({required bool isKeyboardVisible}) {
+  Widget _buildCategoryBody() {
     if (_isLoading) return const _TransactionLoadingCard();
     if (_error != null) return _TransactionErrorCard(onRetry: _loadCategories);
     if (_visibleCategories.isEmpty) {
@@ -1396,8 +1372,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
     );
     final bottomPadding = _selectedCategoryId == null
         ? 32.0
-        : isKeyboardVisible
-        ? 190.0
         : canvasWidth / 1.55 + 190;
 
     return GridView.builder(
@@ -1500,7 +1474,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   }
 
   void _handleCategorySelected(_CategoryItem category) {
-    _dismissSystemKeyboard();
     if (_hasChildren(category)) {
       setState(() {
         _selectedCategoryId = null;
@@ -1514,7 +1487,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   }
 
   void _showParentCategories() {
-    _dismissSystemKeyboard();
     setState(() {
       final activeParent = _categoryById(_activeCategoryParentId);
       _activeCategoryParentId = activeParent?.parentId;
@@ -1525,7 +1497,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
 
   void _switchCategoryType(_CategoryType type) {
     if (_type == type) return;
-    _dismissSystemKeyboard();
     setState(() {
       _type = type;
       _selectedCategoryId = null;
@@ -1536,7 +1507,7 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
 
   void _hideAmountPanel() {
     if (_selectedCategoryId == null) return;
-    _dismissSystemKeyboard();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _selectedCategoryId = null;
       _entryDraftGeneration += 1;
@@ -1545,10 +1516,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
 
   void _handleTransactionCreated() {
     if (mounted) Navigator.pop(context, true);
-  }
-
-  void _dismissSystemKeyboard() {
-    FocusManager.instance.primaryFocus?.unfocus();
   }
 }
 
@@ -1780,6 +1747,7 @@ class _TransactionAmountEntrySheetState
   var _date = DateTime.now();
   var _showAmountError = false;
   var _isSaving = false;
+  var _isEditingRemark = false;
   var _dismissDragDistance = 0.0;
 
   @override
@@ -1790,8 +1758,13 @@ class _TransactionAmountEntrySheetState
 
   @override
   Widget build(BuildContext context) {
+    if (_isEditingRemark) {
+      return const SizedBox.shrink(
+        key: ValueKey('transaction-amount-sheet-editing-remark'),
+      );
+    }
+
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final isKeyboardVisible = bottomInset > 0;
     final currencySymbol = ref.watch(
       currencyProvider.select((currency) => currency.symbol),
     );
@@ -1805,59 +1778,49 @@ class _TransactionAmountEntrySheetState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!isKeyboardVisible)
-                GestureDetector(
-                  key: const ValueKey(
-                    'transaction-amount-sheet-dismiss-handle',
-                  ),
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragStart: (_) => _dismissDragDistance = 0,
-                  onVerticalDragUpdate: (details) {
-                    _dismissDragDistance = math.max(
-                      0,
-                      _dismissDragDistance + details.delta.dy,
-                    );
-                  },
-                  onVerticalDragEnd: (details) {
-                    if (_dismissDragDistance >= 48 ||
-                        (details.primaryVelocity ?? 0) > 300) {
-                      widget.onDismiss();
-                    }
-                  },
-                  child: SizedBox(
-                    height: 24,
-                    child: Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: context.appColors.border,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+              GestureDetector(
+                key: const ValueKey('transaction-amount-sheet-dismiss-handle'),
+                behavior: HitTestBehavior.opaque,
+                onVerticalDragStart: (_) => _dismissDragDistance = 0,
+                onVerticalDragUpdate: (details) {
+                  _dismissDragDistance = math.max(
+                    0,
+                    _dismissDragDistance + details.delta.dy,
+                  );
+                },
+                onVerticalDragEnd: (details) {
+                  if (_dismissDragDistance >= 48 ||
+                      (details.primaryVelocity ?? 0) > 300) {
+                    widget.onDismiss();
+                  }
+                },
+                child: SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.appColors.border,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
                 ),
+              ),
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  isKeyboardVisible ? 18 : 0,
-                  20,
-                  12,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (!isKeyboardVisible) ...[
-                      Text(
-                        widget.category.name,
-                        style: TextStyle(
-                          color: context.appColors.mutedText,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    Text(
+                      widget.category.name,
+                      style: TextStyle(
+                        color: context.appColors.mutedText,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: 6),
-                    ],
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       '$currencySymbol${_calculator.displayText}',
                       key: const ValueKey('transaction-calculator-display'),
@@ -1887,11 +1850,10 @@ class _TransactionAmountEntrySheetState
                       key: const ValueKey('transaction-remark-field'),
                       controller: _remarkController,
                       maxLines: 1,
+                      readOnly: true,
+                      showCursor: false,
                       textInputAction: TextInputAction.done,
-                      onSubmitted: (_) =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
-                      onTapOutside: (_) =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
+                      onTap: () => _editRemark(currencySymbol),
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.notes),
                         hintText: appT(
@@ -1909,14 +1871,13 @@ class _TransactionAmountEntrySheetState
                   ],
                 ),
               ),
-              if (!isKeyboardVisible)
-                _TransactionCalculatorPad(
-                  date: _date,
-                  isSaving: _isSaving,
-                  onKeyPressed: _handleKey,
-                  onDatePressed: _chooseDate,
-                  onComplete: _complete,
-                ),
+              _TransactionCalculatorPad(
+                date: _date,
+                isSaving: _isSaving,
+                onKeyPressed: _handleKey,
+                onDatePressed: _chooseDate,
+                onComplete: _complete,
+              ),
             ],
           ),
         ),
@@ -1940,6 +1901,37 @@ class _TransactionAmountEntrySheetState
           _calculator.inputDigit(key);
       }
     });
+  }
+
+  Future<void> _editRemark(String currencySymbol) async {
+    if (_isEditingRemark) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    var draftRemark = _remarkController.text;
+    setState(() => _isEditingRemark = true);
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        requestFocus: true,
+        backgroundColor: Colors.transparent,
+        constraints: const BoxConstraints(
+          maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
+        ),
+        builder: (sheetContext) => _TransactionRemarkEditorSheet(
+          initialRemark: draftRemark,
+          amountText: '$currencySymbol${_calculator.displayText}',
+          onChanged: (value) => draftRemark = value,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _remarkController.text = draftRemark;
+          _isEditingRemark = false;
+        });
+      }
+    }
   }
 
   Future<void> _chooseDate() async {
@@ -1971,6 +1963,95 @@ class _TransactionAmountEntrySheetState
     } else {
       setState(() => _isSaving = false);
     }
+  }
+}
+
+class _TransactionRemarkEditorSheet extends StatefulWidget {
+  const _TransactionRemarkEditorSheet({
+    required this.initialRemark,
+    required this.amountText,
+    required this.onChanged,
+  });
+
+  final String initialRemark;
+  final String amountText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_TransactionRemarkEditorSheet> createState() =>
+      _TransactionRemarkEditorSheetState();
+}
+
+class _TransactionRemarkEditorSheetState
+    extends State<_TransactionRemarkEditorSheet> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialRemark);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Material(
+        key: const ValueKey('transaction-remark-editor-sheet'),
+        color: context.appColors.surface,
+        elevation: 16,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.amountText,
+                  key: const ValueKey('transaction-remark-editor-amount'),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  style: TextStyle(
+                    color: context.appColors.text,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const ValueKey('transaction-remark-editor-field'),
+                  controller: _controller,
+                  autofocus: true,
+                  maxLines: 1,
+                  textInputAction: TextInputAction.done,
+                  onChanged: widget.onChanged,
+                  onSubmitted: (_) => Navigator.pop(context),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.notes),
+                    hintText: appT(context, 'add_transaction_note_placeholder'),
+                    filled: true,
+                    fillColor: context.appColors.softFill,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

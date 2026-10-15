@@ -166,10 +166,10 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     for (final scenario in <(Size, double, double)>[
-      (const Size(320, 568), 1, 240),
+      (const Size(320, 568), 1, 0),
       (const Size(768, 1024), 1, 0),
       (const Size(1440, 900), 1, 0),
-      (const Size(390, 844), 1.8, 280),
+      (const Size(390, 844), 1.8, 0),
     ]) {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -327,10 +327,14 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const ValueKey('transaction-remark-field')),
+      find.byKey(const ValueKey('transaction-remark-editor-field')),
       'Team lunch',
     );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pumpAndSettle();
 
@@ -372,10 +376,14 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
+    await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const ValueKey('transaction-remark-field')),
+      find.byKey(const ValueKey('transaction-remark-editor-field')),
       'Keep this draft',
     );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Groceries'));
     await tester.pumpAndSettle();
 
@@ -430,7 +438,7 @@ void main() {
     );
   });
 
-  testWidgets('condenses the amount panel while editing the remark', (
+  testWidgets('opens a focused modal editor and preserves the remark', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -466,75 +474,62 @@ void main() {
     await tester.tap(find.text('Restaurants'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
-    await tester.enterText(
-      find.byKey(const ValueKey('transaction-remark-field')),
-      'Keep this note',
-    );
 
-    keyboardInset.value = 300;
+    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
     await tester.pumpAndSettle();
 
     expect(
-      tester
-          .widget<AnimatedOpacity>(
-            find.byKey(const ValueKey('transaction-keyboard-dim-overlay')),
-          )
-          .opacity,
-      1,
+      find.byKey(const ValueKey('transaction-remark-editor-sheet')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-remark-editor-field')),
+      findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey('transaction-calculator-pad')),
       findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('transaction-amount-sheet-dismiss-handle')),
-      findsNothing,
-    );
-    expect(
-      find.byKey(const ValueKey('transaction-calculator-date')),
-      findsNothing,
-    );
-    expect(find.text('Complete'), findsNothing);
-    expect(find.text(r'$5.00'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('transaction-remark-field')),
+      find.byKey(const ValueKey('transaction-amount-sheet-editing-remark')),
       findsOneWidget,
     );
-    expect(find.text('Restaurants'), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isTrue);
 
-    await tester.tapAt(const Offset(385, 250));
+    keyboardInset.value = 300;
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transaction-remark-editor-amount')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('transaction-remark-editor-sheet')),
+        matching: find.text(r'$5.00'),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('transaction-remark-editor-field')),
+      'Keep this note',
+    );
+    await tester.tapAt(const Offset(10, 10));
     await tester.pump();
-    expect(tester.testTextInput.isVisible, isFalse);
     keyboardInset.value = 0;
     await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transaction-remark-editor-sheet')),
+      findsNothing,
+    );
+    expect(tester.testTextInput.isVisible, isFalse);
     expect(
       find.byKey(const ValueKey('transaction-amount-sheet')),
       findsOneWidget,
     );
-    expect(
-      MediaQuery.viewInsetsOf(
-        tester.element(
-          find.byKey(const ValueKey('transaction-amount-sheet')),
-        ),
-      ).bottom,
-      0,
-    );
-    expect(
-      find.byKey(const ValueKey('transaction-calculator-pad')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
-    keyboardInset.value = 300;
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Groceries'));
-    await tester.pump();
-    expect(tester.testTextInput.isVisible, isFalse);
-    keyboardInset.value = 0;
-    await tester.pumpAndSettle();
-
-    expect(find.text('Groceries'), findsAtLeastNWidgets(2));
-    expect(find.text(r'$5.00'), findsOneWidget);
     expect(
       tester
           .widget<TextField>(
@@ -544,6 +539,30 @@ void main() {
           ?.text,
       'Keep this note',
     );
+
+    await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
+    await tester.pumpAndSettle();
+    keyboardInset.value = 300;
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('transaction-remark-editor-field')),
+      'Updated note',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    keyboardInset.value = 0;
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('transaction-remark-field')),
+          )
+          .controller
+          ?.text,
+      'Updated note',
+    );
+    expect(tester.testTextInput.isVisible, isFalse);
     expect(find.text('Complete'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
