@@ -25,6 +25,7 @@ import '../../../statistics/presentation/analytics_context.dart';
 import '../../../statistics/presentation/statistics_page.dart';
 import '../providers/app_release_identity_provider.dart';
 import '../providers/currency_provider.dart';
+import '../utils/transaction_amount_calculator.dart';
 import '../utils/transaction_filter_utils.dart';
 
 part 'home/dashboard_tab.part.dart';
@@ -198,7 +199,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               selectedTab: _selectedTab,
               onSelect: (tab) {
                 if (tab == _HomeTab.add) {
-                  _showAddTransactionSheet();
+                  _showAddTransactionPage();
                   return;
                 }
                 final section = switch (tab) {
@@ -292,17 +293,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref.invalidate(_dashboardProvider);
   }
 
-  void _showAddTransactionSheet() {
-    showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(
-        maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
-      ),
-      builder: (context) => const _AddTransactionSheet(),
-    ).then((created) {
-      if (created == true) ref.invalidate(_dashboardProvider);
-    });
+  void _showAddTransactionPage() {
+    Navigator.of(context)
+        .push<bool>(
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (context) => const _AddTransactionPage(),
+          ),
+        )
+        .then((created) {
+          if (created == true) ref.invalidate(_dashboardProvider);
+        });
   }
 }

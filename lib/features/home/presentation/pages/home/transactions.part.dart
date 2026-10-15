@@ -1181,30 +1181,19 @@ class _DetailValue extends StatelessWidget {
   }
 }
 
-class _AddTransactionSheet extends ConsumerStatefulWidget {
-  const _AddTransactionSheet();
+class _AddTransactionPage extends ConsumerStatefulWidget {
+  const _AddTransactionPage();
 
   @override
-  ConsumerState<_AddTransactionSheet> createState() =>
-      _AddTransactionSheetState();
+  ConsumerState<_AddTransactionPage> createState() =>
+      _AddTransactionPageState();
 }
 
-class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
-  final _descriptionController = TextEditingController();
-  final _remarkController = TextEditingController();
-  var _amountText = '0';
+class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   var _type = _CategoryType.expense;
-  var _date = DateTime.now();
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
-  final _selectedCategoryByType = <_CategoryType, String?>{};
-  final _activeCategoryParentByType = <_CategoryType, String?>{};
-  var _showAmountError = false;
-  var _showCategoryError = false;
-  var _validationShakeTrigger = 0;
   var _isLoading = true;
-  var _isSaving = false;
-  var _showDetails = false;
   Object? _error;
   List<_CategoryItem> _categories = const [];
 
@@ -1221,17 +1210,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
           .toList(growable: false);
     }
 
-    final parent = _categoryById(_activeCategoryParentId);
-    return [
-      if (parent != null && parent.type == _type) parent,
-      ...typeCategories.where(
-        (category) => category.parentId == _activeCategoryParentId,
-      ),
-    ];
-  }
-
-  _CategoryItem? get _selectedCategory {
-    return _categoryById(_selectedCategoryId);
+    return typeCategories
+        .where((category) => category.parentId == _activeCategoryParentId)
+        .toList(growable: false);
   }
 
   _CategoryItem? _categoryById(String? id) {
@@ -1255,137 +1236,97 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   }
 
   @override
-  void dispose() {
-    _descriptionController.dispose();
-    _remarkController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    final activeParent = _categoryById(_activeCategoryParentId);
+
+    return Scaffold(
+      key: const ValueKey('add-transaction-page'),
+      backgroundColor: context.appColors.surface,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            key: const ValueKey('transaction-entry-canvas'),
+            constraints: const BoxConstraints(
+              maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
+            ),
+            child: Column(
+              children: [
+                _TransactionEntryHeader(
+                  activeType: _type,
+                  onTypeChanged: _switchCategoryType,
+                  onCancel: () => Navigator.pop(context, false),
+                ),
+                if (activeParent != null)
+                  _TransactionCategoryBreadcrumb(
+                    name: activeParent.name,
+                    onBack: _showParentCategories,
+                  ),
+                Expanded(child: _buildCategoryBody()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final currencySymbol = ref.watch(
-      currencyProvider.select((currency) => currency.symbol),
-    );
-
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Container(
-          key: const ValueKey('add-transaction-sheet-surface'),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.9,
-          ),
-          decoration: BoxDecoration(
-            color: context.appColors.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
+  Widget _buildCategoryBody() {
+    if (_isLoading) return const _TransactionLoadingCard();
+    if (_error != null) return _TransactionErrorCard(onRetry: _loadCategories);
+    if (_visibleCategories.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: AppPanelHeader(
-                  title: appT(context, 'add_transaction_title'),
+              Icon(
+                Icons.category_outlined,
+                size: 44,
+                color: context.appColors.mutedText,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                appT(context, 'no_categories_available'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.appColors.text,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const Divider(height: 1),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  child: Column(
-                    children: [
-                      _CategoryTypeSwitcher(
-                        activeType: _type,
-                        onChanged: (type) {
-                          setState(() {
-                            _switchCategoryType(type);
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 34),
-                      _TransactionAmountDisplay(
-                        label: appT(context, 'add_transaction_amount_label'),
-                        amountText: _amountText,
-                        currencySymbol: currencySymbol,
-                        amountColor: _themeColor(context),
-                        errorText: _showAmountError
-                            ? appT(context, 'enter_amount_gt_zero')
-                            : null,
-                        shakeTrigger: _validationShakeTrigger,
-                        expanded: !_showDetails,
-                        onToggleExpanded: () {
-                          setState(() => _showDetails = !_showDetails);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _DetailsToggleButton(
-                        expanded: _showDetails,
-                        onTap: () {
-                          setState(() => _showDetails = !_showDetails);
-                        },
-                      ),
-                      const SizedBox(height: 28),
-                      if (_showDetails)
-                        _AddTransactionDetails(
-                          descriptionController: _descriptionController,
-                          remarkController: _remarkController,
-                          isLoading: _isLoading,
-                          error: _error,
-                          categories: _visibleCategories,
-                          allCategories: _categories,
-                          selectedCategoryId: _selectedCategoryId,
-                          activeParentId: _activeCategoryParentId,
-                          categoryErrorText: _showCategoryError
-                              ? appT(context, 'choose_category')
-                              : null,
-                          validationShakeTrigger: _validationShakeTrigger,
-                          date: _date,
-                          onRetry: _loadCategories,
-                          onCategorySelected: _handleCategorySelected,
-                          onDateChanged: (date) => setState(() => _date = date),
-                        )
-                      else
-                        _TransactionAmountPad(
-                          onKeyPressed: (key) {
-                            setState(() => _handleAmountKey(key));
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  decoration: BoxDecoration(
-                    color: context.appColors.surface,
-                    border: Border(
-                      top: BorderSide(color: context.appColors.border),
-                    ),
-                  ),
-                  child: FilledButton(
-                    onPressed: _isSaving ? null : _saveTransaction,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      backgroundColor: _themeColor(context),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(appT(context, 'add_transaction_submit_button')),
-                  ),
-                ),
+              const SizedBox(height: 6),
+              Text(
+                appT(context, 'transaction_choose_category_hint'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.appColors.mutedText),
               ),
             ],
           ),
         ),
+      );
+    }
+
+    return GridView.builder(
+      key: const ValueKey('transaction-category-grid'),
+      padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 20,
+        crossAxisSpacing: 12,
+        mainAxisExtent: 100,
       ),
+      itemCount: _visibleCategories.length,
+      itemBuilder: (context, index) {
+        final category = _visibleCategories[index];
+        final hasChildren = _hasChildren(category);
+        final selected = category.id == _selectedCategoryId;
+        return _TransactionCategoryTile(
+          category: category,
+          hasChildren: hasChildren,
+          selected: selected,
+          onTap: () => _handleCategorySelected(category),
+        );
+      },
     );
   }
 
@@ -1405,7 +1346,6 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
             _categoryById(_activeCategoryParentId) == null) {
           _activeCategoryParentId = null;
         }
-        _rememberCategoryState();
         _isLoading = false;
       });
     } catch (error) {
@@ -1417,32 +1357,15 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     }
   }
 
-  Future<void> _saveTransaction() async {
-    final amount = double.tryParse(_amountText);
-    final category = _selectedCategory;
-    if (amount == null || amount <= 0) {
-      setState(() {
-        _showAmountError = true;
-        _validationShakeTrigger++;
-      });
-      return;
-    }
-    if (category == null) {
-      setState(() {
-        _showDetails = true;
-        _showCategoryError = true;
-        _validationShakeTrigger++;
-      });
-      return;
-    }
-
-    setState(() => _isSaving = true);
+  Future<bool> _createTransaction({
+    required _CategoryItem category,
+    required double amount,
+    required DateTime date,
+    required String remark,
+  }) async {
     try {
-      final belongsDate = _dateToken(_date);
-      final description = _combinedTransactionDescription(
-        _descriptionController,
-        _remarkController,
-      );
+      final belongsDate = _dateToken(date);
+      final description = remark.trim();
       if (_isDemo) {
         await ref
             .read(demoDataStoreProvider)
@@ -1473,104 +1396,379 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
               description: description.isEmpty ? null : description,
             );
       }
-      if (!mounted) return;
-      Navigator.pop(context, true);
+      if (!mounted) return false;
       ToastUtils.showSuccess(context, appT(context, 'transaction_added'));
+      return true;
     } catch (error) {
-      if (!mounted) return;
-      setState(() => _isSaving = false);
-      ToastUtils.showServerErrors(context, error);
+      if (mounted) ToastUtils.showServerErrors(context, error);
+      return false;
     }
   }
 
-  void _handleCategorySelected(_CategoryItem category) {
-    setState(() {
-      _selectedCategoryId = category.id;
-      _showCategoryError = false;
-      if (!_hasChildren(category)) {
-        _rememberCategoryState();
-        return;
-      }
-
-      if (_activeCategoryParentId == category.id) {
-        _activeCategoryParentId = category.parentId;
-      } else {
+  Future<void> _handleCategorySelected(_CategoryItem category) async {
+    if (_hasChildren(category)) {
+      setState(() {
+        _selectedCategoryId = null;
         _activeCategoryParentId = category.id;
-      }
-      _rememberCategoryState();
+      });
+      return;
+    }
+
+    setState(() => _selectedCategoryId = category.id);
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      barrierColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(
+        maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
+      ),
+      builder: (sheetContext) => _TransactionAmountEntrySheet(
+        category: category,
+        onSubmit: ({required amount, required date, required remark}) =>
+            _createTransaction(
+              category: category,
+              amount: amount,
+              date: date,
+              remark: remark,
+            ),
+      ),
+    );
+    if (!mounted || created != true) return;
+    Navigator.pop(context, true);
+  }
+
+  void _showParentCategories() {
+    setState(() {
+      final activeParent = _categoryById(_activeCategoryParentId);
+      _activeCategoryParentId = activeParent?.parentId;
+      _selectedCategoryId = null;
     });
   }
 
   void _switchCategoryType(_CategoryType type) {
     if (_type == type) return;
-    _rememberCategoryState();
-    _type = type;
-    _restoreCategoryState(type);
-    _showCategoryError = false;
-  }
-
-  void _rememberCategoryState() {
-    _selectedCategoryByType[_type] = _selectedCategoryId;
-    _activeCategoryParentByType[_type] = _activeCategoryParentId;
-  }
-
-  void _restoreCategoryState(_CategoryType type) {
-    final selectedCategory = _categoryById(_selectedCategoryByType[type]);
-    _selectedCategoryId = selectedCategory?.type == type
-        ? selectedCategory?.id
-        : null;
-
-    final activeParent = _categoryById(_activeCategoryParentByType[type]);
-    _activeCategoryParentId = activeParent?.type == type
-        ? activeParent?.id
-        : null;
-  }
-
-  void _handleAmountKey(String key) {
-    _amountText = _updatedAmountText(_amountText, key);
-    _showAmountError = false;
+    setState(() {
+      _type = type;
+      _selectedCategoryId = null;
+      _activeCategoryParentId = null;
+    });
   }
 }
 
-class _DetailsToggleButton extends StatelessWidget {
-  const _DetailsToggleButton({required this.expanded, required this.onTap});
+class _TransactionEntryHeader extends StatelessWidget {
+  const _TransactionEntryHeader({
+    required this.activeType,
+    required this.onTypeChanged,
+    required this.onCancel,
+  });
 
-  final bool expanded;
+  final _CategoryType activeType;
+  final ValueChanged<_CategoryType> onTypeChanged;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final themeColor = _themeColor(context);
+    return Material(
+      color: themeColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 8, 8),
+        child: Row(
+          children: [
+            const SizedBox(width: 64),
+            Expanded(
+              child: Row(
+                children: _CategoryType.values
+                    .map((type) {
+                      final selected = type == activeType;
+                      return Expanded(
+                        child: InkWell(
+                          key: ValueKey('transaction-type-${type.apiValue}'),
+                          onTap: () => onTypeChanged(type),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(2, 10, 2, 7),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    appT(context, type.labelKey),
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: selected
+                                          ? FontWeight.w900
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
+                                  width: selected ? 42 : 0,
+                                  height: 3,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+            ),
+            SizedBox(
+              width: 64,
+              child: TextButton(
+                onPressed: onCancel,
+                child: Text(
+                  appT(context, 'cancel'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionCategoryBreadcrumb extends StatelessWidget {
+  const _TransactionCategoryBreadcrumb({
+    required this.name,
+    required this.onBack,
+  });
+
+  final String name;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: context.appColors.surface,
+        border: Border(bottom: BorderSide(color: context.appColors.border)),
+      ),
+      child: TextButton.icon(
+        key: const ValueKey('transaction-category-back'),
+        onPressed: onBack,
+        icon: const Icon(Icons.arrow_back),
+        label: Text(name),
+      ),
+    );
+  }
+}
+
+class _TransactionCategoryTile extends StatelessWidget {
+  const _TransactionCategoryTile({
+    required this.category,
+    required this.hasChildren,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _CategoryItem category;
+  final bool hasChildren;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: context.appColors.softFill,
-      borderRadius: BorderRadius.circular(18),
+    final themeColor = _themeColor(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: category.name,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        key: ValueKey('transaction-category-${category.id}'),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                size: 18,
-                color: context.appColors.mutedText,
+        child: Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? themeColor
+                    : category.color.withValues(alpha: 0.14),
               ),
-              const SizedBox(width: 4),
-              Flexible(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(category.icon, style: const TextStyle(fontSize: 27)),
+                  if (hasChildren)
+                    Positioned(
+                      right: 2,
+                      bottom: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.appColors.surface,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: 17,
+                          color: themeColor,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 7),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topCenter,
                 child: Text(
-                  appT(
-                    context,
-                    expanded
-                        ? 'add_transaction_hide_details'
-                        : 'add_transaction_show_details',
-                  ),
+                  category.name,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: context.appColors.text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.1,
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+typedef _TransactionAmountSubmit = Future<bool> Function({
+  required double amount,
+  required DateTime date,
+  required String remark,
+});
+
+class _TransactionAmountEntrySheet extends ConsumerStatefulWidget {
+  const _TransactionAmountEntrySheet({
+    required this.category,
+    required this.onSubmit,
+  });
+
+  final _CategoryItem category;
+  final _TransactionAmountSubmit onSubmit;
+
+  @override
+  ConsumerState<_TransactionAmountEntrySheet> createState() =>
+      _TransactionAmountEntrySheetState();
+}
+
+class _TransactionAmountEntrySheetState
+    extends ConsumerState<_TransactionAmountEntrySheet> {
+  final _calculator = TransactionAmountCalculator();
+  final _remarkController = TextEditingController();
+  var _date = DateTime.now();
+  var _showAmountError = false;
+  var _isSaving = false;
+
+  @override
+  void dispose() {
+    _remarkController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final currencySymbol = ref.watch(
+      currencyProvider.select((currency) => currency.symbol),
+    );
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Material(
+        key: const ValueKey('transaction-amount-sheet'),
+        color: context.appColors.surface,
+        elevation: 16,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      widget.category.name,
+                      style: TextStyle(
+                        color: context.appColors.mutedText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$currencySymbol${_calculator.displayText}',
+                      key: const ValueKey('transaction-calculator-display'),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.fade,
+                      style: TextStyle(
+                        color: context.appColors.text,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (_showAmountError) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        appT(context, 'enter_amount_gt_zero'),
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(
+                          color: AppTheme.errorColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      key: const ValueKey('transaction-remark-field'),
+                      controller: _remarkController,
+                      maxLines: 1,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.notes),
+                        hintText: appT(
+                          context,
+                          'add_transaction_note_placeholder',
+                        ),
+                        filled: true,
+                        fillColor: context.appColors.softFill,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _TransactionCalculatorPad(
+                date: _date,
+                isSaving: _isSaving,
+                onKeyPressed: _handleKey,
+                onDatePressed: _chooseDate,
+                onComplete: _complete,
               ),
             ],
           ),
@@ -1578,6 +1776,224 @@ class _DetailsToggleButton extends StatelessWidget {
       ),
     );
   }
+
+  void _handleKey(String key) {
+    setState(() {
+      _showAmountError = false;
+      switch (key) {
+        case 'backspace':
+          _calculator.backspace();
+        case '.':
+          _calculator.inputDecimalPoint();
+        case '+':
+          _calculator.applyOperator(TransactionAmountOperator.add);
+        case '-':
+          _calculator.applyOperator(TransactionAmountOperator.subtract);
+        default:
+          _calculator.inputDigit(key);
+      }
+    });
+  }
+
+  Future<void> _chooseDate() async {
+    final nextDate = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (nextDate != null && mounted) setState(() => _date = nextDate);
+  }
+
+  Future<void> _complete() async {
+    final amount = _calculator.result;
+    if (amount <= 0) {
+      setState(() => _showAmountError = true);
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    final created = await widget.onSubmit(
+      amount: amount,
+      date: _date,
+      remark: _remarkController.text,
+    );
+    if (!mounted) return;
+    if (created) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() => _isSaving = false);
+    }
+  }
+}
+
+class _TransactionCalculatorPad extends StatelessWidget {
+  const _TransactionCalculatorPad({
+    required this.date,
+    required this.isSaving,
+    required this.onKeyPressed,
+    required this.onDatePressed,
+    required this.onComplete,
+  });
+
+  final DateTime date;
+  final bool isSaving;
+  final ValueChanged<String> onKeyPressed;
+  final VoidCallback onDatePressed;
+  final VoidCallback onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final isToday = _isSameDate(today, date);
+    final keys = <_CalculatorKey>[
+      for (final value in ['7', '8', '9']) _CalculatorKey.text(value),
+      _CalculatorKey.action(
+        label: isToday ? appT(context, 'today') : _dateLabel(context, date),
+        icon: Icons.calendar_today_outlined,
+        onTap: onDatePressed,
+      ),
+      for (final value in ['4', '5', '6', '+']) _CalculatorKey.text(value),
+      for (final value in ['1', '2', '3', '-']) _CalculatorKey.text(value),
+      _CalculatorKey.text('.'),
+      _CalculatorKey.text('0'),
+      _CalculatorKey.action(
+        label: appT(context, 'delete_digit'),
+        icon: Icons.backspace_outlined,
+        onTap: () => onKeyPressed('backspace'),
+        iconOnly: true,
+      ),
+      _CalculatorKey.action(
+        label: appT(context, 'complete'),
+        onTap: isSaving ? null : onComplete,
+        emphasized: true,
+        loading: isSaving,
+      ),
+    ];
+
+    return GridView.builder(
+      key: const ValueKey('transaction-calculator-pad'),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        childAspectRatio: 1.55,
+      ),
+      itemCount: keys.length,
+      itemBuilder: (context, index) {
+        final key = keys[index];
+        final onTap =
+            key.onTap ??
+            (key.text == null ? null : () => onKeyPressed(key.text!));
+        return Semantics(
+          button: true,
+          label: key.label ?? key.text,
+          child: InkWell(
+            key: key.icon == Icons.calendar_today_outlined
+                ? const ValueKey('transaction-calculator-date')
+                : key.text == null
+                ? null
+                : ValueKey('transaction-calculator-${key.text}'),
+            onTap: onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                color: key.emphasized
+                    ? _themeColor(context)
+                    : context.appColors.surface,
+                border: Border(
+                  top: BorderSide(color: context.appColors.border),
+                  left: BorderSide(color: context.appColors.border),
+                ),
+              ),
+              child: Center(
+                child: key.loading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : key.icon == null
+                    ? Text(
+                        key.label ?? key.text!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: key.emphasized
+                              ? Colors.white
+                              : context.appColors.text,
+                          fontSize: key.emphasized ? 17 : 24,
+                          fontWeight: key.emphasized
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            key.icon,
+                            color: context.appColors.text,
+                            size: 21,
+                          ),
+                          if (!key.iconOnly) ...[
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                key.label!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: context.appColors.text,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CalculatorKey {
+  const _CalculatorKey._({
+    this.text,
+    this.label,
+    this.icon,
+    this.onTap,
+    this.emphasized = false,
+    this.iconOnly = false,
+    this.loading = false,
+  });
+
+  factory _CalculatorKey.text(String value) => _CalculatorKey._(text: value);
+
+  factory _CalculatorKey.action({
+    required String label,
+    IconData? icon,
+    VoidCallback? onTap,
+    bool emphasized = false,
+    bool iconOnly = false,
+    bool loading = false,
+  }) => _CalculatorKey._(
+    label: label,
+    icon: icon,
+    onTap: onTap,
+    emphasized: emphasized,
+    iconOnly: iconOnly,
+    loading: loading,
+  );
+
+  final String? text;
+  final String? label;
+  final IconData? icon;
+  final VoidCallback? onTap;
+  final bool emphasized;
+  final bool iconOnly;
+  final bool loading;
 }
 
 class _TransactionAmountDisplay extends StatelessWidget {
@@ -1588,12 +2004,10 @@ class _TransactionAmountDisplay extends StatelessWidget {
     required this.expanded,
     required this.onToggleExpanded,
     this.prefix = '',
-    this.label,
     this.errorText,
     this.shakeTrigger = 0,
   });
 
-  final String? label;
   final String amountText;
   final String currencySymbol;
   final String prefix;
@@ -1607,13 +2021,6 @@ class _TransactionAmountDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (label != null) ...[
-          Text(
-            label!,
-            style: TextStyle(color: context.appColors.mutedText, fontSize: 14),
-          ),
-          const SizedBox(height: 12),
-        ],
         _ValidationField(
           errorText: errorText,
           shakeTrigger: shakeTrigger,
@@ -1648,156 +2055,6 @@ class _TransactionAmountDisplay extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AddTransactionDetails extends StatelessWidget {
-  const _AddTransactionDetails({
-    required this.descriptionController,
-    required this.remarkController,
-    required this.isLoading,
-    required this.error,
-    required this.categories,
-    required this.allCategories,
-    required this.selectedCategoryId,
-    required this.activeParentId,
-    required this.categoryErrorText,
-    required this.validationShakeTrigger,
-    required this.date,
-    required this.onRetry,
-    required this.onCategorySelected,
-    required this.onDateChanged,
-  });
-
-  final TextEditingController descriptionController;
-  final TextEditingController remarkController;
-  final bool isLoading;
-  final Object? error;
-  final List<_CategoryItem> categories;
-  final List<_CategoryItem> allCategories;
-  final String? selectedCategoryId;
-  final String? activeParentId;
-  final String? categoryErrorText;
-  final int validationShakeTrigger;
-  final DateTime date;
-  final VoidCallback onRetry;
-  final ValueChanged<_CategoryItem> onCategorySelected;
-  final ValueChanged<DateTime> onDateChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 18),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: context.appColors.border)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _AddTransactionFieldLabel(
-            icon: Icons.description_outlined,
-            text: appT(context, 'add_transaction_description_label'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: descriptionController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: appT(
-                context,
-                'add_transaction_description_placeholder',
-              ),
-              filled: true,
-              fillColor: context.appColors.softFill,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            appT(context, 'add_transaction_category_label'),
-            style: _fieldLabelStyle(context),
-          ),
-          const SizedBox(height: 10),
-          if (isLoading)
-            const _TransactionLoadingCard()
-          else if (error != null)
-            _TransactionErrorCard(onRetry: onRetry)
-          else
-            _CategoryChoiceGrid(
-              categories: categories,
-              allCategories: allCategories,
-              selectedCategoryId: selectedCategoryId,
-              activeParentId: activeParentId,
-              errorText: categoryErrorText,
-              shakeTrigger: validationShakeTrigger,
-              onSelected: onCategorySelected,
-            ),
-          const SizedBox(height: 18),
-          _AddTransactionFieldLabel(
-            icon: Icons.calendar_today_outlined,
-            text: appT(context, 'add_transaction_date_label'),
-          ),
-          const SizedBox(height: 8),
-          _DateSelector(date: date, onDateChanged: onDateChanged),
-          const SizedBox(height: 18),
-          _AddTransactionFieldLabel(
-            icon: Icons.description_outlined,
-            text: appT(context, 'add_transaction_remark_label'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: remarkController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: appT(context, 'add_transaction_remark_placeholder'),
-              filled: true,
-              fillColor: context.appColors.softFill,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          _AddTransactionFieldLabel(
-            icon: Icons.attach_file,
-            text: appT(context, 'transaction_attachments'),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              border: Border.all(color: context.appColors.border),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.attach_file,
-                  size: 18,
-                  color: context.appColors.mutedText,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    appT(context, 'transaction_attach_coming_soon'),
-                    style: TextStyle(
-                      color: context.appColors.mutedText,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

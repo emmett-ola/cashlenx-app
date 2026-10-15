@@ -144,17 +144,23 @@ void main() {
 
     await tester.tap(find.text('Add').last);
     await tester.pumpAndSettle();
-    surface = tester.widget<Container>(
-      find.byKey(const ValueKey('add-transaction-sheet-surface')),
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsOneWidget);
+    expect(
+      tester
+          .widget<Scaffold>(find.byKey(const ValueKey('add-transaction-page')))
+          .backgroundColor,
+      colors.surface,
     );
-    expect((surface.decoration! as BoxDecoration).color, colors.surface);
-    expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
-    await tester.tap(find.bySemanticsLabel('Close'));
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('bounds the add sheet to the mobile canvas across viewports', (
+  testWidgets('bounds the category-first entry page across viewports', (
     tester,
   ) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -183,7 +189,7 @@ void main() {
               child: child!,
             ),
             home: HomePage(
-              key: ValueKey('add-sheet-${scenario.$1}-${scenario.$2}'),
+              key: ValueKey('entry-${scenario.$1}-${scenario.$2}'),
             ),
           ),
         ),
@@ -194,86 +200,217 @@ void main() {
       await tester.tap(find.text('Add').last);
       await tester.pumpAndSettle();
 
-      final sheet = find.byKey(const ValueKey('add-transaction-sheet-surface'));
-      final size = tester.getSize(sheet);
+      final canvas = find.byKey(const ValueKey('transaction-entry-canvas'));
+      final size = tester.getSize(canvas);
       expect(
         size.width,
         moreOrLessEquals(
           math.min(scenario.$1.width, AppDesignTokens.mobileCanvasMaxWidth),
         ),
       );
-      final sheetMediaQuery = MediaQuery.of(tester.element(sheet));
-      expect(size.height, lessThanOrEqualTo(sheetMediaQuery.size.height * 0.9));
-      if (scenario.$3 > 0) {
-        expect(
-          tester.getBottomLeft(sheet).dy,
-          lessThanOrEqualTo(scenario.$1.height - scenario.$3),
-        );
-      }
-      expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
-      expect(find.bySemanticsLabel('Delete digit'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('transaction-category-grid')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('transaction-amount-sheet')),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
 
-      if (scenario.$1.width > AppDesignTokens.mobileCanvasMaxWidth) {
-        await tester.tapAt(const Offset(8, 8));
-      } else {
-        await tester.tap(find.bySemanticsLabel('Close'));
-      }
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      expect(sheet, findsNothing);
+      expect(canvas, findsNothing);
     }
   });
 
-  for (final reduceMotion in [false, true]) {
-    testWidgets(
-      'validation ${reduceMotion ? 'removes movement' : 'uses brief feedback'}',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(390, 844));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+  testWidgets('rejects a zero amount after a leaf category is selected', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              authNotifierProvider.overrideWith(_TestAuthNotifier.new),
-              cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
-            ],
-            child: MaterialApp(
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context)
-                    .copyWith(disableAnimations: reduceMotion),
-                child: child!,
-              ),
-              home: const HomePage(),
-            ),
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pump();
-        await tester.tap(find.text('Add').last);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.widgetWithText(FilledButton, 'Add Transaction'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 30));
-
-        expect(find.text('Enter an amount greater than zero.'), findsOneWidget);
-        final feedback = tester.widget<Container>(
-          find.byKey(const ValueKey('validation-feedback')),
-        );
-        expect((feedback.decoration! as BoxDecoration).border, isNotNull);
-
-        final shake = find.byKey(const ValueKey('validation-shake'));
-        if (reduceMotion) {
-          expect(shake, findsNothing);
-        } else {
-          expect(shake, findsOneWidget);
-          final transform = tester.widget<Transform>(shake);
-          expect(transform.transform.getTranslation().x.abs(), greaterThan(0));
-        }
-        expect(tester.takeException(), isNull);
-      },
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
     );
-  }
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transportation'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Complete'));
+    await tester.pump();
+
+    expect(find.text('Enter an amount greater than zero.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('calculates and submits amount note category and date', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _FakeCashlenxApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Food & Dining'));
+    await tester.pumpAndSettle();
+    expect(find.text('Restaurants'), findsOneWidget);
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+
+    Future<void> tapCalculatorKey(String key) async {
+      await tester.tap(find.byKey(ValueKey('transaction-calculator-$key')));
+      await tester.pump();
+    }
+
+    for (final key in [
+      '1',
+      '2',
+      '.',
+      '5',
+      '0',
+      '+',
+      '7',
+      '.',
+      '2',
+      '5',
+      '-',
+      '2',
+    ]) {
+      await tapCalculatorKey(key);
+    }
+    expect(find.text(r'$19.75 − 2.00'), findsOneWidget);
+
+    final now = DateTime.now();
+    final selectedDate = now.day < 28
+        ? DateTime(now.year, now.month, now.day + 1)
+        : DateTime(now.year, now.month, now.day - 1);
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-date')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('${selectedDate.day}').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('transaction-remark-field')),
+      'Team lunch',
+    );
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastCreatedType, 'expense');
+    expect(api.lastCreatedCategoryName, 'Restaurants');
+    expect(api.lastCreatedAmount, 17.75);
+    expect(api.lastCreatedDescription, 'Team lunch');
+    expect(
+      api.lastCreatedBelongsDate,
+      '${selectedDate.year}'
+      '${selectedDate.month.toString().padLeft(2, '0')}'
+      '${selectedDate.day.toString().padLeft(2, '0')}',
+    );
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsNothing);
+  });
+
+  testWidgets('switches cash-flow type and cancels without creating', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _FakeCashlenxApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('transaction-type-income')));
+    await tester.pumpAndSettle();
+    expect(find.text('Salary'), findsOneWidget);
+    expect(find.text('Food & Dining'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Salary'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastCreatedType, isNull);
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsNothing);
+  });
+
+  testWidgets('keeps calculator input when transaction creation fails', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _FakeCashlenxApi(failCreates: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transportation'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text(r'$5.00'), findsOneWidget);
+  });
 
   testWidgets('renders mock dashboard and shell navigation', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -422,13 +559,32 @@ void main() {
     await tester.tap(find.text('Add').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Add Transaction'), findsAtLeastNWidgets(1));
-    expect(find.text('Amount'), findsOneWidget);
-    expect(find.bySemanticsLabel('Close'), findsOneWidget);
-    expect(find.bySemanticsLabel('Delete digit'), findsOneWidget);
-    await tester.tap(find.text('Show Details'));
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsOneWidget);
+    expect(find.text('Expense'), findsOneWidget);
+    expect(find.text('Income'), findsOneWidget);
+    expect(find.text('Food & Dining'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+    await tester.tap(find.text('Food & Dining'));
     await tester.pumpAndSettle();
-    expect(find.text('Category'), findsAtLeastNWidgets(1));
+    expect(find.text('Restaurants'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-category-back')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Delete digit'), findsOneWidget);
   });
 
   testWidgets('dashboard financial insights replaces the category breakdown', (
@@ -969,7 +1125,9 @@ class _UserAuthNotifier extends AuthNotifier {
 }
 
 class _FakeCashlenxApi extends CashlenxApi {
-  _FakeCashlenxApi() : super(ApiClient(Dio()));
+  _FakeCashlenxApi({this.failCreates = false}) : super(ApiClient(Dio()));
+
+  final bool failCreates;
 
   int? lastTransactionLimit;
   int? lastTransactionOffset;
@@ -978,6 +1136,57 @@ class _FakeCashlenxApi extends CashlenxApi {
   String? lastTransactionDescription;
   String? lastTransactionFromDate;
   String? lastTransactionToDate;
+  String? lastCreatedType;
+  String? lastCreatedBelongsDate;
+  String? lastCreatedCategoryName;
+  num? lastCreatedAmount;
+  String? lastCreatedDescription;
+
+  @override
+  Future<ApiJson> createExpense({
+    required String belongsDate,
+    required String categoryName,
+    required num amount,
+    String? description,
+  }) async {
+    if (failCreates) {
+      throw DioException(requestOptions: RequestOptions(path: '/cash/expense'));
+    }
+    lastCreatedType = 'expense';
+    lastCreatedBelongsDate = belongsDate;
+    lastCreatedCategoryName = categoryName;
+    lastCreatedAmount = amount;
+    lastCreatedDescription = description;
+    return _createdTransactionResponse();
+  }
+
+  @override
+  Future<ApiJson> createIncome({
+    required String belongsDate,
+    required String categoryName,
+    required num amount,
+    String? description,
+  }) async {
+    if (failCreates) {
+      throw DioException(requestOptions: RequestOptions(path: '/cash/income'));
+    }
+    lastCreatedType = 'income';
+    lastCreatedBelongsDate = belongsDate;
+    lastCreatedCategoryName = categoryName;
+    lastCreatedAmount = amount;
+    lastCreatedDescription = description;
+    return _createdTransactionResponse();
+  }
+
+  ApiJson _createdTransactionResponse() {
+    return {
+      'code': 'OK',
+      'message': '',
+      'data': <String, dynamic>{},
+      'errors': <dynamic>[],
+      'extra': <String, dynamic>{},
+    };
+  }
 
   @override
   Future<ApiJson> versionInfo() async {
