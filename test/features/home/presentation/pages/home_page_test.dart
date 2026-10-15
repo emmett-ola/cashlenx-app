@@ -216,7 +216,19 @@ void main() {
         find.byKey(const ValueKey('transaction-amount-sheet')),
         findsNothing,
       );
+      await tester.tap(find.text('Transportation'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('transaction-amount-sheet')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('transaction-amount-sheet')),
+        findsNothing,
+      );
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -335,6 +347,124 @@ void main() {
     expect(find.byKey(const ValueKey('add-transaction-page')), findsNothing);
   });
 
+  testWidgets('switches leaf category in one tap and preserves the draft', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final api = _FakeCashlenxApi();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_UserAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food & Dining'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+    await tester.enterText(
+      find.byKey(const ValueKey('transaction-remark-field')),
+      'Keep this draft',
+    );
+    await tester.tap(find.text('Groceries'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('Groceries'), findsAtLeastNWidgets(2));
+    expect(find.text(r'$5.00'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('transaction-remark-field')),
+          )
+          .controller
+          ?.text,
+      'Keep this draft',
+    );
+
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+    expect(api.lastCreatedCategoryName, 'Groceries');
+    expect(api.lastCreatedAmount, 5);
+    expect(api.lastCreatedDescription, 'Keep this draft');
+  });
+
+  testWidgets('blank taps keep the amount panel open', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transportation'));
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(385, 100));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('entering a parent clears the amount panel draft', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transportation'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+
+    await tester.tap(find.text('Food & Dining'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Restaurants'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+    expect(find.text(r'$0.00'), findsOneWidget);
+  });
+
   testWidgets('switches cash-flow type and cancels without creating', (
     tester,
   ) async {
@@ -370,6 +500,19 @@ void main() {
       find.byKey(const ValueKey('transaction-amount-sheet')),
       findsOneWidget,
     );
+    await tester.tap(find.byKey(const ValueKey('transaction-calculator-5')));
+    await tester.tap(find.byKey(const ValueKey('transaction-type-expense')));
+    await tester.pumpAndSettle();
+    expect(find.text('Food & Dining'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('transaction-type-income')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Salary'));
+    await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('add-transaction-page')), findsOneWidget);
@@ -378,6 +521,40 @@ void main() {
 
     expect(api.lastCreatedType, isNull);
     expect(find.byKey(const ValueKey('add-transaction-page')), findsNothing);
+  });
+
+  testWidgets('dismisses the amount panel by dragging its handle down', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_TestAuthNotifier.new),
+          cashlenxApiProvider.overrideWithValue(_FakeCashlenxApi()),
+        ],
+        child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Transportation'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const ValueKey('transaction-amount-sheet-dismiss-handle')),
+      const Offset(0, 120),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('add-transaction-page')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-amount-sheet')),
+      findsNothing,
+    );
   });
 
   testWidgets('keeps calculator input when transaction creation fails', (

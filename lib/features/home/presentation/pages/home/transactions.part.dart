@@ -1193,6 +1193,7 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   var _type = _CategoryType.expense;
   String? _selectedCategoryId;
   String? _activeCategoryParentId;
+  var _entryDraftGeneration = 0;
   var _isLoading = true;
   Object? _error;
   List<_CategoryItem> _categories = const [];
@@ -1238,31 +1239,90 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
   @override
   Widget build(BuildContext context) {
     final activeParent = _categoryById(_activeCategoryParentId);
+    final selectedCategory = _categoryById(_selectedCategoryId);
 
-    return Scaffold(
-      key: const ValueKey('add-transaction-page'),
-      backgroundColor: context.appColors.surface,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            key: const ValueKey('transaction-entry-canvas'),
-            constraints: const BoxConstraints(
-              maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
-            ),
-            child: Column(
-              children: [
-                _TransactionEntryHeader(
-                  activeType: _type,
-                  onTypeChanged: _switchCategoryType,
-                  onCancel: () => Navigator.pop(context, false),
-                ),
-                if (activeParent != null)
-                  _TransactionCategoryBreadcrumb(
-                    name: activeParent.name,
-                    onBack: _showParentCategories,
+    return PopScope<bool>(
+      canPop: selectedCategory == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _hideAmountPanel();
+      },
+      child: Scaffold(
+        key: const ValueKey('add-transaction-page'),
+        backgroundColor: context.appColors.surface,
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              key: const ValueKey('transaction-entry-canvas'),
+              constraints: const BoxConstraints(
+                maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
+              ),
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _TransactionEntryHeader(
+                        activeType: _type,
+                        onTypeChanged: _switchCategoryType,
+                        onCancel: () => Navigator.pop(context, false),
+                      ),
+                      if (activeParent != null)
+                        _TransactionCategoryBreadcrumb(
+                          name: activeParent.name,
+                          onBack: _showParentCategories,
+                        ),
+                      Expanded(child: _buildCategoryBody()),
+                    ],
                   ),
-                Expanded(child: _buildCategoryBody()),
-              ],
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      reverseDuration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, animation) => SlideTransition(
+                        position:
+                            Tween<Offset>(
+                              begin: const Offset(0, 1),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                                reverseCurve: Curves.easeInCubic,
+                              ),
+                            ),
+                        child: child,
+                      ),
+                      child: selectedCategory == null
+                          ? const SizedBox.shrink(
+                              key: ValueKey('transaction-amount-sheet-hidden'),
+                            )
+                          : _TransactionAmountEntrySheet(
+                              key: ValueKey(
+                                'transaction-entry-draft-'
+                                '$_entryDraftGeneration',
+                              ),
+                              category: selectedCategory,
+                              onDismiss: _hideAmountPanel,
+                              onCreated: _handleTransactionCreated,
+                              onSubmit:
+                                  ({
+                                    required amount,
+                                    required date,
+                                    required remark,
+                                  }) => _createTransaction(
+                                    category: selectedCategory,
+                                    amount: amount,
+                                    date: date,
+                                    remark: remark,
+                                  ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1306,9 +1366,17 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
       );
     }
 
+    final canvasWidth = math.min(
+      MediaQuery.sizeOf(context).width,
+      AppDesignTokens.mobileCanvasMaxWidth,
+    );
+    final bottomPadding = _selectedCategoryId == null
+        ? 32.0
+        : canvasWidth / 1.55 + 190;
+
     return GridView.builder(
       key: const ValueKey('transaction-category-grid'),
-      padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
+      padding: EdgeInsets.fromLTRB(18, 24, 18, bottomPadding),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         mainAxisSpacing: 20,
@@ -1405,38 +1473,17 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
     }
   }
 
-  Future<void> _handleCategorySelected(_CategoryItem category) async {
+  void _handleCategorySelected(_CategoryItem category) {
     if (_hasChildren(category)) {
       setState(() {
         _selectedCategoryId = null;
         _activeCategoryParentId = category.id;
+        _entryDraftGeneration += 1;
       });
       return;
     }
 
     setState(() => _selectedCategoryId = category.id);
-    final created = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      barrierColor: Colors.transparent,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(
-        maxWidth: AppDesignTokens.mobileCanvasMaxWidth,
-      ),
-      builder: (sheetContext) => _TransactionAmountEntrySheet(
-        category: category,
-        onSubmit: ({required amount, required date, required remark}) =>
-            _createTransaction(
-              category: category,
-              amount: amount,
-              date: date,
-              remark: remark,
-            ),
-      ),
-    );
-    if (!mounted || created != true) return;
-    Navigator.pop(context, true);
   }
 
   void _showParentCategories() {
@@ -1444,6 +1491,7 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
       final activeParent = _categoryById(_activeCategoryParentId);
       _activeCategoryParentId = activeParent?.parentId;
       _selectedCategoryId = null;
+      _entryDraftGeneration += 1;
     });
   }
 
@@ -1453,7 +1501,21 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
       _type = type;
       _selectedCategoryId = null;
       _activeCategoryParentId = null;
+      _entryDraftGeneration += 1;
     });
+  }
+
+  void _hideAmountPanel() {
+    if (_selectedCategoryId == null) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _selectedCategoryId = null;
+      _entryDraftGeneration += 1;
+    });
+  }
+
+  void _handleTransactionCreated() {
+    if (mounted) Navigator.pop(context, true);
   }
 }
 
@@ -1661,11 +1723,16 @@ typedef _TransactionAmountSubmit = Future<bool> Function({
 
 class _TransactionAmountEntrySheet extends ConsumerStatefulWidget {
   const _TransactionAmountEntrySheet({
+    super.key,
     required this.category,
+    required this.onDismiss,
+    required this.onCreated,
     required this.onSubmit,
   });
 
   final _CategoryItem category;
+  final VoidCallback onDismiss;
+  final VoidCallback onCreated;
   final _TransactionAmountSubmit onSubmit;
 
   @override
@@ -1680,6 +1747,7 @@ class _TransactionAmountEntrySheetState
   var _date = DateTime.now();
   var _showAmountError = false;
   var _isSaving = false;
+  var _dismissDragDistance = 0.0;
 
   @override
   void dispose() {
@@ -1703,8 +1771,38 @@ class _TransactionAmountEntrySheetState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              GestureDetector(
+                key: const ValueKey('transaction-amount-sheet-dismiss-handle'),
+                behavior: HitTestBehavior.opaque,
+                onVerticalDragStart: (_) => _dismissDragDistance = 0,
+                onVerticalDragUpdate: (details) {
+                  _dismissDragDistance = math.max(
+                    0,
+                    _dismissDragDistance + details.delta.dy,
+                  );
+                },
+                onVerticalDragEnd: (details) {
+                  if (_dismissDragDistance >= 48 ||
+                      (details.primaryVelocity ?? 0) > 300) {
+                    widget.onDismiss();
+                  }
+                },
+                child: SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.appColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1820,7 +1918,7 @@ class _TransactionAmountEntrySheetState
     );
     if (!mounted) return;
     if (created) {
-      Navigator.pop(context, true);
+      widget.onCreated();
     } else {
       setState(() => _isSaving = false);
     }
