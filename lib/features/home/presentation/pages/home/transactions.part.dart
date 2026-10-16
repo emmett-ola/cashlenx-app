@@ -1304,7 +1304,6 @@ class _AddTransactionPageState extends ConsumerState<_AddTransactionPage> {
                                 'transaction-entry-draft-'
                                 '$_entryDraftGeneration',
                               ),
-                              category: selectedCategory,
                               onDismiss: _hideAmountPanel,
                               onCreated: _handleTransactionCreated,
                               onSubmit:
@@ -1724,13 +1723,11 @@ typedef _TransactionAmountSubmit = Future<bool> Function({
 class _TransactionAmountEntrySheet extends ConsumerStatefulWidget {
   const _TransactionAmountEntrySheet({
     super.key,
-    required this.category,
     required this.onDismiss,
     required this.onCreated,
     required this.onSubmit,
   });
 
-  final _CategoryItem category;
   final VoidCallback onDismiss;
   final VoidCallback onCreated;
   final _TransactionAmountSubmit onSubmit;
@@ -1813,14 +1810,6 @@ class _TransactionAmountEntrySheetState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      widget.category.name,
-                      style: TextStyle(
-                        color: context.appColors.mutedText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       '$currencySymbol${_calculator.displayText}',
                       key: const ValueKey('transaction-calculator-display'),

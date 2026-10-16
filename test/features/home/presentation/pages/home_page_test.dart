@@ -391,7 +391,7 @@ void main() {
       find.byKey(const ValueKey('transaction-amount-sheet')),
       findsOneWidget,
     );
-    expect(find.text('Groceries'), findsAtLeastNWidgets(2));
+    expect(find.text('Groceries'), findsOneWidget);
     expect(find.text(r'$5.00'), findsOneWidget);
     expect(
       tester
