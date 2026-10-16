@@ -2103,6 +2103,9 @@ class _TransactionCalculatorPad extends StatelessWidget {
       itemCount: keys.length,
       itemBuilder: (context, index) {
         final key = keys[index];
+        final feedbackColor = key.emphasized
+            ? Colors.white
+            : _themeColor(context);
         final onTap =
             key.onTap ??
             (key.text == null ? null : () => onKeyPressed(key.text!));
@@ -2116,7 +2119,9 @@ class _TransactionCalculatorPad extends StatelessWidget {
                 ? null
                 : ValueKey('transaction-calculator-${key.text}'),
             onTap: onTap,
-            child: Container(
+            splashColor: feedbackColor.withValues(alpha: 0.22),
+            highlightColor: feedbackColor.withValues(alpha: 0.12),
+            child: Ink(
               decoration: BoxDecoration(
                 color: key.emphasized
                     ? _themeColor(context)

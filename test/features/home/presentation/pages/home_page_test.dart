@@ -316,6 +316,13 @@ void main() {
       await tapCalculatorKey(key);
     }
     expect(find.text(r'$19.75 − 2.00'), findsOneWidget);
+    final numberKey = find.byKey(const ValueKey('transaction-calculator-1'));
+    expect(
+      find.descendant(of: numberKey, matching: find.byType(Ink)),
+      findsOneWidget,
+    );
+    expect(tester.widget<InkWell>(numberKey).splashColor, isNotNull);
+    expect(tester.widget<InkWell>(numberKey).highlightColor, isNotNull);
 
     final now = DateTime.now();
     final selectedDate = now.day < 28
