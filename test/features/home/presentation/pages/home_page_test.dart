@@ -327,6 +327,20 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
+    final selectedDateLabel =
+        '${selectedDate.year.toString().padLeft(4, '0')}/'
+        '${selectedDate.month.toString().padLeft(2, '0')}/'
+        '${selectedDate.day.toString().padLeft(2, '0')}';
+    final dateKey = find.byKey(const ValueKey('transaction-calculator-date'));
+    expect(find.text(selectedDateLabel), findsOneWidget);
+    expect(
+      find.descendant(
+        of: dateKey,
+        matching: find.byIcon(Icons.calendar_today_outlined),
+      ),
+      findsNothing,
+    );
+
     await tester.tap(find.byKey(const ValueKey('transaction-remark-field')));
     await tester.pumpAndSettle();
     await tester.enterText(

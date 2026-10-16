@@ -2066,8 +2066,12 @@ class _TransactionCalculatorPad extends StatelessWidget {
     final keys = <_CalculatorKey>[
       for (final value in ['7', '8', '9']) _CalculatorKey.text(value),
       _CalculatorKey.action(
-        label: isToday ? appT(context, 'today') : _dateLabel(context, date),
-        icon: Icons.calendar_today_outlined,
+        label: isToday
+            ? appT(context, 'today')
+            : '${date.year.toString().padLeft(4, '0')}/'
+                  '${date.month.toString().padLeft(2, '0')}/'
+                  '${date.day.toString().padLeft(2, '0')}',
+        icon: isToday ? Icons.calendar_today_outlined : null,
         onTap: onDatePressed,
       ),
       for (final value in ['4', '5', '6', '+']) _CalculatorKey.text(value),
@@ -2106,7 +2110,7 @@ class _TransactionCalculatorPad extends StatelessWidget {
           button: true,
           label: key.label ?? key.text,
           child: InkWell(
-            key: key.icon == Icons.calendar_today_outlined
+            key: index == 3
                 ? const ValueKey('transaction-calculator-date')
                 : key.text == null
                 ? null
@@ -2136,7 +2140,11 @@ class _TransactionCalculatorPad extends StatelessWidget {
                           color: key.emphasized
                               ? Colors.white
                               : context.appColors.text,
-                          fontSize: key.emphasized ? 17 : 24,
+                          fontSize: key.emphasized
+                              ? 17
+                              : key.text == null
+                              ? 13
+                              : 24,
                           fontWeight: key.emphasized
                               ? FontWeight.w800
                               : FontWeight.w500,
