@@ -32,7 +32,7 @@ void main() {
 
         await _advanceToVerification(tester);
 
-        expect(find.text('We sent a 6-digit code to'), findsOneWidget);
+        expect(find.text('We sent a 6-character code to'), findsOneWidget);
         expect(find.text('person@example.test'), findsOneWidget);
         expect(find.text('Confirm'), findsOneWidget);
         expect(find.text('Return to edit email'), findsOneWidget);
@@ -68,7 +68,7 @@ void main() {
     );
   }
 
-  testWidgets('validates and confirms the six-digit code', (tester) async {
+  testWidgets('validates and confirms an alphanumeric code', (tester) async {
     SharedPreferences.setMockInitialValues({'app_language': 'en'});
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -85,21 +85,24 @@ void main() {
     await _advanceToVerification(tester);
 
     final codeField = find.byType(TextFormField);
-    await tester.enterText(codeField, '123');
+    await tester.enterText(codeField, 'A1b');
     await tester.pump();
     await tester.ensureVisible(find.text('Confirm'));
     await tester.tap(find.text('Confirm'));
     await tester.pump();
 
-    expect(find.text('Enter the 6-digit verification code.'), findsOneWidget);
+    expect(
+      find.text('Enter a 6-character code using letters or numbers.'),
+      findsOneWidget,
+    );
     expect(notifier.verifiedCodes, isEmpty);
 
-    await tester.enterText(codeField, '123456');
+    await tester.enterText(codeField, 'A1b2C3');
     await tester.pump();
     await tester.tap(find.text('Confirm'));
     await tester.pump();
 
-    expect(notifier.verifiedCodes, ['123456']);
+    expect(notifier.verifiedCodes, ['A1b2C3']);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(
       tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
@@ -112,6 +115,79 @@ void main() {
 
     expect(find.text('Complete your profile'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('continues to accept a numeric verification code', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'app_language': 'en'});
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final notifier = _RegisterAuthNotifier();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authNotifierProvider.overrideWith(() => notifier)],
+        child: const MaterialApp(home: RegisterPage()),
+      ),
+    );
+    await tester.pump();
+    await _advanceToVerification(tester);
+
+    await tester.enterText(find.byType(TextFormField), '123456');
+    await tester.pump();
+    await tester.ensureVisible(find.text('Confirm'));
+    await tester.tap(find.text('Confirm'));
+    await tester.pump();
+
+    expect(notifier.verifiedCodes, ['123456']);
+    expect(find.text('Complete your profile'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('filters non-ASCII code characters and limits input length', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'app_language': 'en'});
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_RegisterAuthNotifier.new),
+        ],
+        child: const MaterialApp(home: RegisterPage()),
+      ),
+    );
+    await tester.pump();
+    await _advanceToVerification(tester);
+
+    final codeField = find.byType(TextFormField);
+    await tester.enterText(codeField, 'A1- b中2C3Z');
+    await tester.pump();
+
+    expect(tester.widget<TextFormField>(codeField).controller?.text, 'A1b2C3');
+    expect(tester.takeException(), isNull);
+  });
+
+  test('localizes alphanumeric verification guidance', () {
+    expect(
+      const AppTranslations(AppLanguage.english)('please_enter_valid_code'),
+      'Enter a 6-character code using letters or numbers.',
+    );
+    expect(
+      const AppTranslations(AppLanguage.simplifiedChinese)(
+        'please_enter_valid_code',
+      ),
+      '请输入由数字或英文字母组成的 6 位验证码。',
+    );
+    expect(
+      const AppTranslations(AppLanguage.traditionalChinese)(
+        'please_enter_valid_code',
+      ),
+      '請輸入由數字或英文字母組成的 6 位驗證碼。',
+    );
   });
 
   test('localizes the requested verification actions', () {

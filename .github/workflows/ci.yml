@@ -157,6 +157,8 @@ jobs:
           publish_branch: ${{ github.ref_name }}
           publish_dir: ./build/web
           personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
+          user_name: emmett-ola
+          user_email: emmett-ola@users.noreply.github.com
           commit_message: deploy ${{ github.repository }}@${{ github.sha }}
 
   package-candidate:

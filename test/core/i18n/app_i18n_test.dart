@@ -37,4 +37,19 @@ void main() {
       }
     }
   });
+
+  test('transaction entry copy is localized in every language', () {
+    const keys = [
+      'transaction_choose_category_hint',
+      'add_transaction_note_placeholder',
+      'complete',
+    ];
+
+    for (final language in AppLanguage.values) {
+      final translations = AppTranslations(language);
+      for (final key in keys) {
+        expect(translations(key), isNot(key), reason: '${language.code}:$key');
+      }
+    }
+  });
 }
