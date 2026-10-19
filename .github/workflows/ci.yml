@@ -46,6 +46,9 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Verify environment-configured Flutter launcher
+        run: bash test/scripts/flutter-config-smoke.sh
+
       - name: Build canonical web client
         run: |
           flutter build web --release \

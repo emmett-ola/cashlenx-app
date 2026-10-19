@@ -66,13 +66,14 @@ if [[ "${1:-}" == image && "${2:-}" == inspect ]]; then
   exit 0
 fi
 if [[ "${1:-}" == run && "$*" == *'--entrypoint cat'* ]]; then
-  printf '{"version":"%s","revision":"%s"}\n' "$FAKE_IMAGE_VERSION" "$FAKE_IMAGE_REVISION"
+  printf '{"version":"%s","revision":"%s","build_date":"%s"}\n' "$FAKE_IMAGE_VERSION" "$FAKE_IMAGE_REVISION" "$FAKE_BUILD_DATE"
 fi
 EOF
 chmod +x "$fake_dir/docker"
 
 image_version="$(awk '$1 == "version:" { print $2; exit }' "$project_dir/pubspec.yaml")"
 image_revision="$(git -C "$project_dir" rev-parse HEAD)"
+image_build_date="$(date -u +%F)"
 
 reset_log() { : > "$fake_log"; rm -f "$fake_stop_marker"; }
 run_script() {
@@ -88,7 +89,7 @@ run_script() {
     FAKE_HEALTHY="${FAKE_HEALTHY:-true}" \
     FAKE_IMAGE_EXISTS="${FAKE_IMAGE_EXISTS:-true}" \
     FAKE_STOP_MARKER="$fake_stop_marker" \
-    FAKE_IMAGE_VERSION="$image_version" FAKE_IMAGE_REVISION="$image_revision" \
+    FAKE_IMAGE_VERSION="$image_version" FAKE_IMAGE_REVISION="$image_revision" FAKE_BUILD_DATE="$image_build_date" BUILD_DATE="$image_build_date" \
     ENV_FILE="${2:-.env.example}" bash "$project_dir/$1"
 }
 assert_log_contains() { grep -F -- "$1" "$fake_log" >/dev/null || { echo "Expected call containing: $1" >&2; exit 1; }; }

@@ -41,7 +41,10 @@ is uncertain.
 - `lib/main.dart`: initializes config, provider scope, themes, i18n, and router.
 - `lib/routing/app_router.dart`: GoRouter setup and auth redirects.
 - `lib/core/i18n/app_i18n.dart`: app translations and language provider.
-- `lib/core/config/app_config.dart`: loads `.env` and builds API base URL.
+- `lib/core/config/app_config.dart`: consumes compile-time public settings and
+  builds the API base URL without rewriting configured device addresses.
+- `scripts/run.sh`: selects `ENV_FILE` (default `.env`) and forwards only the
+  five public App/API settings to native Flutter runs.
 - `lib/network/cashlenx_api.dart`: ready-to-use API adapter methods.
 - `lib/features/home/presentation/pages/home_page.dart`: authenticated shell,
   route-section coordination, and the owning library for the Home presentation
@@ -261,8 +264,13 @@ flutter test test/features/profile/presentation/pages/profile_page_test.dart
 Run the app:
 
 ```bash
-flutter run
+ENV_FILE=.env scripts/run.sh
 ```
+
+Use `ENV_FILE=.env.local scripts/run.sh -d DEVICE_ID` for a local device
+profile. Explicit shell variables override the selected file. `API_DOMAIN`
+is used unchanged, and an explicitly empty `API_PORT` omits the URL port.
+Android permits HTTP only in debug builds; profile and release use HTTPS.
 
 Run the API server locally from the sibling repo when needed:
 

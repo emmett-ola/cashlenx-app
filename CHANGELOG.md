@@ -6,6 +6,19 @@ state.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-19
+
+### Fixed
+
+- Added an environment-profile launcher for native Flutter development that
+  forwards only the five public App/API settings and preserves configured
+  device addresses without platform-dependent rewriting.
+- Unified native, container-build, and candidate-package configuration loading;
+  explicitly empty API ports now retain the scheme's default port.
+- Granted Android network access and limited local HTTP support to debug builds.
+- Updated the container lifecycle test fixture to include required build-date
+  metadata.
+
 ## [1.1.1] - 2026-10-13
 
 ### Added

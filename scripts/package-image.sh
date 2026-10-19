@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
 . "$project_dir/scripts/lib/container_lifecycle.sh"
+. "$project_dir/scripts/lib/flutter_config.sh"
 ENV_FILE="${ENV_FILE:-.env.example}"
 env_file="$(resolve_env_file)"
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto "$env_file")"
@@ -27,18 +28,7 @@ build_date="${BUILD_DATE:-$(date -u +%F)}"
 mkdir -p "$output_dir"
 output_dir="$(cd "$output_dir" && pwd -P)"
 short_revision="${revision:0:12}"
-app_env="$(read_config_value APP_ENV dev "$env_file")"
-api_scheme="$(read_config_value API_SCHEME http "$env_file")"
-api_domain="$(read_config_value API_DOMAIN 127.0.0.1 "$env_file")"
-api_port="$(read_config_value API_PORT 10063 "$env_file")"
-api_version="$(read_config_value API_VERSION api/v1 "$env_file")"
-[[ "$app_env" =~ ^(dev|staging|prod)$ ]] || { echo "APP_ENV must be dev, staging, or prod." >&2; exit 1; }
-[[ "$api_scheme" =~ ^https?$ ]] || { echo "API_SCHEME must be http or https." >&2; exit 1; }
-[[ "$api_domain" =~ ^[A-Za-z0-9.-]+$ ]] || { echo "API_DOMAIN must be a hostname or IP address without a path." >&2; exit 1; }
-if [[ -n "$api_port" ]]; then
-  [[ "$api_port" =~ ^[0-9]+$ ]] && ((api_port >= 1 && api_port <= 65535)) || { echo "API_PORT must be empty or an integer from 1 to 65535." >&2; exit 1; }
-fi
-[[ "$api_version" =~ ^[A-Za-z0-9._/-]+$ && "$api_version" != /* ]] || { echo "API_VERSION must be a relative URL path." >&2; exit 1; }
+load_flutter_config
 public_configuration_sha256="$(printf 'APP_ENV=%s\nAPI_SCHEME=%s\nAPI_DOMAIN=%s\nAPI_PORT=%s\nAPI_VERSION=%s\n' \
   "$app_env" "$api_scheme" "$api_domain" "$api_port" "$api_version" | sha256sum | awk '{print $1}')"
 configuration_identity="${app_env}-${public_configuration_sha256:0:12}"

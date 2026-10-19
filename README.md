@@ -103,8 +103,19 @@ lib/
 
 5.  **Run the app:**
     ```bash
-    flutter run
+    ENV_FILE=.env scripts/run.sh
     ```
+
+    Select an ignored local profile with `ENV_FILE=.env.local scripts/run.sh -d DEVICE_ID`.
+    The runner passes only `APP_ENV`, `API_SCHEME`, `API_DOMAIN`, `API_PORT`, and
+    `API_VERSION` to Flutter. Explicit shell variables override the selected
+    file; an empty `API_PORT` omits the port. Raw `flutter run` does not load
+    `.env` files. Changes require restarting the run or rebuilding the client.
+    Configure `API_DOMAIN` for the target device in that local profile; the app
+    never rewrites loopback addresses or detects an emulator. Android HTTP is
+    enabled only for debug builds; profile and release builds use HTTPS.
+    Run `bash test/scripts/flutter-config-smoke.sh` to verify file selection,
+    public-setting isolation, validation, and argument forwarding without a device.
 
 ## 🐳 Container Usage
 
