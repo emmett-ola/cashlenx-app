@@ -228,16 +228,24 @@ failure paths without changing containers.
 `.github/workflows/ci.yml` installs locked dependencies, regenerates code, runs
 analysis and tests, and builds Flutter Web against canonical `/api/v1`.
 
-After both the web and deployable-image validation jobs succeed on a push to
-`develop`, `testing`, or `main`, CI performs a branch-configured Flutter build
-and publishes `build/web` to the matching branch in
-`emmett-ola/cashlenx-app-release`. The tracked public profiles are:
+Pushes and pull requests targeting any branch run validation. Only pushes to
+`main` and `testing` publish static output, after both the web and
+deployable-image validation jobs succeed. CI builds the corresponding public
+profile and publishes `build/web` using this fixed mapping:
 
-- `develop`: local development API at `http://127.0.0.1:10063/api/v1`
-- `testing`: test API at `https://test-api.cashlenx.com/api/v1`
-- `main`: production API at `https://api.cashlenx.com/api/v1`
+| Source branch | Release repository | Target branch | API |
+| --- | --- | --- | --- |
+| `main` | `emmett-ola/cashlenx-app-release-main` | `main` | `https://api.cashlenx.com/api/v1` |
+| `testing` | `emmett-ola/cashlenx-app-release-test` | `main` | `https://test-api.cashlenx.com/api/v1` |
 
-The release repository contains prebuilt static files. Its Vercel projects use
+Other source branches, pull requests, and manual dispatches do not publish to
+a release repository. The release commit author and committer remain
+`emmett-ola <emmett-ola@users.noreply.github.com>`. Both destination repositories
+must exist, and the `RELEASE_REPO_TOKEN` secret must have Contents read/write
+access to both; the source repository's `GITHUB_TOKEN` is not sufficient for
+cross-repository publication. CI no longer publishes to `cashlenx-app-release`.
+
+The release repositories contain prebuilt static files. Their Vercel projects use
 the `Other` framework preset and skip build and install commands; Vercel does
 not install Flutter or inject the client API configuration.
 

@@ -2,9 +2,9 @@ name: App CI
 
 on:
   push:
-    branches: [main, testing, develop, 'dev/**']
+    branches: ['**']
   pull_request:
-    branches: [main, testing, develop, 'dev/**']
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
@@ -76,7 +76,7 @@ jobs:
     name: Publish static web release
     if: >-
       github.event_name == 'push' &&
-      (github.ref_name == 'develop' || github.ref_name == 'testing' || github.ref_name == 'main')
+      (github.ref == 'refs/heads/testing' || github.ref == 'refs/heads/main')
     needs: [validate-web, validate-image]
     runs-on: ubuntu-latest
     steps:
@@ -102,22 +102,18 @@ jobs:
         run: |
           case "$GITHUB_REF_NAME" in
             main)
+              release_repository=emmett-ola/cashlenx-app-release-main
               app_env=prod
               api_scheme=https
               api_domain=api.cashlenx.com
               api_port=
               ;;
             testing)
+              release_repository=emmett-ola/cashlenx-app-release-test
               app_env=staging
               api_scheme=https
               api_domain=test-api.cashlenx.com
               api_port=
-              ;;
-            develop)
-              app_env=dev
-              api_scheme=http
-              api_domain=127.0.0.1
-              api_port=10063
               ;;
             *)
               echo "Unsupported release branch: $GITHUB_REF_NAME" >&2
@@ -126,6 +122,7 @@ jobs:
           esac
 
           {
+            echo "release_repository=$release_repository"
             echo "app_env=$app_env"
             echo "api_scheme=$api_scheme"
             echo "api_domain=$api_domain"
@@ -153,11 +150,11 @@ jobs:
           test -f build/web/main.dart.js
           grep -Eq '"build_date":"[0-9]{4}-[0-9]{2}-[0-9]{2}"' build/web/build-metadata.json
 
-      - name: Publish matching release branch
+      - name: Publish environment release repository
         uses: peaceiris/actions-gh-pages@v4
         with:
-          external_repository: emmett-ola/cashlenx-app-release
-          publish_branch: ${{ github.ref_name }}
+          external_repository: ${{ steps.release-config.outputs.release_repository }}
+          publish_branch: main
           publish_dir: ./build/web
           personal_token: ${{ secrets.RELEASE_REPO_TOKEN }}
           user_name: emmett-ola

@@ -6,6 +6,12 @@ state.
 
 ## [Unreleased]
 
+### Changed
+
+- Run CI validation for all branches and restrict static publication to pushes
+  on `main` and `testing`. Publish to the `main` branch of
+  `cashlenx-app-release-main` and `cashlenx-app-release-test`, respectively.
+
 ## [1.1.3] - 2026-10-19
 
 ### Fixed
